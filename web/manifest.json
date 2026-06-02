@@ -1,11 +1,11 @@
 {
-    "name": "frontend_dialysis_record",
-    "short_name": "frontend_dialysis_record",
+    "name": "Dialysis Record",
+    "short_name": "Dialysis",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Patient and doctor dialysis record app.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

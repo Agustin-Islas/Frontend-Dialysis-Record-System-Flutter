@@ -1,4 +1,4 @@
-package com.example.frontend_dialysis_record
+package com.agustinislas.dialysisrecord
 
 import io.flutter.embedding.android.FlutterActivity
 
