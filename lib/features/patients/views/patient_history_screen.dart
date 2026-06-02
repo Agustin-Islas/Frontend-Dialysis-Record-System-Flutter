@@ -432,10 +432,10 @@ class _WeeklyUfTile extends StatelessWidget {
   }
 }
 
-class _MonthSummaryCard extends StatelessWidget {
+class MonthSummaryCard extends StatelessWidget {
   final SessionSummary summary;
 
-  const _MonthSummaryCard({required this.summary});
+  const MonthSummaryCard({required this.summary});
 
   @override
   Widget build(BuildContext context) {

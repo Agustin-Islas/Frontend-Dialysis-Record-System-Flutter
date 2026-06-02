@@ -33,14 +33,14 @@ class SessionDto {
   });
 
   factory SessionDto.fromJson(Map<String, dynamic> json) {
-    int? _toInt(dynamic v) {
+    int? toInt(dynamic v) {
       if (v == null) return null;
       if (v is int) return v;
       if (v is double) return v.toInt();
       return int.tryParse(v.toString());
     }
 
-    double? _toDouble(dynamic v) {
+    double? toDouble(dynamic v) {
       if (v == null) return null;
       if (v is double) return v;
       if (v is int) return v.toDouble();
@@ -51,11 +51,11 @@ class SessionDto {
       id: json['id']?.toString(),
       date: json['date']?.toString(),
       hour: json['hour']?.toString(),
-      bag: _toInt(json['bag']),
-      concentration: _toDouble(json['concentration']),
-      drainage: _toInt(json['drainage']),
-      infusion: _toInt(json['infusion']),
-      partial: _toInt(json['partial']),
+      bag: toInt(json['bag']),
+      concentration: toDouble(json['concentration']),
+      drainage: toInt(json['drainage']),
+      infusion: toInt(json['infusion']),
+      partial: toInt(json['partial']),
       observations: json['observations']?.toString(),
       patientName: json['patientName']?.toString(),
       patientId: json['patientId']?.toString(),
