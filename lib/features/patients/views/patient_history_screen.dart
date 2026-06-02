@@ -95,7 +95,7 @@ class _PatientHistoryScreenState extends State<PatientHistoryScreen> {
       );
       final name = (widget.me.name ?? 'paciente').replaceAll(RegExp(r'\s+'), '_').toLowerCase();
       final fileName = 'registro_dialisis_${name}_${_selectedMonth.year}_${_selectedMonth.month.toString().padLeft(2, '0')}.pdf';
-      _pdfService.download(bytes, fileName);
+      await _pdfService.download(bytes, fileName);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('PDF generado')));
       }

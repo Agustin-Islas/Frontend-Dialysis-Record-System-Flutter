@@ -1,8 +1,10 @@
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:share_plus/share_plus.dart';
 import 'package:universal_html/html.dart' as html;
 import 'package:frontend_dialysis_record/features/auth/models/me_response.dart';
 import 'package:frontend_dialysis_record/features/sessions/models/monthly_ultrafiltration_summary.dart';
@@ -49,7 +51,21 @@ class MonthlyDialysisPdfService {
     return document.save();
   }
 
-  void download(Uint8List bytes, String filename) {
+  Future<void> download(Uint8List bytes, String filename) async {
+    if (!kIsWeb) {
+      final file = XFile.fromData(
+        bytes,
+        mimeType: 'application/pdf',
+        name: filename,
+      );
+      await Share.shareXFiles(
+        [file],
+        text: 'Registro mensual de dialisis peritoneal',
+        subject: filename,
+      );
+      return;
+    }
+
     final blob = html.Blob([bytes], 'application/pdf');
     final url = html.Url.createObjectUrlFromBlob(blob);
     final anchor = html.AnchorElement(href: url)
