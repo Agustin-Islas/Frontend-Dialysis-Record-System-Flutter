@@ -1,6 +1,4 @@
-import 'package:flutter/widgets.dart';
-
-class MeResponse { //TODO: modelo para patient, crear uno nuevo para doctor si es necesario
+class MeResponse {
   final String? id;
   final String? email;
   final String? name;
@@ -12,6 +10,9 @@ class MeResponse { //TODO: modelo para patient, crear uno nuevo para doctor si e
   final String? number;
   final String? doctorName;
   final String? doctorId;
+  final int? patientCount;
+  final List<String> patientIds;
+  final List<double> customConcentrations;
 
   MeResponse({
     required this.role,
@@ -25,9 +26,14 @@ class MeResponse { //TODO: modelo para patient, crear uno nuevo para doctor si e
     this.number,
     this.doctorName,
     this.doctorId,
+    this.patientCount,
+    this.patientIds = const [],
+    this.customConcentrations = const [],
   });
 
   factory MeResponse.fromJson(Map<String, dynamic> json) {
+    final rawPatientIds = json['patientIds'];
+    final rawCustomConcentrations = json['customConcentrations'];
     return MeResponse(
       role: (json['role'] ?? '').toString(),
       id: json['id']?.toString(),
@@ -40,6 +46,26 @@ class MeResponse { //TODO: modelo para patient, crear uno nuevo para doctor si e
       number: json['number']?.toString(),
       doctorName: json['doctorName']?.toString(),
       doctorId: json['doctorId']?.toString(),
+      patientCount: _toInt(json['patientCount']),
+      patientIds: rawPatientIds is List
+          ? rawPatientIds.map((e) => e.toString()).toList()
+          : const [],
+      customConcentrations: rawCustomConcentrations is List
+          ? rawCustomConcentrations.map(_toDouble).whereType<double>().toList()
+          : const [],
     );
+  }
+
+  static int? _toInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    return int.tryParse(value.toString());
+  }
+
+  static double? _toDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    return double.tryParse(value.toString());
   }
 }

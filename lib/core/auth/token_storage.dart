@@ -36,7 +36,8 @@ class TokenStorage {
     if (kIsWeb) {
       return html.window.localStorage[_refreshKey];
     }
-    return _secureStorage.read(key: _refreshKey);
+
+    return await _secureStorage.read(key: _refreshKey);
   }
 
   Future<void> clearAll() async {

@@ -1,12 +1,16 @@
 import 'dart:async';
+
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:frontend_dialysis_record/core/auth/token_storage.dart';
+import 'package:frontend_dialysis_record/core/config/app_config.dart';
+import 'package:frontend_dialysis_record/core/network/app_exception.dart';
 
 class DioClient {
   final Dio dio;
   final TokenStorage tokenStorage;
 
-  static const String baseUrl = 'http://localhost:8080';
+  static const String baseUrl = AppConfig.apiBaseUrl;
 
   bool _isRefreshing = false;
   final List<_QueuedRequest> _refreshQueue = [];
@@ -18,12 +22,21 @@ class DioClient {
             baseUrl: baseUrl,
             connectTimeout: const Duration(milliseconds: 10000),
             receiveTimeout: const Duration(milliseconds: 7000),
-            headers: const {
-              'Content-Type': 'application/json',
-            },
+            headers: const {'Content-Type': 'application/json'},
           ),
         ) {
-    dio.interceptors.add(LogInterceptor(responseBody: true));
+    if (kDebugMode) {
+      dio.interceptors.add(
+        LogInterceptor(
+          requestHeader: true,
+          requestBody: true,
+          responseHeader: false,
+          responseBody: true,
+          error: true,
+        ),
+      );
+    }
+
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
@@ -36,35 +49,28 @@ class DioClient {
         onError: (e, handler) async {
           final status = e.response?.statusCode;
           final req = e.requestOptions;
-
           final isAuthEndpoint =
               req.path.contains('/auth/login') || req.path.contains('/auth/refresh');
 
-          // Si es 401 en endpoints NO-auth, intentamos refresh
           if (status == 401 && !isAuthEndpoint) {
             final completer = Completer<Response<dynamic>>();
             _refreshQueue.add(_QueuedRequest(req, completer));
 
-            // Si ya hay un refresh en curso, esperamos a que termine
             if (_isRefreshing) {
               try {
-                final res = await completer.future;
-                return handler.resolve(res);
-              } catch (err) {
+                return handler.resolve(await completer.future);
+              } catch (_) {
                 return handler.next(e);
               }
             }
 
             _isRefreshing = true;
-
             try {
               final refreshed = await _tryRefreshToken();
               _isRefreshing = false;
 
               if (!refreshed) {
-                // refresh falló => limpiar sesión
-                await tokenStorage?.clearAll();
-                // Rechazamos todo lo encolado
+                await this.tokenStorage.clearAll();
                 for (final q in _refreshQueue) {
                   q.completer.completeError(e);
                 }
@@ -72,43 +78,43 @@ class DioClient {
                 return handler.next(e);
               }
 
-              // refresh OK: reintentamos TODO lo encolado con el nuevo access
-              final newAccess = await tokenStorage?.readAccessToken();
+              final newAccess = await this.tokenStorage.readAccessToken();
               for (final q in _refreshQueue) {
                 try {
                   q.requestOptions.headers['Authorization'] = 'Bearer $newAccess';
-                  final cloned = await dio.fetch(q.requestOptions);
-                  q.completer.complete(cloned);
+                  q.completer.complete(await dio.fetch(q.requestOptions));
                 } catch (err) {
                   q.completer.completeError(err);
                 }
               }
               _refreshQueue.clear();
-
-              // resolvemos el request actual
-              final res = await completer.future;
-              return handler.resolve(res);
+              return handler.resolve(await completer.future);
             } catch (err) {
               _isRefreshing = false;
-              await tokenStorage?.clearAll();
-
+              await this.tokenStorage.clearAll();
               for (final q in _refreshQueue) {
                 q.completer.completeError(err);
               }
               _refreshQueue.clear();
-
               return handler.next(e);
             }
           }
 
-          handler.next(e);
+          handler.reject(
+            DioException(
+              requestOptions: e.requestOptions,
+              response: e.response,
+              type: e.type,
+              error: AppException.fromDio(e),
+              stackTrace: e.stackTrace,
+              message: e.message,
+            ),
+          );
         },
       ),
     );
   }
 
-  /// POST /auth/refresh con refreshToken
-  /// Espera: { "accessToken": "...", "refreshToken": "..."? }
   Future<bool> _tryRefreshToken() async {
     final refresh = await tokenStorage.readRefreshToken();
     if (refresh == null || refresh.isEmpty) return false;
@@ -121,22 +127,18 @@ class DioClient {
           receiveTimeout: const Duration(milliseconds: 7000),
           headers: const {'Content-Type': 'application/json'},
         ),
-      ).post(
-        '/auth/refresh',
-        data: {'refreshToken': refresh},
-      );
+      ).post('/auth/refresh', data: {'refreshToken': refresh});
 
       final data = res.data;
-      if (data == null || data is! Map) return false;
+      if (data is! Map) return false;
 
       final newAccess = data['accessToken'] as String?;
       final newRefresh = data['refreshToken'] as String?;
-
       if (newAccess == null || newAccess.isEmpty) return false;
 
       await tokenStorage.saveAccessToken(newAccess);
       if (newRefresh != null && newRefresh.isNotEmpty) {
-        await tokenStorage.saveRefreshToken(newRefresh); // si el backend rota refresh
+        await tokenStorage.saveRefreshToken(newRefresh);
       }
       return true;
     } catch (_) {

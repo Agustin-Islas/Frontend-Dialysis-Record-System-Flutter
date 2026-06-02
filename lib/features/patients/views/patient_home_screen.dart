@@ -4,15 +4,18 @@ import 'package:frontend_dialysis_record/features/auth/authController/auth_contr
 import 'package:frontend_dialysis_record/features/patients/views/patient_today_screen.dart';
 import 'package:frontend_dialysis_record/features/patients/views/patient_history_screen.dart';
 import 'package:frontend_dialysis_record/features/patients/views/patient_profile_screen.dart';
+import 'package:frontend_dialysis_record/features/patients/patientController/patient_controller.dart';
 
 class PatientHomeScreen extends StatefulWidget {
   final MeResponse me;
   final AuthController authController;
+  final PatientController patientController;
 
   const PatientHomeScreen({
     super.key,
     required this.me,
     required this.authController,
+    required this.patientController,
   });
 
   @override
@@ -21,6 +24,14 @@ class PatientHomeScreen extends StatefulWidget {
 
 class _PatientHomeScreenState extends State<PatientHomeScreen> {
   int _currentIndex = 0;
+  final GlobalKey<PatientTodayScreenState> _todayKey = GlobalKey<PatientTodayScreenState>();
+  late MeResponse _me;
+
+  @override
+  void initState() {
+    super.initState();
+    _me = widget.me;
+  }
 
   void _goTo(int index) {
     if (index == _currentIndex) return;
@@ -28,17 +39,20 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
   }
 
   void _onNewRecord() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Nuevo registro (pendiente de implementar)')),
-    );
+    _todayKey.currentState?.openCreateSession();
   }
 
   @override
   Widget build(BuildContext context) {
     final pages = <Widget>[
-      PatientTodayScreen(me: widget.me, authController: widget.authController),
-      PatientHistoryScreen(me: widget.me, authController: widget.authController),
-      PatientProfileScreen(me: widget.me, authController: widget.authController),
+      PatientTodayScreen(key: _todayKey, me: _me, authController: widget.authController, patientController: widget.patientController),
+      PatientHistoryScreen(me: _me, authController: widget.authController, patientController: widget.patientController),
+      PatientProfileScreen(
+        me: _me,
+        authController: widget.authController,
+        patientController: widget.patientController,
+        onUpdated: (updated) => setState(() => _me = updated),
+      ),
     ];
 
     return Scaffold(
@@ -49,10 +63,12 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
         children: pages,
       ),
 
-      floatingActionButton: FloatingActionButton(
-        onPressed: _onNewRecord,
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: _currentIndex == 0
+          ? FloatingActionButton(
+              onPressed: _onNewRecord,
+              child: const Icon(Icons.add),
+            )
+          : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
 
       bottomNavigationBar: _PatientBottomBar(
@@ -85,7 +101,7 @@ class _PatientBottomBar extends StatelessWidget {
       final selected = currentIndex == index;
       final color = selected
           ? theme.colorScheme.primary
-          : theme.textTheme.bodyMedium?.color?.withOpacity(0.7);
+          : theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7);
 
       return Expanded(
         child: InkWell(
@@ -124,11 +140,7 @@ class _PatientBottomBar extends StatelessWidget {
           children: [
             item(index: 0, icon: Icons.home_rounded, label: 'Hoy'),
             item(index: 1, icon: Icons.view_agenda_rounded, label: 'Historial'),
-
-            // Espacio para el FAB al centro
-            const SizedBox(width: 72),
-
-            item(index: 2, icon: Icons.bar_chart_rounded, label: 'Resumen'),
+            item(index: 2, icon: Icons.person_rounded, label: 'Perfil'),
           ],
         ),
       ),

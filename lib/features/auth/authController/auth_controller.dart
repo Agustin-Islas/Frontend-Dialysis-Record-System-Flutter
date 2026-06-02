@@ -19,8 +19,10 @@ class AuthController {
     final loginRequest = LoginRequest(email: email, password: password);
     final loginResponse = await authApi.login(loginRequest);
     await tokenStorage.saveAccessToken(loginResponse.accessToken);
+    await tokenStorage.saveRefreshToken(loginResponse.refreshToken);
     final role = JwtDecoder.getRole(loginResponse.accessToken);
-    return await authApi.getMeForRole(role!);
+    if (role == null || role.isEmpty) return null;
+    return await authApi.getMeForRole(role);
   }
 
   Future<void> logout() async {
@@ -31,7 +33,8 @@ class AuthController {
     final token = await tokenStorage.readAccessToken();
     if (token == null) return null;
     final role = JwtDecoder.getRole(token);
-    return await authApi.getMeForRole(role!);
+    if (role == null || role.isEmpty) return null;
+    return await authApi.getMeForRole(role);
   }
 
   Future<void> registerPatient({

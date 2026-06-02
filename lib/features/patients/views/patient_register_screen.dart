@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:frontend_dialysis_record/core/auth/token_storage.dart';
-import 'package:frontend_dialysis_record/core/network/dio_client.dart';
-import 'package:frontend_dialysis_record/features/auth/authController/auth_controller.dart';
+import 'package:frontend_dialysis_record/core/di/app_di.dart';
+import 'package:frontend_dialysis_record/core/network/app_exception.dart';
 import 'package:frontend_dialysis_record/features/auth/views/login_screen.dart';
 
 class PatientRegisterScreen extends StatefulWidget {
@@ -15,8 +14,6 @@ class PatientRegisterScreen extends StatefulWidget {
 class _PatientRegisterScreenState extends State<PatientRegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _dateFormat = DateFormat('yyyy-MM-dd');
-
-  late final AuthController authController = AuthController(DioClient(), TokenStorage());
 
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
@@ -42,7 +39,6 @@ class _PatientRegisterScreenState extends State<PatientRegisterScreen> {
     super.dispose();
   }
 
-  // --- Helpers de validación ---
   bool _isValidEmail(String value) {
     final emailRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
     return emailRegex.hasMatch(value);
@@ -50,8 +46,7 @@ class _PatientRegisterScreenState extends State<PatientRegisterScreen> {
 
   String? _required(String? value, {String message = 'Campo requerido'}) {
     final v = (value ?? '').trim();
-    if (v.isEmpty) return message;
-    return null;
+    return v.isEmpty ? message : null;
   }
 
   String? _validatePassword(String? value) {
@@ -74,17 +69,16 @@ class _PatientRegisterScreenState extends State<PatientRegisterScreen> {
     final v = (value ?? '').trim();
     if (v.isEmpty) return 'DNI requerido';
     final dni = int.tryParse(v);
-    if (dni == null) return 'DNI inválido (solo números)';
-    // Rango razonable (ajustalo si querés)
+    if (dni == null) return 'DNI inválido';
     if (dni < 1000000 || dni > 99999999) return 'DNI fuera de rango';
     return null;
   }
 
-  String? _validatNumber(String? value) {
+  String? _validateNumber(String? value) {
     final v = (value ?? '').trim();
     if (v.isEmpty) return 'Número requerido';
     final n = int.tryParse(v);
-    if (n == null) return 'Número inválido (solo números)';
+    if (n == null) return 'Número inválido';
     if (n <= 0 || n > 9999999999) return 'Número fuera de rango';
     return null;
   }
@@ -93,10 +87,9 @@ class _PatientRegisterScreenState extends State<PatientRegisterScreen> {
     final v = (value ?? '').trim();
     if (v.isEmpty) return 'Fecha de nacimiento requerida';
     try {
-      final parsed = DateTime.parse(v); // espera yyyy-MM-dd
+      final parsed = DateTime.parse(v);
       final now = DateTime.now();
       if (parsed.isAfter(now)) return 'La fecha no puede ser futura';
-      // ejemplo: al menos 0 años, y no más de 120
       final age = now.year - parsed.year - ((now.month < parsed.month || (now.month == parsed.month && now.day < parsed.day)) ? 1 : 0);
       if (age > 120) return 'Fecha inválida';
     } catch (_) {
@@ -107,7 +100,6 @@ class _PatientRegisterScreenState extends State<PatientRegisterScreen> {
 
   Future<void> _pickDateOfBirth() async {
     FocusScope.of(context).unfocus();
-
     DateTime initial = DateTime(2000, 1, 1);
     try {
       final current = dateOfBirthController.text.trim();
@@ -124,7 +116,6 @@ class _PatientRegisterScreenState extends State<PatientRegisterScreen> {
 
     if (picked != null) {
       dateOfBirthController.text = _dateFormat.format(picked);
-      // fuerza revalidación visual si ya interactuó
       _formKey.currentState?.validate();
     }
   }
@@ -136,13 +127,13 @@ class _PatientRegisterScreenState extends State<PatientRegisterScreen> {
     setState(() => isLoading = true);
 
     try {
-      await authController.registerPatient(
+      await AppDI.authController.registerPatient(
         email: emailController.text.trim(),
         password: passwordController.text,
         name: nameController.text.trim(),
         surname: surnameController.text.trim(),
         dni: int.parse(dniController.text.trim()),
-        dateOfBirth: dateOfBirthController.text.trim(), // yyyy-MM-dd
+        dateOfBirth: dateOfBirthController.text.trim(),
         address: addressController.text.trim(),
         number: int.parse(numberController.text.trim()),
       );
@@ -161,10 +152,8 @@ class _PatientRegisterScreenState extends State<PatientRegisterScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => isLoading = false);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No se pudo registrar: $e')),
-      );
+      final message = e is AppException ? e.message : 'No se pudo registrar.';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
@@ -173,7 +162,6 @@ class _PatientRegisterScreenState extends State<PatientRegisterScreen> {
       labelText: label,
       hintText: hint,
       prefixIcon: icon != null ? Icon(icon) : null,
-      border: const OutlineInputBorder(),
     );
   }
 
@@ -182,156 +170,150 @@ class _PatientRegisterScreenState extends State<PatientRegisterScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Registro de paciente')),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Form(
-            key: _formKey,
-            autovalidateMode: AutovalidateMode.onUserInteraction,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 8),
-                Text(
-                  'Completá tus datos',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 16),
-
-                // --- Cuenta ---
-                TextFormField(
-                  controller: emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  textInputAction: TextInputAction.next,
-                  decoration: _dec('Email', icon: Icons.email_outlined),
-                  validator: (value) {
-                    final v = (value ?? '').trim();
-                    if (v.isEmpty) return 'Email requerido';
-                    if (!_isValidEmail(v)) return 'Email inválido';
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: passwordController,
-                  obscureText: true,
-                  textInputAction: TextInputAction.next,
-                  decoration: _dec('Password', hint: 'Mínimo 8 caracteres', icon: Icons.lock_outline),
-                  validator: _validatePassword,
-                ),
-
-                const SizedBox(height: 20),
-                Text(
-                  'Datos personales',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 12),
-
-                Row(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Form(
+                key: _formKey,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: nameController,
-                        textInputAction: TextInputAction.next,
-                        decoration: _dec('Nombre', icon: Icons.person_outline),
-                        validator: (v) => _validateName(v, label: 'Nombre'),
-                      ),
+                    Text('Completá tus datos', style: Theme.of(context).textTheme.titleLarge),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      textInputAction: TextInputAction.next,
+                      decoration: _dec('Email', icon: Icons.email_outlined),
+                      validator: (value) {
+                        final v = (value ?? '').trim();
+                        if (v.isEmpty) return 'Email requerido';
+                        if (!_isValidEmail(v)) return 'Email inválido';
+                        return null;
+                      },
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextFormField(
-                        controller: surnameController,
-                        textInputAction: TextInputAction.next,
-                        decoration: _dec('Apellido', icon: Icons.person_outline),
-                        validator: (v) => _validateName(v, label: 'Apellido'),
-                      ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: passwordController,
+                      obscureText: true,
+                      textInputAction: TextInputAction.next,
+                      decoration: _dec('Password', hint: 'Mínimo 8 caracteres', icon: Icons.lock_outline),
+                      validator: _validatePassword,
                     ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: dniController,
-                        keyboardType: TextInputType.number,
-                        textInputAction: TextInputAction.next,
-                        decoration: _dec('DNI', icon: Icons.badge_outlined),
-                        validator: _validateDni,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextFormField(
-                        controller: dateOfBirthController,
-                        readOnly: true,
-                        decoration: _dec('Fecha de nacimiento', hint: 'YYYY-MM-DD', icon: Icons.calendar_month_outlined).copyWith(
-                          suffixIcon: IconButton(
-                            onPressed: _pickDateOfBirth,
-                            icon: const Icon(Icons.date_range),
-                            tooltip: 'Elegir fecha',
+                    const SizedBox(height: 20),
+                    Text('Datos personales', style: Theme.of(context).textTheme.titleMedium),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: [
+                        _HalfField(
+                          child: TextFormField(
+                            controller: nameController,
+                            textInputAction: TextInputAction.next,
+                            decoration: _dec('Nombre', icon: Icons.person_outline),
+                            validator: (v) => _validateName(v, label: 'Nombre'),
                           ),
                         ),
-                        onTap: _pickDateOfBirth,
-                        validator: _validateDate,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                      controller: addressController,
-                      textInputAction: TextInputAction.next,
-                      decoration: _dec('Domicilio', icon: Icons.location_on_outlined),
-                      validator: (v) => _required(v, message: 'Domicilio requerido'),
-                      ),
-                    ),
-                    Expanded(
-                      child: TextFormField(
-                      controller: numberController,
-                      keyboardType: TextInputType.number,
-                      textInputAction: TextInputAction.done,
-                      decoration: _dec('Número de celular', icon: Icons.numbers_outlined),
-                      validator: _validatNumber,
-                      onFieldSubmitted: (_) => isLoading ? null : _submit(),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-
-                SizedBox(
-                  height: 48,
-                  child: isLoading
-                      ? const Center(child: CircularProgressIndicator())
-                      : ElevatedButton.icon(
-                          onPressed: _submit,
-                          icon: const Icon(Icons.check),
-                          label: const Text('Crear cuenta'),
+                        _HalfField(
+                          child: TextFormField(
+                            controller: surnameController,
+                            textInputAction: TextInputAction.next,
+                            decoration: _dec('Apellido', icon: Icons.person_outline),
+                            validator: (v) => _validateName(v, label: 'Apellido'),
+                          ),
                         ),
+                        _HalfField(
+                          child: TextFormField(
+                            controller: dniController,
+                            keyboardType: TextInputType.number,
+                            textInputAction: TextInputAction.next,
+                            decoration: _dec('DNI', icon: Icons.badge_outlined),
+                            validator: _validateDni,
+                          ),
+                        ),
+                        _HalfField(
+                          child: TextFormField(
+                            controller: dateOfBirthController,
+                            readOnly: true,
+                            decoration: _dec('Fecha de nacimiento', hint: 'YYYY-MM-DD', icon: Icons.calendar_month_outlined).copyWith(
+                              suffixIcon: IconButton(
+                                onPressed: _pickDateOfBirth,
+                                icon: const Icon(Icons.date_range),
+                                tooltip: 'Elegir fecha',
+                              ),
+                            ),
+                            onTap: _pickDateOfBirth,
+                            validator: _validateDate,
+                          ),
+                        ),
+                        _HalfField(
+                          child: TextFormField(
+                            controller: addressController,
+                            textInputAction: TextInputAction.next,
+                            decoration: _dec('Domicilio', icon: Icons.location_on_outlined),
+                            validator: (v) => _required(v, message: 'Domicilio requerido'),
+                          ),
+                        ),
+                        _HalfField(
+                          child: TextFormField(
+                            controller: numberController,
+                            keyboardType: TextInputType.number,
+                            textInputAction: TextInputAction.done,
+                            decoration: _dec('Número de celular', icon: Icons.phone_outlined),
+                            validator: _validateNumber,
+                            onFieldSubmitted: (_) => isLoading ? null : _submit(),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      height: 48,
+                      child: isLoading
+                          ? const Center(child: CircularProgressIndicator())
+                          : FilledButton.icon(
+                              onPressed: _submit,
+                              icon: const Icon(Icons.check),
+                              label: const Text('Crear cuenta'),
+                            ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextButton(
+                      onPressed: isLoading
+                          ? null
+                          : () {
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(builder: (_) => const LoginScreen()),
+                              );
+                            },
+                      child: const Text('Ya tengo cuenta - Iniciar sesión'),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 12),
-
-                TextButton(
-                  onPressed: isLoading
-                      ? null
-                      : () {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(builder: (_) => const LoginScreen()),
-                          );
-                        },
-                  child: const Text('Ya tengo cuenta → Iniciar sesión'),
-                ),
-              ],
+              ),
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _HalfField extends StatelessWidget {
+  final Widget child;
+
+  const _HalfField({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: MediaQuery.of(context).size.width < 680 ? double.infinity : 330,
+      child: child,
     );
   }
 }
