@@ -1,0 +1,48 @@
+name: Deploy Flutter Web to Cloudflare Pages
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "lib/**"
+      - "web/**"
+      - "pubspec.yaml"
+      - "pubspec.lock"
+      - "analysis_options.yaml"
+      - "cloudflare-pages-build.sh"
+      - ".github/workflows/deploy-cloudflare-pages.yml"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Build Flutter Web
+        run: flutter build web --release --dart-define=API_BASE_URL="${{ secrets.API_BASE_URL }}"
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy build/web --project-name="${{ secrets.CLOUDFLARE_PAGES_PROJECT_NAME }}" --branch=main
