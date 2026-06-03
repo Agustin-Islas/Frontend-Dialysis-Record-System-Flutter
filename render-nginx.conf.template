@@ -1,0 +1,18 @@
+server {
+  listen ${PORT};
+  server_name _;
+
+  root /usr/share/nginx/html;
+  index index.html;
+
+  location / {
+    try_files $uri $uri/ /index.html;
+  }
+
+  location ~* \.(?:css|js|mjs|wasm|png|jpg|jpeg|gif|ico|svg|webp|json)$ {
+    try_files $uri =404;
+    access_log off;
+    expires 30d;
+    add_header Cache-Control "public, max-age=2592000";
+  }
+}
