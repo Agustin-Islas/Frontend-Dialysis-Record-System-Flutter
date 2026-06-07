@@ -37,7 +37,8 @@ class PatientTodayScreenState extends State<PatientTodayScreen> {
     return today.subtract(Duration(days: _daysAgo));
   }
 
-  Future<void> openCreateSession() => _openSessionForm(initialDate: _selectedDate);
+  Future<void> openCreateSession() =>
+      _openSessionForm(initialDate: _selectedDate);
 
   Future<_DayData> _loadDay(DateTime day) async {
     final patientId = widget.me.id;
@@ -45,7 +46,10 @@ class PatientTodayScreenState extends State<PatientTodayScreen> {
 
     final results = await Future.wait([
       widget.patientController.getSessionsByDay(patientId: patientId, day: day),
-      widget.patientController.getSessionSummaryByDay(patientId: patientId, day: day),
+      widget.patientController.getSessionSummaryByDay(
+        patientId: patientId,
+        day: day,
+      ),
     ]);
 
     return _DayData(
@@ -112,7 +116,9 @@ class PatientTodayScreenState extends State<PatientTodayScreen> {
             }
             _refresh();
           } catch (e) {
-            final message = e is AppException ? e.message : 'No se pudo guardar el cambio.';
+            final message = e is AppException
+                ? e.message
+                : 'No se pudo guardar el cambio.';
             _showMessage(message);
             rethrow;
           }
@@ -129,8 +135,14 @@ class PatientTodayScreenState extends State<PatientTodayScreen> {
         title: const Text('Eliminar cambio'),
         content: const Text('Esta accion eliminara el registro seleccionado.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Eliminar')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Eliminar'),
+          ),
         ],
       ),
     );
@@ -142,14 +154,18 @@ class PatientTodayScreenState extends State<PatientTodayScreen> {
       _showMessage('Cambio eliminado');
       _refresh();
     } catch (e) {
-      final message = e is AppException ? e.message : 'No se pudo eliminar el cambio.';
+      final message = e is AppException
+          ? e.message
+          : 'No se pudo eliminar el cambio.';
       _showMessage(message);
     }
   }
 
   void _showMessage(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   String _titleFor(DateTime day) {
@@ -173,7 +189,9 @@ class PatientTodayScreenState extends State<PatientTodayScreen> {
         controller: _pageController,
         onPageChanged: (index) => setState(() => _daysAgo = index),
         itemBuilder: (context, index) {
-          final day = DateUtils.dateOnly(DateTime.now()).subtract(Duration(days: index));
+          final day = DateUtils.dateOnly(
+            DateTime.now(),
+          ).subtract(Duration(days: index));
           return FutureBuilder<_DayData>(
             key: ValueKey('$index-${day.toIso8601String()}'),
             future: _loadDay(day),
@@ -191,47 +209,62 @@ class PatientTodayScreenState extends State<PatientTodayScreen> {
               }
 
               final data = snapshot.data ?? _DayData.empty();
-              final sessions = [...data.sessions]..sort((a, b) => (a.bag ?? 999).compareTo(b.bag ?? 999));
+              final sessions = [...data.sessions]
+                ..sort((a, b) => (a.bag ?? 999).compareTo(b.bag ?? 999));
 
-              return ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  _GreetingHeader(me: widget.me),
-                  const SizedBox(height: 12),
-                  _DayHero(
-                    title: _capitalize(_heroDateFormat.format(day)),
-                    canGoForward: index > 0,
-                    onPrevious: () => _goToDay(index + 1),
-                    onNext: index == 0 ? null : () => _goToDay(index - 1),
-                    onToday: index == 0 ? null : () => _goToDay(0),
-                  ),
-                  const SizedBox(height: 12),
-                  _DayStrip(
-                    selectedDaysAgo: index,
-                    shortDateFormat: _shortDateFormat,
-                    titleFor: _titleFor,
-                    onSelected: _goToDay,
-                  ),
-                  const SizedBox(height: 12),
-                  _DaySummaryCard(summary: data.summary),
-                  const SizedBox(height: 12),
-                  if (sessions.isEmpty)
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Text('No hay cambios registrados para ${_titleFor(day).toLowerCase()}.'),
+              return Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1040),
+                  child: ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      _GreetingHeader(me: widget.me),
+                      const SizedBox(height: 12),
+                      _DayHero(
+                        title: _capitalize(_heroDateFormat.format(day)),
+                        canGoForward: index > 0,
+                        onPrevious: () => _goToDay(index + 1),
+                        onNext: index == 0 ? null : () => _goToDay(index - 1),
+                        onToday: index == 0 ? null : () => _goToDay(0),
                       ),
-                    )
-                  else
-                    ...sessions.map(
-                      (s) => SessionExpansionCard(
-                        session: s,
-                        onEdit: s.id == null ? null : () => _openSessionForm(initialDate: day, session: s),
-                        onDelete: s.id == null ? null : () => _deleteSession(s),
+                      const SizedBox(height: 12),
+                      _DayStrip(
+                        selectedDaysAgo: index,
+                        shortDateFormat: _shortDateFormat,
+                        titleFor: _titleFor,
+                        onSelected: _goToDay,
                       ),
-                    ),
-                  const SizedBox(height: 100),
-                ],
+                      const SizedBox(height: 12),
+                      _DaySummaryCard(summary: data.summary),
+                      const SizedBox(height: 12),
+                      if (sessions.isEmpty)
+                        Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Text(
+                              'No hay cambios registrados para ${_titleFor(day).toLowerCase()}.',
+                            ),
+                          ),
+                        )
+                      else
+                        ...sessions.map(
+                          (s) => SessionExpansionCard(
+                            session: s,
+                            onEdit: s.id == null
+                                ? null
+                                : () => _openSessionForm(
+                                    initialDate: day,
+                                    session: s,
+                                  ),
+                            onDelete: s.id == null
+                                ? null
+                                : () => _deleteSession(s),
+                          ),
+                        ),
+                      const SizedBox(height: 100),
+                    ],
+                  ),
+                ),
               );
             },
           );
@@ -251,7 +284,9 @@ class _GreetingHeader extends StatelessWidget {
     final name = (me.name ?? '').trim();
     return Text(
       name.isEmpty ? 'Hola!' : 'Hola $name!',
-      style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+      style: Theme.of(
+        context,
+      ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
     );
   }
 }
@@ -286,9 +321,9 @@ class _DayHero extends StatelessWidget {
           Text(
             title,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: scheme.onPrimaryContainer,
-                  fontWeight: FontWeight.w800,
-                ),
+              color: scheme.onPrimaryContainer,
+              fontWeight: FontWeight.w800,
+            ),
           ),
           const SizedBox(height: 8),
           Row(
@@ -317,7 +352,10 @@ class _DayHero extends StatelessWidget {
           Text(
             'Desliza o usa los días para revisar registros anteriores.',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 12, color: scheme.onPrimaryContainer.withValues(alpha: 0.72)),
+            style: TextStyle(
+              fontSize: 12,
+              color: scheme.onPrimaryContainer.withValues(alpha: 0.72),
+            ),
           ),
         ],
       ),
@@ -361,9 +399,15 @@ class _DayStrip extends StatelessWidget {
                     titleFor(day),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                    ),
                   ),
-                  Text(shortDateFormat.format(day), style: const TextStyle(fontSize: 11)),
+                  Text(
+                    shortDateFormat.format(day),
+                    style: const TextStyle(fontSize: 11),
+                  ),
                 ],
               ),
             ),
@@ -389,8 +433,16 @@ class _DaySummaryCard extends StatelessWidget {
       crossAxisSpacing: 8,
       childAspectRatio: 2.4,
       children: [
-        _MetricTile(label: 'Cambios', value: summary.sessionsCount.toString(), icon: Icons.event_note_outlined),
-        _MetricTile(label: 'Total del día', value: '${summary.totalBalance} ml', icon: Icons.scale_outlined),
+        _MetricTile(
+          label: 'Cambios',
+          value: summary.sessionsCount.toString(),
+          icon: Icons.event_note_outlined,
+        ),
+        _MetricTile(
+          label: 'Total del día',
+          value: '${summary.totalBalance} ml',
+          icon: Icons.scale_outlined,
+        ),
       ],
     );
   }
@@ -401,7 +453,11 @@ class _MetricTile extends StatelessWidget {
   final String value;
   final IconData icon;
 
-  const _MetricTile({required this.label, required this.value, required this.icon});
+  const _MetricTile({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -420,7 +476,13 @@ class _MetricTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(label, style: TextStyle(fontSize: 11, color: Theme.of(context).hintColor)),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Theme.of(context).hintColor,
+                    ),
+                  ),
                   Text(
                     value,
                     maxLines: 1,
@@ -459,11 +521,17 @@ class _ErrorState extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(message, style: const TextStyle(fontWeight: FontWeight.w700)),
+                Text(
+                  message,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
                 const SizedBox(height: 8),
                 Text(details, maxLines: 4, overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 12),
-                FilledButton(onPressed: onRetry, child: const Text('Reintentar')),
+                FilledButton(
+                  onPressed: onRetry,
+                  child: const Text('Reintentar'),
+                ),
               ],
             ),
           ),

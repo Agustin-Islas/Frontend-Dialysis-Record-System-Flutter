@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:frontend_dialysis_record/core/di/app_di.dart';
 import 'package:frontend_dialysis_record/core/network/app_exception.dart';
 import 'package:frontend_dialysis_record/features/auth/views/session_gate.dart';
+import 'package:frontend_dialysis_record/features/doctors/views/doctor_register_screen.dart';
 import 'package:frontend_dialysis_record/features/patients/views/patient_register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -60,8 +61,12 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => isLoading = false);
-      final message = e is AppException ? e.message : 'Error al iniciar sesión.';
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      final message = e is AppException
+          ? e.message
+          : 'Error al iniciar sesión.';
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
@@ -69,6 +74,13 @@ class _LoginScreenState extends State<LoginScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const PatientRegisterScreen()),
+    );
+  }
+
+  void registerDoctor() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const DoctorRegisterScreen()),
     );
   }
 
@@ -116,7 +128,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       validator: (value) {
                         final v = value ?? '';
                         if (v.trim().isEmpty) return 'Password requerido';
-                        if (v.length < 8) return 'Debe tener al menos 8 caracteres';
+                        if (v.length < 8) {
+                          return 'Debe tener al menos 8 caracteres';
+                        }
                         if (v.length > 72) return 'Máximo 72 caracteres';
                         return null;
                       },
@@ -133,12 +147,47 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton(
-                          onPressed: registerPatient,
-                          child: const Text('Registrarse'),
-                        ),
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final wide = constraints.maxWidth >= 420;
+                          final buttons = [
+                            OutlinedButton.icon(
+                              onPressed: registerPatient,
+                              icon: const Icon(Icons.person_add_alt_1_outlined),
+                              label: const Text('Paciente'),
+                            ),
+                            OutlinedButton.icon(
+                              onPressed: registerDoctor,
+                              icon: const Icon(Icons.medical_services_outlined),
+                              label: const Text('Médico'),
+                            ),
+                          ];
+
+                          if (!wide) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: buttons[0],
+                                ),
+                                const SizedBox(height: 8),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: buttons[1],
+                                ),
+                              ],
+                            );
+                          }
+
+                          return Row(
+                            children: [
+                              Expanded(child: buttons[0]),
+                              const SizedBox(width: 8),
+                              Expanded(child: buttons[1]),
+                            ],
+                          );
+                        },
                       ),
                     ],
                   ],

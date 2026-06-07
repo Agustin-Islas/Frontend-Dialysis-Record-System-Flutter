@@ -6,6 +6,7 @@ import 'package:frontend_dialysis_record/core/network/dio_client.dart';
 import 'package:frontend_dialysis_record/features/auth/models/login_request.dart';
 import 'package:frontend_dialysis_record/features/auth/models/login_response.dart';
 import 'package:frontend_dialysis_record/features/auth/models/me_response.dart';
+import 'package:frontend_dialysis_record/features/auth/models/register_doctor_request.dart';
 import 'package:frontend_dialysis_record/features/auth/models/register_patient_request.dart';
 
 class AuthApi {
@@ -16,18 +17,38 @@ class AuthApi {
 
   Future<LoginResponse> login(LoginRequest req) async {
     try {
-      final response = await dioClient.dio.post(ApiPaths.login, data: req.toJson());
+      final response = await dioClient.dio.post(
+        ApiPaths.login,
+        data: req.toJson(),
+      );
       return LoginResponse.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
-      throw e.error is AppException ? e.error as AppException : AppException.fromDio(e);
+      throw e.error is AppException
+          ? e.error as AppException
+          : AppException.fromDio(e);
     }
   }
 
   Future<void> registerPatient(RegisterPatientRequest request) async {
     try {
-      await dioClient.dio.post('/auth/register/patient', data: request.toJson());
+      await dioClient.dio.post(
+        '/auth/register/patient',
+        data: request.toJson(),
+      );
     } on DioException catch (e) {
-      throw e.error is AppException ? e.error as AppException : AppException.fromDio(e);
+      throw e.error is AppException
+          ? e.error as AppException
+          : AppException.fromDio(e);
+    }
+  }
+
+  Future<void> registerDoctor(RegisterDoctorRequest request) async {
+    try {
+      await dioClient.dio.post('/auth/register/doctor', data: request.toJson());
+    } on DioException catch (e) {
+      throw e.error is AppException
+          ? e.error as AppException
+          : AppException.fromDio(e);
     }
   }
 
@@ -42,7 +63,9 @@ class AuthApi {
       final response = await dioClient.dio.get(path);
       return MeResponse.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
-      throw e.error is AppException ? e.error as AppException : AppException.fromDio(e);
+      throw e.error is AppException
+          ? e.error as AppException
+          : AppException.fromDio(e);
     }
   }
 }

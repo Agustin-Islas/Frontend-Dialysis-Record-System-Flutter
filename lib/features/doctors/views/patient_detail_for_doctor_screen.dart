@@ -7,6 +7,7 @@ import 'package:frontend_dialysis_record/features/patients/views/widgets/session
 import 'package:frontend_dialysis_record/features/reports/monthly_dialysis_pdf_service.dart';
 import 'package:frontend_dialysis_record/features/sessions/models/monthly_ultrafiltration_summary.dart';
 import 'package:frontend_dialysis_record/features/sessions/models/session_dto.dart';
+import 'package:frontend_dialysis_record/features/sessions/views/widgets/day_session_group_title.dart';
 
 class PatientDetailForDoctorScreen extends StatefulWidget {
   final MeResponse patient;
@@ -19,10 +20,12 @@ class PatientDetailForDoctorScreen extends StatefulWidget {
   });
 
   @override
-  State<PatientDetailForDoctorScreen> createState() => _PatientDetailForDoctorScreenState();
+  State<PatientDetailForDoctorScreen> createState() =>
+      _PatientDetailForDoctorScreenState();
 }
 
-class _PatientDetailForDoctorScreenState extends State<PatientDetailForDoctorScreen> {
+class _PatientDetailForDoctorScreenState
+    extends State<PatientDetailForDoctorScreen> {
   late DateTime _selectedMonth;
   late Future<List<SessionDto>> _sessionsFuture;
 
@@ -97,16 +100,25 @@ class _PatientDetailForDoctorScreenState extends State<PatientDetailForDoctorScr
         sessions: sessions,
         summary: summary,
       );
-      final name = (widget.patient.name ?? 'paciente').replaceAll(RegExp(r'\s+'), '_').toLowerCase();
-      final fileName = 'registro_dialisis_${name}_${_selectedMonth.year}_${_selectedMonth.month.toString().padLeft(2, '0')}.pdf';
+      final name = (widget.patient.name ?? 'paciente')
+          .replaceAll(RegExp(r'\s+'), '_')
+          .toLowerCase();
+      final fileName =
+          'registro_dialisis_${name}_${_selectedMonth.year}_${_selectedMonth.month.toString().padLeft(2, '0')}.pdf';
       await _pdfService.download(bytes, fileName);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('PDF generado')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('PDF generado')));
       }
     } catch (e) {
-      final message = e is AppException ? e.message : 'No se pudo generar el PDF.';
+      final message = e is AppException
+          ? e.message
+          : 'No se pudo generar el PDF.';
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(message)));
       }
     } finally {
       if (mounted) setState(() => _generatingPdf = false);
@@ -121,7 +133,9 @@ class _PatientDetailForDoctorScreenState extends State<PatientDetailForDoctorScr
     }
     final sortedKeys = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
     return {
-      for (final key in sortedKeys) key: (grouped[key]!..sort((a, b) => (a.bag ?? 999).compareTo(b.bag ?? 999))),
+      for (final key in sortedKeys)
+        key: (grouped[key]!
+          ..sort((a, b) => (a.bag ?? 999).compareTo(b.bag ?? 999))),
     };
   }
 
@@ -137,10 +151,11 @@ class _PatientDetailForDoctorScreenState extends State<PatientDetailForDoctorScr
   }
 
   int _dayTotal(List<SessionDto> sessions) {
-    return sessions.fold<int>(0, (total, session) => total + (session.partial ?? 0));
+    return sessions.fold<int>(
+      0,
+      (total, session) => total + (session.partial ?? 0),
+    );
   }
-
-  String _signed(int value) => value > 0 ? '+$value' : value.toString();
 
   String _capitalize(String value) {
     if (value.isEmpty) return value;
@@ -149,10 +164,18 @@ class _PatientDetailForDoctorScreenState extends State<PatientDetailForDoctorScr
 
   @override
   Widget build(BuildContext context) {
-    final patientName = '${widget.patient.name ?? "-"} ${widget.patient.surname ?? ""}'.trim();
+    final patientName =
+        '${widget.patient.name ?? "-"} ${widget.patient.surname ?? ""}'.trim();
     final currentMonth = DateTime(DateTime.now().year, DateTime.now().month);
-    final canGoForward = DateTime(_selectedMonth.year, _selectedMonth.month + 1).isBefore(currentMonth) ||
-        DateTime(_selectedMonth.year, _selectedMonth.month + 1).isAtSameMomentAs(currentMonth);
+    final canGoForward =
+        DateTime(
+          _selectedMonth.year,
+          _selectedMonth.month + 1,
+        ).isBefore(currentMonth) ||
+        DateTime(
+          _selectedMonth.year,
+          _selectedMonth.month + 1,
+        ).isAtSameMomentAs(currentMonth);
 
     return Scaffold(
       appBar: AppBar(title: Text(patientName)),
@@ -170,13 +193,26 @@ class _PatientDetailForDoctorScreenState extends State<PatientDetailForDoctorScr
                 child: Card(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
-                    child: Column(mainAxisSize: MainAxisSize.min, children: [
-                      const Text('No se pudo cargar el paciente.', style: TextStyle(fontWeight: FontWeight.w700)),
-                      const SizedBox(height: 8),
-                      Text(snapshot.error.toString(), maxLines: 4, overflow: TextOverflow.ellipsis),
-                      const SizedBox(height: 12),
-                      FilledButton(onPressed: _reload, child: const Text('Reintentar')),
-                    ]),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          'No se pudo cargar el paciente.',
+                          style: TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          snapshot.error.toString(),
+                          maxLines: 4,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 12),
+                        FilledButton(
+                          onPressed: _reload,
+                          child: const Text('Reintentar'),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               );
@@ -189,110 +225,145 @@ class _PatientDetailForDoctorScreenState extends State<PatientDetailForDoctorScr
             );
             final grouped = _groupByDay(sessions);
 
-            return ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                _PatientMonthPanel(
-                  patient: widget.patient,
-                  patientName: patientName,
-                  summary: summary,
-                  monthLabel: _monthLabel(),
-                ),
-                const SizedBox(height: 12),
-                _MonthFilterCard(monthLabel: _monthLabel(), onPickMonth: _pickMonth),
-                const SizedBox(height: 12),
-                Card(
-                  elevation: 0,
-                  child: Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                'Historial de cambios',
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-                              ),
+            return Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1120),
+                child: ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    _PatientMonthPanel(
+                      patient: widget.patient,
+                      patientName: patientName,
+                      summary: summary,
+                      monthLabel: _monthLabel(),
+                    ),
+                    const SizedBox(height: 12),
+                    _MonthFilterCard(
+                      monthLabel: _monthLabel(),
+                      onPickMonth: _pickMonth,
+                    ),
+                    const SizedBox(height: 12),
+                    Card(
+                      elevation: 0,
+                      child: Column(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    'Historial de cambios',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(fontWeight: FontWeight.w700),
+                                  ),
+                                ),
+                                IconButton(
+                                  tooltip: 'Mes anterior',
+                                  onPressed: () => _changeMonth(-1),
+                                  icon: const Icon(Icons.chevron_left),
+                                ),
+                                IconButton(
+                                  tooltip: 'Mes siguiente',
+                                  onPressed: canGoForward
+                                      ? () => _changeMonth(1)
+                                      : null,
+                                  icon: const Icon(Icons.chevron_right),
+                                ),
+                                FilledButton.icon(
+                                  onPressed: _generatingPdf
+                                      ? null
+                                      : () => _generatePdf(sessions),
+                                  icon: _generatingPdf
+                                      ? const SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                      : const Icon(
+                                          Icons.picture_as_pdf_outlined,
+                                        ),
+                                  label: const Text('PDF'),
+                                ),
+                              ],
                             ),
-                            IconButton(
-                              tooltip: 'Mes anterior',
-                              onPressed: () => _changeMonth(-1),
-                              icon: const Icon(Icons.chevron_left),
-                            ),
-                            IconButton(
-                              tooltip: 'Mes siguiente',
-                              onPressed: canGoForward ? () => _changeMonth(1) : null,
-                              icon: const Icon(Icons.chevron_right),
-                            ),
-                            FilledButton.icon(
-                              onPressed: _generatingPdf ? null : () => _generatePdf(sessions),
-                              icon: _generatingPdf
-                                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                                  : const Icon(Icons.picture_as_pdf_outlined),
-                              label: const Text('PDF'),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                        child: sessions.isEmpty
-                            ? const Text('No hay cambios registrados para este mes.')
-                            : Column(
-                                children: grouped.entries.map((entry) {
-                                  final daySessions = entry.value;
-                                  final total = _dayTotal(daySessions);
-                                  final hasObservations =
-                                      daySessions.any((session) => (session.observations ?? '').trim().isNotEmpty);
-                                  return Card(
-                                    elevation: 0,
-                                    margin: const EdgeInsets.only(bottom: 8),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
-                                    ),
-                                    child: ExpansionTile(
-                                      initiallyExpanded: false,
-                                      title: Row(
-                                        children: [
-                                          Expanded(
-                                            child: Text(
-                                              _formatDayTitle(entry.key),
-                                              style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                            child: sessions.isEmpty
+                                ? const Text(
+                                    'No hay cambios registrados para este mes.',
+                                  )
+                                : Column(
+                                    children: grouped.entries.map((entry) {
+                                      final daySessions = entry.value;
+                                      final total = _dayTotal(daySessions);
+                                      final hasObservations = daySessions.any(
+                                        (session) =>
+                                            (session.observations ?? '')
+                                                .trim()
+                                                .isNotEmpty,
+                                      );
+                                      return Card(
+                                        elevation: 0,
+                                        margin: const EdgeInsets.only(
+                                          bottom: 8,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                          side: BorderSide(
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.outlineVariant,
+                                          ),
+                                        ),
+                                        child: ExpansionTile(
+                                          initiallyExpanded: false,
+                                          tilePadding:
+                                              const EdgeInsets.symmetric(
+                                                horizontal: 16,
+                                                vertical: 4,
+                                              ),
+                                          title: DaySessionGroupTitle(
+                                            dayTitle: _formatDayTitle(
+                                              entry.key,
                                             ),
+                                            changesCount: daySessions.length,
+                                            totalMl: total,
+                                            hasObservations: hasObservations,
                                           ),
-                                          Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              if (hasObservations) ...[
-                                                Icon(
-                                                  Icons.sticky_note_2_outlined,
-                                                  size: 18,
-                                                  color: Theme.of(context).colorScheme.primary,
-                                                ),
-                                                const SizedBox(width: 8),
-                                              ],
-                                              Text('Cambios: ${daySessions.length}',
-                                                  style: const TextStyle(fontWeight: FontWeight.w600)),
-                                              const SizedBox(width: 12),
-                                              Text('Total: ${_signed(total)} ml',
-                                                  style: const TextStyle(fontWeight: FontWeight.w700)),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                      childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                                      children: daySessions.map((session) => SessionExpansionCard(session: session)).toList(),
-                                    ),
-                                  );
-                                }).toList(),
-                              ),
+                                          childrenPadding:
+                                              const EdgeInsets.fromLTRB(
+                                                12,
+                                                0,
+                                                12,
+                                                12,
+                                              ),
+                                          children: daySessions
+                                              .map(
+                                                (session) =>
+                                                    SessionExpansionCard(
+                                                      session: session,
+                                                    ),
+                                              )
+                                              .toList(),
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             );
           },
         ),
@@ -324,64 +395,92 @@ class _PatientMonthPanel extends StatelessWidget {
       color: scheme.primaryContainer,
       child: Padding(
         padding: const EdgeInsets.all(18),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(
-            patientName,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: scheme.onPrimaryContainer,
-                ),
-          ),
-          const SizedBox(height: 4),
-          Wrap(
-            spacing: 12,
-            runSpacing: 4,
-            children: [
-              if (patient.email != null) Text(patient.email!, style: TextStyle(color: scheme.onPrimaryContainer)),
-              if (patient.dni != null) Text('DNI: ${patient.dni}', style: TextStyle(color: scheme.onPrimaryContainer)),
-              Text(monthLabel, style: TextStyle(color: scheme.onPrimaryContainer, fontWeight: FontWeight.w700)),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: scheme.surface,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: scheme.outlineVariant),
-            ),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Cambios totales', style: TextStyle(color: scheme.onSurfaceVariant, fontWeight: FontWeight.w600)),
-              const SizedBox(height: 4),
-              Text(
-                '${summary.totalChanges}',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              patientName,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: scheme.onPrimaryContainer,
               ),
-            ]),
-          ),
-          const SizedBox(height: 12),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final columns = constraints.maxWidth < 560 ? 2 : 4;
-              return GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: 4,
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: columns,
-                  crossAxisSpacing: 8,
-                  mainAxisSpacing: 8,
-                  mainAxisExtent: 78,
+            ),
+            const SizedBox(height: 4),
+            Wrap(
+              spacing: 12,
+              runSpacing: 4,
+              children: [
+                if (patient.email != null)
+                  Text(
+                    patient.email!,
+                    style: TextStyle(color: scheme.onPrimaryContainer),
+                  ),
+                if (patient.dni != null)
+                  Text(
+                    'DNI: ${patient.dni}',
+                    style: TextStyle(color: scheme.onPrimaryContainer),
+                  ),
+                Text(
+                  monthLabel,
+                  style: TextStyle(
+                    color: scheme.onPrimaryContainer,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-                itemBuilder: (context, index) => _DoctorWeeklyUfTile(
-                  week: index + 1,
-                  value: weeklyValues[index],
-                ),
-              );
-            },
-          ),
-        ]),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: scheme.surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: scheme.outlineVariant),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Cambios totales',
+                    style: TextStyle(
+                      color: scheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${summary.totalChanges}',
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final columns = constraints.maxWidth < 560 ? 2 : 4;
+                return GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: 4,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: columns,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                    mainAxisExtent: 78,
+                  ),
+                  itemBuilder: (context, index) => _DoctorWeeklyUfTile(
+                    week: index + 1,
+                    value: weeklyValues[index],
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -408,9 +507,20 @@ class _DoctorWeeklyUfTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text('Semana $week', style: TextStyle(color: scheme.onSurfaceVariant, fontWeight: FontWeight.w600)),
+          Text(
+            'UF semana $week',
+            style: TextStyle(
+              color: scheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           const SizedBox(height: 4),
-          Text('$value ml/dia', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+          Text(
+            '$value ml/día',
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+          ),
         ],
       ),
     );
@@ -429,18 +539,27 @@ class _MonthFilterCard extends StatelessWidget {
       elevation: 0,
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Filtrar', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: onPickMonth,
-              icon: const Icon(Icons.calendar_month_outlined),
-              label: Text(monthLabel),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Filtrar',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
             ),
-          ),
-        ]),
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 280),
+                child: OutlinedButton.icon(
+                  onPressed: onPickMonth,
+                  icon: const Icon(Icons.calendar_month_outlined),
+                  label: Text(monthLabel),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -511,13 +630,23 @@ class _MonthYearPickerDialogState extends State<_MonthYearPickerDialog> {
             DropdownButtonFormField<int>(
               initialValue: selectedYear,
               decoration: const InputDecoration(labelText: 'Año'),
-              items: years.map((year) => DropdownMenuItem(value: year, child: Text(year.toString()))).toList(),
+              items: years
+                  .map(
+                    (year) => DropdownMenuItem(
+                      value: year,
+                      child: Text(year.toString()),
+                    ),
+                  )
+                  .toList(),
               onChanged: (value) {
                 if (value == null) return;
                 setState(() {
                   selectedYear = value;
                   if (!_isMonthEnabled(selectedMonth)) {
-                    selectedMonth = List.generate(12, (i) => i + 1).where(_isMonthEnabled).first;
+                    selectedMonth = List.generate(
+                      12,
+                      (i) => i + 1,
+                    ).where(_isMonthEnabled).first;
                   }
                 });
               },
@@ -531,7 +660,9 @@ class _MonthYearPickerDialogState extends State<_MonthYearPickerDialog> {
                 return ChoiceChip(
                   label: Text(monthNames[index]),
                   selected: selectedMonth == month,
-                  onSelected: _isMonthEnabled(month) ? (_) => setState(() => selectedMonth = month) : null,
+                  onSelected: _isMonthEnabled(month)
+                      ? (_) => setState(() => selectedMonth = month)
+                      : null,
                 );
               }),
             ),
@@ -539,9 +670,13 @@ class _MonthYearPickerDialogState extends State<_MonthYearPickerDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancelar'),
+        ),
         FilledButton(
-          onPressed: () => Navigator.pop(context, DateTime(selectedYear, selectedMonth)),
+          onPressed: () =>
+              Navigator.pop(context, DateTime(selectedYear, selectedMonth)),
           child: const Text('Aceptar'),
         ),
       ],

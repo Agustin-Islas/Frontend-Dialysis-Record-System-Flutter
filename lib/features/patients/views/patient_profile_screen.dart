@@ -75,11 +75,15 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
     final now = DateUtils.dateOnly(DateTime.now());
     final picked = await showDatePicker(
       context: context,
-      initialDate: _dateOfBirth.isAfter(now) ? DateTime(now.year - 18) : _dateOfBirth,
+      initialDate: _dateOfBirth.isAfter(now)
+          ? DateTime(now.year - 18)
+          : _dateOfBirth,
       firstDate: DateTime(1900),
       lastDate: now,
     );
-    if (picked != null) setState(() => _dateOfBirth = DateUtils.dateOnly(picked));
+    if (picked != null) {
+      setState(() => _dateOfBirth = DateUtils.dateOnly(picked));
+    }
   }
 
   void _addCustomConcentration() {
@@ -90,11 +94,16 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
       return;
     }
     final rounded = double.parse(value.toStringAsFixed(1));
-    if (rounded < 0.1 || rounded > 10.0 || ((value * 10) - (value * 10).round()).abs() > 0.0001) {
-      _showMessage('La concentracion debe tener un decimal y estar entre 0.1 y 10.0.');
+    if (rounded < 0.1 ||
+        rounded > 10.0 ||
+        ((value * 10) - (value * 10).round()).abs() > 0.0001) {
+      _showMessage(
+        'La concentracion debe tener un decimal y estar entre 0.1 y 10.0.',
+      );
       return;
     }
-    if (_contains(_fixedConcentrations, rounded) || _contains(_customConcentrations, rounded)) {
+    if (_contains(_fixedConcentrations, rounded) ||
+        _contains(_customConcentrations, rounded)) {
       _showMessage('Esa concentracion ya existe.');
       return;
     }
@@ -124,7 +133,9 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
       if (refreshed != null) widget.onUpdated(refreshed);
       _showMessage('Perfil actualizado');
     } catch (e) {
-      final message = e is AppException ? e.message : 'No se pudo actualizar el perfil.';
+      final message = e is AppException
+          ? e.message
+          : 'No se pudo actualizar el perfil.';
       _showMessage(message);
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -137,7 +148,9 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
 
   void _showMessage(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   String _formatDate(DateTime value) {
@@ -166,137 +179,213 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Text('Perfil', style: Theme.of(context).textTheme.headlineSmall),
-            const SizedBox(height: 12),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const Text('Datos personales', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-                  const SizedBox(height: 12),
-                  Row(children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _nameCtrl,
-                        decoration: const InputDecoration(labelText: 'Nombre'),
-                        validator: (v) => _required(v, 'Nombre'),
-                      ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 920),
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                Text(
+                  'Perfil',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 12),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Datos personales',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                controller: _nameCtrl,
+                                decoration: const InputDecoration(
+                                  labelText: 'Nombre',
+                                ),
+                                validator: (v) => _required(v, 'Nombre'),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: TextFormField(
+                                controller: _surnameCtrl,
+                                decoration: const InputDecoration(
+                                  labelText: 'Apellido',
+                                ),
+                                validator: (v) => _required(v, 'Apellido'),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: _dniCtrl,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(labelText: 'DNI'),
+                          validator: (v) => _requiredInt(v, 'DNI'),
+                        ),
+                        const SizedBox(height: 12),
+                        InkWell(
+                          onTap: _saving ? null : _pickDate,
+                          child: InputDecorator(
+                            decoration: const InputDecoration(
+                              labelText: 'Nacimiento',
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(_formatDate(_dateOfBirth)),
+                                ),
+                                const Icon(Icons.calendar_today_outlined),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: _addressCtrl,
+                          decoration: const InputDecoration(
+                            labelText: 'Domicilio',
+                          ),
+                          validator: (v) => _required(v, 'Domicilio'),
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: _numberCtrl,
+                          keyboardType: TextInputType.phone,
+                          decoration: const InputDecoration(
+                            labelText: 'Celular',
+                          ),
+                          validator: (v) => _requiredInt(v, 'Celular'),
+                        ),
+                        const SizedBox(height: 16),
+                        _ReadOnlyRow(
+                          label: 'Email',
+                          value: widget.me.email ?? '-',
+                        ),
+                        _ReadOnlyRow(
+                          label: 'Medico',
+                          value: widget.me.doctorName ?? 'Sin medico asociado',
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _surnameCtrl,
-                        decoration: const InputDecoration(labelText: 'Apellido'),
-                        validator: (v) => _required(v, 'Apellido'),
-                      ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Concentraciones',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            const Chip(label: Text('Amarillo 1,5%')),
+                            const Chip(label: Text('Verde 2,4%')),
+                            const Chip(label: Text('Rojo 3,8%')),
+                            ..._customConcentrations.map(
+                              (value) => InputChip(
+                                label: Text('${_formatConcentration(value)}%'),
+                                onDeleted: () => setState(
+                                  () => _customConcentrations.remove(value),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _customConcentrationCtrl,
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                      decimal: true,
+                                    ),
+                                decoration: const InputDecoration(
+                                  labelText: 'Nueva concentracion',
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            FilledButton.icon(
+                              onPressed: _addCustomConcentration,
+                              icon: const Icon(Icons.add),
+                              label: const Text('Agregar'),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                  ]),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _dniCtrl,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'DNI'),
-                    validator: (v) => _requiredInt(v, 'DNI'),
                   ),
-                  const SizedBox(height: 12),
-                  InkWell(
-                    onTap: _saving ? null : _pickDate,
-                    child: InputDecorator(
-                      decoration: const InputDecoration(labelText: 'Nacimiento'),
-                      child: Row(children: [
-                        Expanded(child: Text(_formatDate(_dateOfBirth))),
-                        const Icon(Icons.calendar_today_outlined),
-                      ]),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _addressCtrl,
-                    decoration: const InputDecoration(labelText: 'Domicilio'),
-                    validator: (v) => _required(v, 'Domicilio'),
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _numberCtrl,
-                    keyboardType: TextInputType.phone,
-                    decoration: const InputDecoration(labelText: 'Celular'),
-                    validator: (v) => _requiredInt(v, 'Celular'),
-                  ),
-                  const SizedBox(height: 16),
-                  _ReadOnlyRow(label: 'Email', value: widget.me.email ?? '-'),
-                  _ReadOnlyRow(label: 'Medico', value: widget.me.doctorName ?? 'Sin medico asociado'),
-                ]),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const Text('Concentraciones', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-                  const SizedBox(height: 8),
-                  Wrap(
+                ),
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Wrap(
                     spacing: 8,
                     runSpacing: 8,
+                    alignment: WrapAlignment.end,
                     children: [
-                      const Chip(label: Text('Amarillo 1,5%')),
-                      const Chip(label: Text('Verde 2,4%')),
-                      const Chip(label: Text('Rojo 3,8%')),
-                      ..._customConcentrations.map(
-                        (value) => InputChip(
-                          label: Text('${_formatConcentration(value)}%'),
-                          onDeleted: () => setState(() => _customConcentrations.remove(value)),
+                      OutlinedButton.icon(
+                        onPressed: () async {
+                          await widget.authController.logout();
+                          if (!context.mounted) return;
+                          Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const LoginScreen(),
+                            ),
+                            (_) => false,
+                          );
+                        },
+                        icon: const Icon(Icons.logout),
+                        label: const Text('Cerrar sesion'),
+                      ),
+                      FilledButton.icon(
+                        onPressed: _saving ? null : _save,
+                        icon: _saving
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.save_outlined),
+                        label: Text(
+                          _saving ? 'Guardando...' : 'Guardar perfil',
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  Row(children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _customConcentrationCtrl,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        decoration: const InputDecoration(labelText: 'Nueva concentracion'),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    FilledButton.icon(
-                      onPressed: _addCustomConcentration,
-                      icon: const Icon(Icons.add),
-                      label: const Text('Agregar'),
-                    ),
-                  ]),
-                ]),
-              ),
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
-            FilledButton.icon(
-              onPressed: _saving ? null : _save,
-              icon: _saving
-                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Icon(Icons.save_outlined),
-              label: Text(_saving ? 'Guardando...' : 'Guardar perfil'),
-            ),
-            const SizedBox(height: 8),
-            OutlinedButton.icon(
-              onPressed: () async {
-                await widget.authController.logout();
-                if (!context.mounted) return;
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (_) => const LoginScreen()),
-                  (_) => false,
-                );
-              },
-              icon: const Icon(Icons.logout),
-              label: const Text('Cerrar sesion'),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -315,7 +404,13 @@ class _ReadOnlyRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          SizedBox(width: 90, child: Text(label, style: TextStyle(color: Theme.of(context).hintColor))),
+          SizedBox(
+            width: 90,
+            child: Text(
+              label,
+              style: TextStyle(color: Theme.of(context).hintColor),
+            ),
+          ),
           Expanded(child: Text(value)),
         ],
       ),

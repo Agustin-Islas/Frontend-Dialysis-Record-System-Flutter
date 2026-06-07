@@ -13,14 +13,20 @@ class PatientController {
     required String patientId,
     required DateTime day,
   }) {
-    return patientApi.getSessionsByDay(patientId: patientId, day: DateUtils.dateOnly(day));
+    return patientApi.getSessionsByDay(
+      patientId: patientId,
+      day: DateUtils.dateOnly(day),
+    );
   }
 
   Future<SessionSummary> getSessionSummaryByDay({
     required String patientId,
     required DateTime day,
   }) {
-    return patientApi.getSessionSummaryByDay(patientId: patientId, day: DateUtils.dateOnly(day));
+    return patientApi.getSessionSummaryByDay(
+      patientId: patientId,
+      day: DateUtils.dateOnly(day),
+    );
   }
 
   Future<SessionDto> createSession({
@@ -92,11 +98,19 @@ class PatientController {
     required int year,
     required int month,
   }) {
-    return patientApi.getSessionSummaryByMonth(patientId: patientId, year: year, month: month);
+    return patientApi.getSessionSummaryByMonth(
+      patientId: patientId,
+      year: year,
+      month: month,
+    );
   }
 
   Future<MeResponse> getPatientById(String patientId) {
     return patientApi.getPatientById(patientId);
+  }
+
+  Future<List<MeResponse>> getAllPatients() {
+    return patientApi.getAllPatients();
   }
 
   Future<MeResponse> updatePatient({

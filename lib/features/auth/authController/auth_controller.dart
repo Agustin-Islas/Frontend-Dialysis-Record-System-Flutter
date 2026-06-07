@@ -1,3 +1,4 @@
+import 'package:frontend_dialysis_record/features/auth/models/register_doctor_request.dart';
 import 'package:frontend_dialysis_record/features/auth/models/register_patient_request.dart';
 import '../api/auth_api.dart';
 import '../models/login_request.dart';
@@ -20,9 +21,17 @@ class AuthController {
     final loginResponse = await authApi.login(loginRequest);
     await tokenStorage.saveAccessToken(loginResponse.accessToken);
     await tokenStorage.saveRefreshToken(loginResponse.refreshToken);
-    final role = JwtDecoder.getRole(loginResponse.accessToken);
-    if (role == null || role.isEmpty) return null;
-    return await authApi.getMeForRole(role);
+    try {
+      final role = JwtDecoder.getRole(loginResponse.accessToken);
+      if (role == null || role.isEmpty) {
+        await tokenStorage.clearAll();
+        return null;
+      }
+      return await authApi.getMeForRole(role);
+    } catch (_) {
+      await tokenStorage.clearAll();
+      rethrow;
+    }
   }
 
   Future<void> logout() async {
@@ -38,14 +47,14 @@ class AuthController {
   }
 
   Future<void> registerPatient({
-      required String email,
-      required String password,
-      required String name,
-      required String surname,
-      required int dni,
-      required String dateOfBirth, // "YYYY-MM-DD"
-      required String address,
-      required int number,
+    required String email,
+    required String password,
+    required String name,
+    required String surname,
+    required int dni,
+    required String dateOfBirth, // "YYYY-MM-DD"
+    required String address,
+    required int number,
   }) async {
     final req = RegisterPatientRequest(
       email: email,
@@ -59,5 +68,21 @@ class AuthController {
     );
 
     await authApi.registerPatient(req);
+  }
+
+  Future<void> registerDoctor({
+    required String email,
+    required String password,
+    required String name,
+    required String surname,
+  }) async {
+    final req = RegisterDoctorRequest(
+      email: email,
+      password: password,
+      name: name,
+      surname: surname,
+    );
+
+    await authApi.registerDoctor(req);
   }
 }

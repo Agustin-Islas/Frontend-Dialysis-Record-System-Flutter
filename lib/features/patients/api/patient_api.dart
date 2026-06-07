@@ -23,14 +23,20 @@ class PatientApi {
   }) async {
     try {
       final dayStr = _formatDate(day);
-      final res = await dioClient.dio.get('/api/patients/$patientId/sessions/day/$dayStr');
+      final res = await dioClient.dio.get(
+        '/api/patients/$patientId/sessions/day/$dayStr',
+      );
       final data = res.data;
       if (data is List) {
-        return data.map((e) => SessionDto.fromJson(e as Map<String, dynamic>)).toList();
+        return data
+            .map((e) => SessionDto.fromJson(e as Map<String, dynamic>))
+            .toList();
       }
       return [];
     } on DioException catch (e) {
-      throw e.error is AppException ? e.error as AppException : AppException.fromDio(e);
+      throw e.error is AppException
+          ? e.error as AppException
+          : AppException.fromDio(e);
     }
   }
 
@@ -40,10 +46,14 @@ class PatientApi {
   }) async {
     try {
       final dayStr = _formatDate(day);
-      final res = await dioClient.dio.get('/api/patients/$patientId/sessions/summary/day/$dayStr');
+      final res = await dioClient.dio.get(
+        '/api/patients/$patientId/sessions/summary/day/$dayStr',
+      );
       return SessionSummary.fromJson(res.data as Map<String, dynamic>);
     } on DioException catch (e) {
-      throw e.error is AppException ? e.error as AppException : AppException.fromDio(e);
+      throw e.error is AppException
+          ? e.error as AppException
+          : AppException.fromDio(e);
     }
   }
 
@@ -63,11 +73,15 @@ class PatientApi {
 
       final data = res.data;
       if (data is List) {
-        return data.map((e) => SessionDto.fromJson(e as Map<String, dynamic>)).toList();
+        return data
+            .map((e) => SessionDto.fromJson(e as Map<String, dynamic>))
+            .toList();
       }
       return [];
     } on DioException catch (e) {
-      throw e.error is AppException ? e.error as AppException : AppException.fromDio(e);
+      throw e.error is AppException
+          ? e.error as AppException
+          : AppException.fromDio(e);
     }
   }
 
@@ -83,7 +97,9 @@ class PatientApi {
       );
       return SessionSummary.fromJson(res.data as Map<String, dynamic>);
     } on DioException catch (e) {
-      throw e.error is AppException ? e.error as AppException : AppException.fromDio(e);
+      throw e.error is AppException
+          ? e.error as AppException
+          : AppException.fromDio(e);
     }
   }
 
@@ -92,10 +108,15 @@ class PatientApi {
     required Map<String, dynamic> body,
   }) async {
     try {
-      final res = await dioClient.dio.post('/api/patients/$patientId/sessions', data: body);
+      final res = await dioClient.dio.post(
+        '/api/patients/$patientId/sessions',
+        data: body,
+      );
       return SessionDto.fromJson(res.data as Map<String, dynamic>);
     } on DioException catch (e) {
-      throw e.error is AppException ? e.error as AppException : AppException.fromDio(e);
+      throw e.error is AppException
+          ? e.error as AppException
+          : AppException.fromDio(e);
     }
   }
 
@@ -104,10 +125,15 @@ class PatientApi {
     required Map<String, dynamic> body,
   }) async {
     try {
-      final res = await dioClient.dio.put('/api/sessions/$sessionId', data: body);
+      final res = await dioClient.dio.put(
+        '/api/sessions/$sessionId',
+        data: body,
+      );
       return SessionDto.fromJson(res.data as Map<String, dynamic>);
     } on DioException catch (e) {
-      throw e.error is AppException ? e.error as AppException : AppException.fromDio(e);
+      throw e.error is AppException
+          ? e.error as AppException
+          : AppException.fromDio(e);
     }
   }
 
@@ -115,7 +141,9 @@ class PatientApi {
     try {
       await dioClient.dio.delete('/api/sessions/$sessionId');
     } on DioException catch (e) {
-      throw e.error is AppException ? e.error as AppException : AppException.fromDio(e);
+      throw e.error is AppException
+          ? e.error as AppException
+          : AppException.fromDio(e);
     }
   }
 
@@ -124,7 +152,26 @@ class PatientApi {
       final res = await dioClient.dio.get('/api/patients/$patientId');
       return MeResponse.fromJson(res.data as Map<String, dynamic>);
     } on DioException catch (e) {
-      throw e.error is AppException ? e.error as AppException : AppException.fromDio(e);
+      throw e.error is AppException
+          ? e.error as AppException
+          : AppException.fromDio(e);
+    }
+  }
+
+  Future<List<MeResponse>> getAllPatients() async {
+    try {
+      final res = await dioClient.dio.get('/api/patients');
+      final data = res.data;
+      if (data is List) {
+        return data
+            .map((e) => MeResponse.fromJson(e as Map<String, dynamic>))
+            .toList();
+      }
+      return [];
+    } on DioException catch (e) {
+      throw e.error is AppException
+          ? e.error as AppException
+          : AppException.fromDio(e);
     }
   }
 
@@ -133,10 +180,15 @@ class PatientApi {
     required Map<String, dynamic> body,
   }) async {
     try {
-      final res = await dioClient.dio.put('/api/patients/$patientId', data: body);
+      final res = await dioClient.dio.put(
+        '/api/patients/$patientId',
+        data: body,
+      );
       return MeResponse.fromJson(res.data as Map<String, dynamic>);
     } on DioException catch (e) {
-      throw e.error is AppException ? e.error as AppException : AppException.fromDio(e);
+      throw e.error is AppException
+          ? e.error as AppException
+          : AppException.fromDio(e);
     }
   }
 }
