@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_animate/flutter_animate.dart';
+
 import 'package:intl/intl.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:frontend_dialysis_record/core/design/design.dart';
@@ -9,7 +9,9 @@ import 'package:frontend_dialysis_record/core/widgets/widgets.dart';
 import 'package:frontend_dialysis_record/core/network/app_exception.dart';
 import 'package:frontend_dialysis_record/features/auth/providers/auth_providers.dart';
 import 'package:frontend_dialysis_record/features/patients/views/widgets/session_expansion_card.dart';
+import 'package:frontend_dialysis_record/features/reports/four_weeks_dialysis_pdf_service.dart';
 import 'package:frontend_dialysis_record/features/reports/monthly_dialysis_pdf_service.dart';
+import 'package:frontend_dialysis_record/features/sessions/models/four_weeks_ultrafiltration_summary.dart';
 import 'package:frontend_dialysis_record/features/sessions/models/monthly_ultrafiltration_summary.dart';
 import 'package:frontend_dialysis_record/features/sessions/models/session_dto.dart';
 import 'package:frontend_dialysis_record/features/sessions/models/session_summary.dart';
@@ -30,6 +32,7 @@ class _PatientHistoryScreenState extends ConsumerState<PatientHistoryScreen> {
   final DateFormat _monthFormat = DateFormat('MMMM yyyy', 'es');
   final DateFormat _dayLabelFormat = DateFormat('EEEE dd/MM', 'es');
   final MonthlyDialysisPdfService _pdfService = MonthlyDialysisPdfService();
+  final FourWeeksDialysisPdfService _fourWeeksPdfService = FourWeeksDialysisPdfService();
   bool _generatingPdf = false;
 
   @override
@@ -108,6 +111,49 @@ class _PatientHistoryScreenState extends ConsumerState<PatientHistoryScreen> {
       if (mounted) setState(() => _generatingPdf = false);
     }
   }
+
+  Future<void> _generate4WeeksPdf() async {
+    setState(() => _generatingPdf = true);
+    try {
+      final me = ref.read(authStateProvider).valueOrNull;
+      final patientId = me?.id;
+      if (patientId == null) return;
+      
+      final endDate = DateTime.now();
+      final startDate = endDate.subtract(const Duration(days: 27));
+
+      final patientCtrl = ref.read(patientControllerProvider);
+      final sessions = await patientCtrl.getSessionsByDateRange(
+        patientId: patientId,
+        startDate: startDate,
+        endDate: endDate,
+      );
+
+      final summary = FourWeeksUltrafiltrationCalculator.calculate(
+        endDate: endDate,
+        sessions: sessions,
+      );
+
+      final bytes = await _fourWeeksPdfService.build4WeeksReport(
+        patient: me!,
+        endDate: endDate,
+        sessions: sessions,
+        summary: summary,
+      );
+
+      final name = (me.name ?? 'paciente').replaceAll(RegExp(r'\s+'), '_').toLowerCase();
+      final fileName = 'registro_4semanas_${name}_${endDate.year}_${endDate.month.toString().padLeft(2, '0')}_${endDate.day.toString().padLeft(2, '0')}.pdf';
+      
+      await _fourWeeksPdfService.download(bytes, fileName);
+      if (mounted) AppSnackBar.success(context, 'PDF de 4 semanas generado');
+    } catch (e) {
+      final message = e is AppException ? e.message : 'No se pudo generar el PDF de 4 semanas.';
+      if (mounted) AppSnackBar.error(context, message);
+    } finally {
+      if (mounted) setState(() => _generatingPdf = false);
+    }
+  }
+
 
   Future<void> _editSession(SessionDto session) async {
     if (session.id == null) return;
@@ -233,17 +279,37 @@ class _PatientHistoryScreenState extends ConsumerState<PatientHistoryScreen> {
                           style: Theme.of(context).textTheme.headlineSmall,
                         ),
                       ),
-                      FilledButton.icon(
-                        onPressed: _generatingPdf ? null : _generatePdf,
-                        icon: _generatingPdf
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : const Icon(PhosphorIconsRegular.filePdf),
-                        label: const Text('PDF'),
-                      ),
+                      if (_generatingPdf)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 16),
+                          child: SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        )
+                      else
+                        PopupMenuButton<int>(
+                          icon: const Icon(PhosphorIconsRegular.filePdf),
+                          tooltip: 'Generar reporte PDF',
+                          onSelected: (value) {
+                            if (value == 0) {
+                              _generatePdf();
+                            } else if (value == 1) {
+                              _generate4WeeksPdf();
+                            }
+                          },
+                          itemBuilder: (context) => const [
+                            PopupMenuItem(
+                              value: 0,
+                              child: Text('Reporte Mensual'),
+                            ),
+                            PopupMenuItem(
+                              value: 1,
+                              child: Text('Reporte Últimas 4 Semanas'),
+                            ),
+                          ],
+                        ),
                     ],
                   ),
                   const SizedBox(height: AppSpacing.md),

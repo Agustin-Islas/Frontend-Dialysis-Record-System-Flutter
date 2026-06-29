@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_animate/flutter_animate.dart';
+
 import 'package:intl/intl.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:frontend_dialysis_record/core/design/design.dart';
@@ -24,7 +24,7 @@ class PatientTodayScreen extends ConsumerStatefulWidget {
 
 class PatientTodayScreenState extends ConsumerState<PatientTodayScreen> {
   final PageController _pageController = PageController();
-  final DateFormat _longDateFormat = DateFormat('EEEE d/MM', 'es');
+
   final DateFormat _shortDateFormat = DateFormat('dd/MM');
   final DateFormat _heroDateFormat = DateFormat('EEEE dd/MM', 'es');
   int _daysAgo = 0;

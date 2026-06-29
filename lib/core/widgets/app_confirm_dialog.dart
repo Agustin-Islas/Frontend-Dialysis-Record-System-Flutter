@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
-import 'package:frontend_dialysis_record/core/design/design.dart';
+
 
 /// Reusable confirmation dialog for destructive actions.
 ///

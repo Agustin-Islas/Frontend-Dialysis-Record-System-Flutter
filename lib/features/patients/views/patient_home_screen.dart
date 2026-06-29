@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
-import 'package:frontend_dialysis_record/core/design/design.dart';
-import 'package:frontend_dialysis_record/core/router/app_router.dart';
+
 import 'package:frontend_dialysis_record/features/auth/providers/auth_providers.dart';
 import 'package:frontend_dialysis_record/features/patients/views/patient_today_screen.dart';
 

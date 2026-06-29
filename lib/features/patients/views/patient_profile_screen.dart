@@ -168,7 +168,7 @@ class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
       return const AppSkeletonScreen(title: 'Perfil', itemCount: 3);
     }
 
-    final scheme = Theme.of(context).colorScheme;
+
 
     return SafeArea(
       child: Center(

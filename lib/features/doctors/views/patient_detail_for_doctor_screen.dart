@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:frontend_dialysis_record/core/providers/providers.dart';
 import 'package:intl/intl.dart';
 import 'package:frontend_dialysis_record/core/network/app_exception.dart';
-import 'package:frontend_dialysis_record/core/providers/providers.dart';
+
 import 'package:frontend_dialysis_record/features/auth/models/me_response.dart';
 import 'package:frontend_dialysis_record/features/doctors/providers/doctor_providers.dart';
 import 'package:frontend_dialysis_record/features/patients/providers/patient_providers.dart';
 import 'package:frontend_dialysis_record/features/patients/views/widgets/session_expansion_card.dart';
+import 'package:frontend_dialysis_record/features/reports/four_weeks_dialysis_pdf_service.dart';
 import 'package:frontend_dialysis_record/features/reports/monthly_dialysis_pdf_service.dart';
+import 'package:frontend_dialysis_record/features/sessions/models/four_weeks_ultrafiltration_summary.dart';
 import 'package:frontend_dialysis_record/features/sessions/models/monthly_ultrafiltration_summary.dart';
 import 'package:frontend_dialysis_record/features/sessions/models/session_dto.dart';
 import 'package:frontend_dialysis_record/features/sessions/views/widgets/day_session_group_title.dart';
@@ -32,6 +35,7 @@ class _PatientDetailForDoctorScreenState extends ConsumerState<PatientDetailForD
   final DateFormat _monthFormat = DateFormat('MMMM yyyy', 'es');
   final DateFormat _dayFormat = DateFormat('EEEE dd/MM', 'es');
   final MonthlyDialysisPdfService _pdfService = MonthlyDialysisPdfService();
+  final FourWeeksDialysisPdfService _fourWeeksPdfService = FourWeeksDialysisPdfService();
   bool _generatingPdf = false;
 
   @override
@@ -85,6 +89,44 @@ class _PatientDetailForDoctorScreenState extends ConsumerState<PatientDetailForD
       if (mounted) AppSnackBar.success(context, 'PDF generado');
     } catch (e) {
       final message = e is AppException ? e.message : 'No se pudo generar el PDF.';
+      if (mounted) AppSnackBar.error(context, message);
+    } finally {
+      if (mounted) setState(() => _generatingPdf = false);
+    }
+  }
+
+  Future<void> _generate4WeeksPdf(MeResponse patient) async {
+    setState(() => _generatingPdf = true);
+    try {
+      final endDate = DateTime.now();
+      final startDate = endDate.subtract(const Duration(days: 27));
+
+      final patientCtrl = ref.read(patientControllerProvider);
+      final sessions = await patientCtrl.getSessionsByDateRange(
+        patientId: widget.patientId,
+        startDate: startDate,
+        endDate: endDate,
+      );
+
+      final summary = FourWeeksUltrafiltrationCalculator.calculate(
+        endDate: endDate,
+        sessions: sessions,
+      );
+
+      final bytes = await _fourWeeksPdfService.build4WeeksReport(
+        patient: patient,
+        endDate: endDate,
+        sessions: sessions,
+        summary: summary,
+      );
+
+      final name = (patient.name ?? 'paciente').replaceAll(RegExp(r'\s+'), '_').toLowerCase();
+      final fileName = 'registro_4semanas_${name}_${endDate.year}_${endDate.month.toString().padLeft(2, '0')}_${endDate.day.toString().padLeft(2, '0')}.pdf';
+      
+      await _fourWeeksPdfService.download(bytes, fileName);
+      if (mounted) AppSnackBar.success(context, 'PDF de 4 semanas generado');
+    } catch (e) {
+      final message = e is AppException ? e.message : 'No se pudo generar el PDF de 4 semanas.';
       if (mounted) AppSnackBar.error(context, message);
     } finally {
       if (mounted) setState(() => _generatingPdf = false);
@@ -209,17 +251,37 @@ class _PatientDetailForDoctorScreenState extends ConsumerState<PatientDetailForD
                                           onPressed: canGoForward ? () => _changeMonth(1) : null,
                                           icon: const Icon(Icons.chevron_right),
                                         ),
-                                        FilledButton.icon(
-                                          onPressed: _generatingPdf ? null : () => _generatePdf(patient, sessions),
-                                          icon: _generatingPdf
-                                              ? const SizedBox(
-                                                  width: 16,
-                                                  height: 16,
-                                                  child: CircularProgressIndicator(strokeWidth: 2),
-                                                )
-                                              : const Icon(Icons.picture_as_pdf_outlined),
-                                          label: const Text('PDF'),
-                                        ),
+                                        if (_generatingPdf)
+                                          const Padding(
+                                            padding: EdgeInsets.symmetric(horizontal: 16),
+                                            child: SizedBox(
+                                              width: 24,
+                                              height: 24,
+                                              child: CircularProgressIndicator(strokeWidth: 2),
+                                            ),
+                                          )
+                                        else
+                                          PopupMenuButton<int>(
+                                            icon: const Icon(Icons.picture_as_pdf_outlined),
+                                            tooltip: 'Generar reporte PDF',
+                                            onSelected: (value) {
+                                              if (value == 0) {
+                                                _generatePdf(patient, sessions);
+                                              } else if (value == 1) {
+                                                _generate4WeeksPdf(patient);
+                                              }
+                                            },
+                                            itemBuilder: (context) => const [
+                                              PopupMenuItem(
+                                                value: 0,
+                                                child: Text('Reporte Mensual'),
+                                              ),
+                                              PopupMenuItem(
+                                                value: 1,
+                                                child: Text('Reporte Últimas 4 Semanas'),
+                                              ),
+                                            ],
+                                          ),
                                       ],
                                     ),
                                   ),
