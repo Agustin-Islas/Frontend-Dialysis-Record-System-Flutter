@@ -1,6 +1,6 @@
-# Frontend - Dialysis Record App
+﻿# Frontend - RenApp
 
-Aplicacion Flutter para pacientes y doctores dentro del sistema Dialysis Record App.
+Aplicacion Flutter para pacientes y doctores dentro del sistema RenApp.
 
 ## Mision del frontend
 

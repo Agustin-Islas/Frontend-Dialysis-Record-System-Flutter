@@ -1,11 +1,11 @@
-{
-    "name": "Dialysis Record",
+﻿{
+    "name": "RenApp",
     "short_name": "Dialysis",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "Patient and doctor dialysis record app.",
+    "description": "Patient and doctor RenApp.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

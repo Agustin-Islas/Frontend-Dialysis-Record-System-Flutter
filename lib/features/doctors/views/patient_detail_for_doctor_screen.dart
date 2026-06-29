@@ -734,9 +734,18 @@ class _MonthYearPickerDialogState extends State<_MonthYearPickerDialog> {
               runSpacing: AppSpacing.sm,
               children: List.generate(12, (index) {
                 final month = index + 1;
+                final isSelected = selectedMonth == month;
                 return ChoiceChip(
-                  label: Text(monthNames[index]),
-                  selected: selectedMonth == month,
+                  label: Text(
+                    monthNames[index],
+                    style: TextStyle(
+                      color: isSelected 
+                          ? Theme.of(context).colorScheme.onPrimary 
+                          : Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                  selectedColor: Theme.of(context).colorScheme.primary,
+                  selected: isSelected,
                   onSelected: _isMonthEnabled(month) ? (_) => setState(() => selectedMonth = month) : null,
                 );
               }),

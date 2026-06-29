@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+﻿import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -39,7 +39,7 @@ class MonthlyDialysisPdfService {
           _recordsTable(_groupByDate(sorted)),
           pw.SizedBox(height: 10),
           pw.Text(
-            'Reporte generado digitalmente desde Dialysis Record App.',
+            'Reporte generado digitalmente desde RenApp.',
             style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
           ),
         ],

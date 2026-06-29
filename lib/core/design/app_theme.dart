@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'app_colors.dart';
 import 'app_spacing.dart';
 import 'app_typography.dart';
 
-/// Central Material 3 ThemeData for Dialysis Record.
+/// Central Material 3 ThemeData for RenApp.
 ///
 /// Unifies color, typography, spacing, and component themes
 /// into a single consistent design system.
