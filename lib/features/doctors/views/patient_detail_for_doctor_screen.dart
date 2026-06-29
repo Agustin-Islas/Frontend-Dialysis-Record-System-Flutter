@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
@@ -37,7 +36,7 @@ class _PatientDetailForDoctorScreenState extends ConsumerState<PatientDetailForD
   DateTime _selectedMonth = DateTime(DateTime.now().year, DateTime.now().month);
   bool _generatingPdf = false;
   final ItemScrollController _itemScrollController = ItemScrollController();
-  final Map<int, ExpansionTileController> _tileControllers = {};
+  final Map<int, ExpansibleController> _tileControllers = {};
   final DateFormat _monthFormat = DateFormat('MMMM yyyy', 'es');
   final DateFormat _dayFormat = DateFormat('EEEE dd/MM', 'es');
   final MonthlyDialysisPdfService _pdfService = MonthlyDialysisPdfService();
@@ -390,7 +389,7 @@ class _PatientDetailForDoctorScreenState extends ConsumerState<PatientDetailForD
                                     side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
                                   ),
                                   child: ExpansionTile(
-                                    controller: _tileControllers.putIfAbsent(index - 6, () => ExpansionTileController()),
+                                    controller: _tileControllers.putIfAbsent(index - 6, () => ExpansibleController()),
                                     initiallyExpanded: false,
                                     title: DaySessionGroupTitle(
                                       dayTitle: _formatDayTitle(entry.key),
