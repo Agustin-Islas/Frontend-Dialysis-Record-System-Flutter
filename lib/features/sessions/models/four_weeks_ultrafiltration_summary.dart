@@ -5,11 +5,13 @@ class FourWeeksUltrafiltrationSummary {
   final int totalChanges;
   final List<int> weeklyUltrafiltration;
   final List<int> weekDayCounts;
+  final int elapsedDays;
 
   const FourWeeksUltrafiltrationSummary({
     required this.totalChanges,
     required this.weeklyUltrafiltration,
     required this.weekDayCounts,
+    required this.elapsedDays,
   });
 
   factory FourWeeksUltrafiltrationSummary.empty() {
@@ -17,6 +19,7 @@ class FourWeeksUltrafiltrationSummary {
       totalChanges: 0,
       weeklyUltrafiltration: [0, 0, 0, 0],
       weekDayCounts: [7, 7, 7, 7],
+      elapsedDays: 28,
     );
   }
 }
@@ -62,6 +65,7 @@ class FourWeeksUltrafiltrationCalculator {
         growable: false,
       ),
       weekDayCounts: weekDayCounts,
+      elapsedDays: 28,
     );
   }
 }

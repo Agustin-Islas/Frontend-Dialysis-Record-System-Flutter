@@ -6,7 +6,7 @@ import 'package:frontend_dialysis_record/features/sessions/models/session_summar
 
 /// Provider family for loading sessions of a specific day.
 final daySessionsProvider =
-    FutureProvider.family<List<SessionDto>, ({String patientId, DateTime day})>(
+    FutureProvider.autoDispose.family<List<SessionDto>, ({String patientId, DateTime day})>(
   (ref, params) async {
     final controller = ref.watch(patientControllerProvider);
     return controller.getSessionsByDay(
@@ -18,7 +18,7 @@ final daySessionsProvider =
 
 /// Provider family for loading the summary of a specific day.
 final daySummaryProvider =
-    FutureProvider.family<SessionSummary, ({String patientId, DateTime day})>(
+    FutureProvider.autoDispose.family<SessionSummary, ({String patientId, DateTime day})>(
   (ref, params) async {
     final controller = ref.watch(patientControllerProvider);
     return controller.getSessionSummaryByDay(
@@ -29,7 +29,7 @@ final daySummaryProvider =
 );
 
 /// Provider family for loading sessions of a month range.
-final monthSessionsProvider = FutureProvider.family<List<SessionDto>,
+final monthSessionsProvider = FutureProvider.autoDispose.family<List<SessionDto>,
     ({String patientId, DateTime month})>(
   (ref, params) async {
     final controller = ref.watch(patientControllerProvider);
@@ -42,7 +42,7 @@ final monthSessionsProvider = FutureProvider.family<List<SessionDto>,
 );
 
 /// Provider for fetching all patients (used in doctor's patient picker).
-final allPatientsProvider = FutureProvider<List<MeResponse>>((ref) async {
+final allPatientsProvider = FutureProvider.autoDispose<List<MeResponse>>((ref) async {
   final controller = ref.watch(patientControllerProvider);
   return controller.getAllPatients();
 });

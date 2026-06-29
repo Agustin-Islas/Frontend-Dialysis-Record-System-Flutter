@@ -134,7 +134,7 @@ class MonthlyDialysisPdfService {
 
     return pw.Row(
       children: [
-        item('Total de cambios', summary.totalChanges.toString()),
+        item('Promedio de cambios diarios', _formatAvg(summary.totalChanges, summary.elapsedDays)),
         item('UF semana 1', '${summary.weeklyUltrafiltration[0]} ml/dia'),
         item('UF semana 2', '${summary.weeklyUltrafiltration[1]} ml/dia'),
         item('UF semana 3', '${summary.weeklyUltrafiltration[2]} ml/dia'),
@@ -309,5 +309,12 @@ class MonthlyDialysisPdfService {
   String _capitalize(String value) {
     if (value.isEmpty) return value;
     return value[0].toUpperCase() + value.substring(1);
+  }
+
+  String _formatAvg(int total, int days) {
+    if (days == 0) return '0';
+    final avg = total / days;
+    if (avg == avg.truncateToDouble()) return avg.toInt().toString();
+    return avg.toStringAsFixed(2).replaceFirst(RegExp(r'0*$'), '').replaceFirst(RegExp(r'\.$'), '');
   }
 }

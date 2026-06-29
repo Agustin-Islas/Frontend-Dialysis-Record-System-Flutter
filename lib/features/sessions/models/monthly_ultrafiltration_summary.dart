@@ -5,18 +5,34 @@ class MonthlyUltrafiltrationSummary {
   final int totalChanges;
   final List<int> weeklyUltrafiltration;
   final List<int> weekDayCounts;
+  final int elapsedDays;
 
   const MonthlyUltrafiltrationSummary({
     required this.totalChanges,
     required this.weeklyUltrafiltration,
     required this.weekDayCounts,
+    required this.elapsedDays,
   });
 
   factory MonthlyUltrafiltrationSummary.empty(DateTime month) {
-    return const MonthlyUltrafiltrationSummary(
+    final monthStart = DateUtils.dateOnly(DateTime(month.year, month.month, 1));
+    final monthEnd = DateUtils.dateOnly(DateTime(month.year, month.month + 1, 0));
+    final now = DateUtils.dateOnly(DateTime.now());
+    
+    int elapsed;
+    if (now.isBefore(monthStart)) {
+      elapsed = 0;
+    } else if (now.isAfter(monthEnd)) {
+      elapsed = monthEnd.day;
+    } else {
+      elapsed = now.day;
+    }
+
+    return MonthlyUltrafiltrationSummary(
       totalChanges: 0,
       weeklyUltrafiltration: [0, 0, 0, 0],
-      weekDayCounts: [7, 7, 7, 7],
+      weekDayCounts: [7, 7, 7, monthEnd.day - 21],
+      elapsedDays: elapsed,
     );
   }
 }
@@ -53,6 +69,17 @@ class MonthlyUltrafiltrationCalculator {
       weekTotals[weekIndex] += session.partial ?? ((session.infusion ?? 0) - (session.drainage ?? 0));
     }
 
+    final now = DateUtils.dateOnly(DateTime.now());
+    
+    int elapsedDays;
+    if (now.isBefore(monthStart)) {
+      elapsedDays = 0;
+    } else if (now.isAfter(monthEnd)) {
+      elapsedDays = monthEnd.day;
+    } else {
+      elapsedDays = now.day;
+    }
+
     return MonthlyUltrafiltrationSummary(
       totalChanges: totalChanges,
       weeklyUltrafiltration: List.generate(
@@ -61,6 +88,7 @@ class MonthlyUltrafiltrationCalculator {
         growable: false,
       ),
       weekDayCounts: weekDayCounts,
+      elapsedDays: elapsedDays,
     );
   }
 }
