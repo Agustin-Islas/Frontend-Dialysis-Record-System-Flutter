@@ -1,108 +1,277 @@
-# Dialysis Record – Frontend
+# Frontend - Dialysis Record App
 
-## Descripción general
+Aplicacion Flutter para pacientes y doctores dentro del sistema Dialysis Record App.
 
-Este proyecto corresponde al **frontend** del sistema *Dialysis Record*, una aplicación cliente desarrollada en **Flutter** orientada a pacientes y profesionales de la salud.
+## Mision del frontend
 
-La aplicación consume una **API REST segura**, permitiendo la autenticación mediante **JWT** y el acceso a funcionalidades personalizadas según el rol del usuario. Su objetivo principal es facilitar el registro y la visualización estructurada de sesiones de diálisis peritoneal, priorizando claridad, usabilidad y seguridad.
+El frontend debe hacer que el registro diario de dialisis peritoneal sea rapido, claro y confiable para el paciente, y que el doctor pueda revisar informacion clinica sin pelearse con planillas dispersas. La interfaz prioriza tareas reales: cargar cambios, revisar historial, asociar pacientes, generar reportes y detectar patrones.
 
----
+## Estado actual
 
-## Arquitectura y organización
+Implementado:
 
-El frontend está estructurado siguiendo una **arquitectura modular basada en features**, lo que facilita el mantenimiento, la escalabilidad y la extensión futura del sistema.
+- App Flutter con soporte Web, Android, Windows, Linux, macOS e iOS generado por Flutter.
+- Login con JWT.
+- Registro de pacientes.
+- Registro de doctores.
+- Persistencia de access token y refresh token.
+- Refresh automatico ante respuestas `401` en endpoints protegidos.
+- `SessionGate` para redirigir por rol.
+- Home de paciente:
+  - pantalla de hoy;
+  - carga de cambios;
+  - edicion/eliminacion de cambios;
+  - resumen diario;
+  - navegacion por dias.
+- Historial de paciente:
+  - filtro por mes;
+  - agrupacion por dia;
+  - resumen mensual;
+  - ultrafiltrados por semana;
+  - exportacion PDF.
+- Perfil de paciente:
+  - edicion de datos personales;
+  - concentraciones personalizadas;
+  - cierre de sesion.
+- Home de doctor:
+  - pacientes asociados;
+  - selector para agregar pacientes existentes;
+  - busqueda por nombre, DNI o email;
+  - desasociacion de pacientes;
+  - detalle mensual del paciente;
+  - exportacion PDF del paciente.
+- Layout responsive para mobile y pantallas grandes.
 
-### Core
+## Tecnologias
 
-Contiene componentes transversales reutilizables en toda la aplicación:
+- Flutter.
+- Dart.
+- Material UI.
+- Dio.
+- Flutter Secure Storage.
+- universal_html para storage web.
+- intl.
+- pdf.
+- share_plus.
+- flutter_lints.
 
-- Cliente HTTP basado en **Dio**
-- Manejo de tokens JWT
-- Almacenamiento seguro de credenciales
-- Interceptores de red
-- Utilidades y constantes globales
-- Manejo básico de errores
+## Estructura
 
-### Features
+```text
+lib/
++-- app.dart
++-- main.dart
++-- core/
+|   +-- auth/
+|   +-- config/
+|   +-- di/
+|   +-- network/
++-- features/
+    +-- auth/
+    +-- doctors/
+    +-- patients/
+    +-- reports/
+    +-- sessions/
+```
 
-Cada funcionalidad principal se organiza como un módulo independiente:
+## Configuracion de API
 
-#### Auth
-- Pantallas de login y registro
-- Control del estado de autenticación
-- Integración con el flujo JWT del backend
+El frontend usa `API_BASE_URL`.
 
-#### Patient
-- Visualización de información del paciente
-- Acceso al historial de sesiones
-- Navegación por fechas
+Valor por defecto:
 
-#### Session
-- Registro de sesiones de diálisis
-- Listado cronológico de registros
-- Comunicación directa con la API para envío y consulta de datos
+```text
+http://localhost:8080
+```
 
-Cada feature contiene:
-- Screens (UI)
-- Controllers / ViewModels
-- Models (DTOs del frontend)
-- Servicios de red específicos
+Ejemplo:
 
----
+```powershell
+flutter run -d web-server --dart-define=API_BASE_URL=http://localhost:8080
+```
 
-## Seguridad y autenticación
+## Ejecucion local
 
-La aplicación implementa un flujo de autenticación **stateless**, alineado con el backend:
+Instalar dependencias:
 
-- Login contra la API
-- Recepción y almacenamiento seguro del access token
-- Inclusión automática del JWT en cada request mediante interceptores
-- Protección de pantallas según estado de autenticación
-- Persistencia de sesión entre reinicios de la app
+```powershell
+flutter pub get
+```
 
-Este enfoque garantiza que solo usuarios autenticados puedan acceder a los recursos protegidos.
+Ejecutar en web server:
 
----
+```powershell
+flutter run -d web-server --web-hostname 127.0.0.1 --web-port 3001
+```
 
-## Tecnologías utilizadas
+Analizar:
 
-- Flutter  
-- Dart  
-- Dio (HTTP client)  
-- Flutter Secure Storage (mobile)  
-- LocalStorage (web)  
-- Material UI  
-- Arquitectura basada en features  
+```powershell
+dart analyze
+```
 
----
+Build web:
 
-## Funcionalidades principales
+```powershell
+flutter build web
+```
 
-- Autenticación de usuarios mediante JWT
-- Persistencia segura de sesión
-- Consumo de API REST protegida
-- Registro de sesiones de diálisis
-- Visualización del historial clínico ordenado por fecha
-- Navegación simple e intuitiva
-- Separación clara entre UI y lógica de negocio
-- Arquitectura modular orientada a la escalabilidad
+## Flujo de autenticacion
 
----
+1. Login envia email/password a `/auth/login`.
+2. Backend responde access token y refresh token.
+3. Frontend guarda tokens.
+4. Frontend decodifica `role` del JWT.
+5. Segun rol consulta:
+   - `GET /api/doctors/me`
+   - `GET /api/patients/me`
+6. `SessionGate` abre la home correspondiente.
+7. Interceptor agrega `Authorization: Bearer <token>` a requests protegidos.
+8. Si un endpoint protegido responde `401`, intenta refresh con `/auth/refresh`.
 
-## Estado del proyecto
+Nota: si el login obtiene tokens pero falla la carga de `/me`, se limpian los tokens para evitar sesiones intermedias rotas.
 
-Aplicación en **desarrollo activo**, con:
+## Pantallas actuales
 
-- Flujo de autenticación funcional
-- Comunicación estable con el backend
-- Base estructural sólida para extender funcionalidades
+### Auth
 
-Preparada para evolucionar hacia una aplicación completa **multiplataforma (Android / Web)**.
+- `LoginScreen`
+- `PatientRegisterScreen`
+- `DoctorRegisterScreen`
+- `SessionGate`
 
----
+### Paciente
 
-## Objetivo final
+- `PatientHomeScreen`
+- `PatientTodayScreen`
+- `PatientHistoryScreen`
+- `PatientProfileScreen`
+- `SessionCreateBottomSheet`
 
-El objetivo del frontend es brindar una interfaz clara, accesible y confiable para el seguimiento diario de la diálisis peritoneal, facilitando la carga de datos por parte del paciente y el análisis clínico por parte del profesional de la salud.
+### Doctor
 
-Esta implementación establece una base sólida para una aplicación médica real, segura y escalable, integrada con un backend robusto.
+- `DoctorHomeScreen`
+- `DoctorPatientsScreen`
+- `PatientDetailForDoctorScreen`
+
+## Funcionalidades clinicas actuales
+
+- Carga de cambio con:
+  - fecha;
+  - hora;
+  - bolsa;
+  - concentracion;
+  - infusion;
+  - drenaje;
+  - observaciones.
+- Concentraciones fijas y personalizadas.
+- Resumen diario:
+  - cantidad de sesiones;
+  - infusion total;
+  - drenaje total;
+  - balance total.
+- Resumen mensual:
+  - total de cambios;
+  - ultrafiltrados semanales;
+  - historial agrupado por dia.
+- PDF mensual.
+
+## UX actual
+
+- Navegacion inferior para paciente.
+- Navegacion inferior para doctor.
+- Cards y listas centradas con ancho maximo en web/desktop.
+- Encabezados de historial reorganizados para mobile.
+- Selector de pacientes para doctor con busqueda.
+- Botones principales con iconos.
+- Estados de carga, error y vacio en pantallas criticas.
+
+## Riesgos y mejoras recomendadas
+
+Prioridad alta:
+
+- Web guarda tokens en `localStorage`; evaluar cookies HttpOnly/SameSite o endurecer proteccion XSS.
+- No hay tests de widgets ni integracion de flujos criticos.
+- El doctor puede seleccionar cualquier paciente expuesto por backend; conviene agregar consentimiento/invitacion.
+- Validar convencion visual de UF/balance contra definicion clinica final.
+
+Prioridad media:
+
+- Agregar graficos reales para doctor y paciente.
+- Agregar buscador/filtros avanzados en historial.
+- Agregar cache/offline para carga diaria si no hay conexion.
+- Mejorar manejo de errores por campo en formularios.
+- Agregar i18n formal en vez de textos hardcodeados.
+- Agregar estados skeleton o shimmer para cargas largas.
+
+Prioridad baja:
+
+- Unificar vocabulario UI: cambio, sesion, bolsa, UF, balance.
+- Agregar tema visual mas consistente.
+- Mejorar accesibilidad: contraste, tamanos, labels semanticos.
+
+## Funcionalidades sugeridas
+
+### Para pacientes
+
+- Recordatorios de cambios por horario.
+- Alerta si el paciente no cargo registros del dia.
+- Registro de sintomas.
+- Registro de peso, presion arterial, temperatura y glucemia.
+- Resumen semanal facil de entender.
+- Historial de observaciones.
+- Modo offline con sincronizacion posterior.
+
+### Para doctores
+
+- Dashboard con pacientes priorizados.
+- Grafico de UF diaria/semanal/mensual.
+- Grafico infusion vs drenaje.
+- Calendario de adherencia por paciente.
+- Alertas por registros faltantes.
+- Alertas por valores fuera de rango.
+- Notas clinicas privadas por paciente.
+- Exportacion mas completa con firma/datos del doctor.
+- Filtros: sin registros hoy, UF baja, observaciones recientes, pacientes nuevos.
+
+### Notificaciones
+
+- Notificaciones locales para paciente.
+- Push notifications cuando haya backend listo.
+- Resumen diario al doctor.
+- Alertas configurables por paciente.
+- Mensajes o avisos simples doctor-paciente.
+
+## Verificacion reciente
+
+- `dart analyze`: sin issues.
+- `flutter build web`: compilo correctamente.
+- Flutter informo advertencias de compatibilidad Wasm por dependencias web, no errores de build.
+
+## Notas de deploy
+
+- `CODEMAGIC_DEPLOY.md` y `RENDER_WEB_DEPLOY.md` contienen notas especificas de deploy.
+- `Dockerfile` y `render-nginx.conf.template` estan disponibles para despliegue web.
+- Para web productivo, definir `API_BASE_URL` al construir.
+
+## Roadmap frontend
+
+1. Estabilizacion:
+   - tests;
+   - errores por campo;
+   - accesibilidad;
+   - revisar almacenamiento de tokens web.
+2. Dashboard clinico:
+   - KPIs de doctor;
+   - graficos;
+   - filtros;
+   - alertas basicas.
+3. Notificaciones:
+   - recordatorios locales;
+   - alertas de registros faltantes;
+   - push notifications.
+4. Experiencia avanzada:
+   - offline;
+   - sintomas/signos vitales;
+   - reportes longitudinales;
+   - configuracion por paciente.

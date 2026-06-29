@@ -1,59 +1,29 @@
 import 'package:flutter/material.dart';
-import 'package:frontend_dialysis_record/core/di/app_di.dart';
-import 'package:frontend_dialysis_record/features/auth/models/me_response.dart';
-import 'package:frontend_dialysis_record/features/auth/views/login_screen.dart';
-import 'package:frontend_dialysis_record/features/doctors/views/doctor_home_screen.dart';
-import 'package:frontend_dialysis_record/features/patients/views/patient_home_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:frontend_dialysis_record/core/widgets/widgets.dart';
+import 'package:frontend_dialysis_record/features/auth/providers/auth_providers.dart';
 
-class SessionGate extends StatefulWidget {
+/// Initial loading screen shown while checking authentication state.
+///
+/// The GoRouter redirect guard handles navigation based on auth state,
+/// so this widget only needs to show a loading indicator.
+class SessionGate extends ConsumerWidget {
   const SessionGate({super.key});
 
   @override
-  State<SessionGate> createState() => _SessionGateState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authStateProvider);
 
-class _SessionGateState extends State<SessionGate> {
-  late Future<MeResponse?> _future;
-
-  @override
-  void initState() {
-    super.initState();
-    _future = AppDI.authController.getMe();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<MeResponse?>(
-      future: _future,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
-        }
-
-        final me = snapshot.data;
-        if (snapshot.hasError || me == null) {
-          return const LoginScreen();
-        }
-
-        if (me.role == 'DOCTOR') {
-          return DoctorHomeScreen(
-            me: me,
-            authController: AppDI.authController,
-            doctorController: AppDI.doctorController,
-            patientController: AppDI.patientController,
-          );
-        }
-
-        if (me.role == 'PATIENT') {
-          return PatientHomeScreen(
-            me: me,
-            authController: AppDI.authController,
-            patientController: AppDI.patientController,
-          );
-        }
-
-        return const LoginScreen();
-      },
+    return Scaffold(
+      body: authState.when(
+        loading: () => const AppSkeletonScreen(itemCount: 3),
+        error: (error, _) => AppErrorCard(
+          message: 'No se pudo verificar la sesión.',
+          details: error.toString(),
+          onRetry: () => ref.invalidate(authStateProvider),
+        ),
+        data: (_) => const AppSkeletonScreen(itemCount: 3),
+      ),
     );
   }
 }

@@ -1,29 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:frontend_dialysis_record/core/design/design.dart';
+import 'package:frontend_dialysis_record/core/providers/providers.dart';
+import 'package:frontend_dialysis_record/core/router/app_router.dart';
+import 'package:frontend_dialysis_record/core/widgets/widgets.dart';
 import 'package:frontend_dialysis_record/core/network/app_exception.dart';
-import 'package:frontend_dialysis_record/features/auth/authController/auth_controller.dart';
+import 'package:frontend_dialysis_record/features/auth/providers/auth_providers.dart';
 import 'package:frontend_dialysis_record/features/auth/models/me_response.dart';
-import 'package:frontend_dialysis_record/features/auth/views/login_screen.dart';
-import 'package:frontend_dialysis_record/features/patients/patientController/patient_controller.dart';
 
-class PatientProfileScreen extends StatefulWidget {
-  final MeResponse me;
-  final AuthController authController;
-  final PatientController patientController;
-  final ValueChanged<MeResponse> onUpdated;
-
-  const PatientProfileScreen({
-    super.key,
-    required this.me,
-    required this.authController,
-    required this.patientController,
-    required this.onUpdated,
-  });
+class PatientProfileScreen extends ConsumerStatefulWidget {
+  const PatientProfileScreen({super.key});
 
   @override
-  State<PatientProfileScreen> createState() => _PatientProfileScreenState();
+  ConsumerState<PatientProfileScreen> createState() => _PatientProfileScreenState();
 }
 
-class _PatientProfileScreenState extends State<PatientProfileScreen> {
+class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
   final _surnameCtrl = TextEditingController();
@@ -35,30 +29,9 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
   late DateTime _dateOfBirth;
   late List<double> _customConcentrations;
   bool _saving = false;
+  bool _loaded = false;
 
   static const _fixedConcentrations = [1.5, 2.4, 3.8];
-
-  @override
-  void initState() {
-    super.initState();
-    _load(widget.me);
-  }
-
-  @override
-  void didUpdateWidget(covariant PatientProfileScreen oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.me != widget.me) _load(widget.me);
-  }
-
-  void _load(MeResponse me) {
-    _nameCtrl.text = me.name ?? '';
-    _surnameCtrl.text = me.surname ?? '';
-    _dniCtrl.text = me.dni ?? '';
-    _addressCtrl.text = me.address ?? '';
-    _numberCtrl.text = me.number ?? '';
-    _dateOfBirth = DateTime.tryParse(me.dateOfBirth ?? '') ?? DateTime(1990);
-    _customConcentrations = [...me.customConcentrations]..sort();
-  }
 
   @override
   void dispose() {
@@ -69,6 +42,17 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
     _numberCtrl.dispose();
     _customConcentrationCtrl.dispose();
     super.dispose();
+  }
+
+  void _load(MeResponse me) {
+    _nameCtrl.text = me.name ?? '';
+    _surnameCtrl.text = me.surname ?? '';
+    _dniCtrl.text = me.dni ?? '';
+    _addressCtrl.text = me.address ?? '';
+    _numberCtrl.text = me.number ?? '';
+    _dateOfBirth = DateTime.tryParse(me.dateOfBirth ?? '') ?? DateTime(1990);
+    _customConcentrations = [...me.customConcentrations]..sort();
+    _loaded = true;
   }
 
   Future<void> _pickDate() async {
@@ -90,21 +74,21 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
     final raw = _customConcentrationCtrl.text.trim().replaceAll(',', '.');
     final value = double.tryParse(raw);
     if (value == null) {
-      _showMessage('Ingresa una concentracion valida.');
+      AppSnackBar.warning(context, 'Ingresá una concentración válida.');
       return;
     }
     final rounded = double.parse(value.toStringAsFixed(1));
-    if (rounded < 0.1 ||
-        rounded > 10.0 ||
+    if (rounded < 0.1 || rounded > 10.0 ||
         ((value * 10) - (value * 10).round()).abs() > 0.0001) {
-      _showMessage(
-        'La concentracion debe tener un decimal y estar entre 0.1 y 10.0.',
+      AppSnackBar.warning(
+        context,
+        'La concentración debe tener un decimal y estar entre 0.1 y 10.0.',
       );
       return;
     }
     if (_contains(_fixedConcentrations, rounded) ||
         _contains(_customConcentrations, rounded)) {
-      _showMessage('Esa concentracion ya existe.');
+      AppSnackBar.info(context, 'Esa concentración ya existe.');
       return;
     }
     setState(() {
@@ -114,12 +98,15 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
   }
 
   Future<void> _save() async {
-    final id = widget.me.id;
+    final me = ref.read(authStateProvider).valueOrNull;
+    final id = me?.id;
     if (id == null || !_formKey.currentState!.validate()) return;
+
+    final patientCtrl = ref.read(patientControllerProvider);
 
     setState(() => _saving = true);
     try {
-      await widget.patientController.updatePatient(
+      await patientCtrl.updatePatient(
         patientId: id,
         name: _nameCtrl.text.trim(),
         surname: _surnameCtrl.text.trim(),
@@ -129,28 +116,20 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
         number: int.parse(_numberCtrl.text.trim()),
         customConcentrations: _customConcentrations,
       );
-      final refreshed = await widget.authController.getMe();
-      if (refreshed != null) widget.onUpdated(refreshed);
-      _showMessage('Perfil actualizado');
+      await ref.read(authStateProvider.notifier).refresh();
+      if (mounted) AppSnackBar.success(context, 'Perfil actualizado');
     } catch (e) {
       final message = e is AppException
           ? e.message
           : 'No se pudo actualizar el perfil.';
-      _showMessage(message);
+      if (mounted) AppSnackBar.error(context, message);
     } finally {
       if (mounted) setState(() => _saving = false);
     }
   }
 
   bool _contains(List<double> values, double target) {
-    return values.any((value) => (value - target).abs() < 0.0001);
-  }
-
-  void _showMessage(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    return values.any((v) => (v - target).abs() < 0.0001);
   }
 
   String _formatDate(DateTime value) {
@@ -172,12 +151,25 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
     final text = value?.trim() ?? '';
     if (text.isEmpty) return '$label requerido';
     final parsed = int.tryParse(text);
-    if (parsed == null || parsed <= 0) return '$label invalido';
+    if (parsed == null || parsed <= 0) return '$label inválido';
     return null;
   }
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authStateProvider);
+    final me = authState.valueOrNull;
+
+    if (me != null && !_loaded) {
+      _load(me);
+    }
+
+    if (me == null) {
+      return const AppSkeletonScreen(title: 'Perfil', itemCount: 3);
+    }
+
+    final scheme = Theme.of(context).colorScheme;
+
     return SafeArea(
       child: Center(
         child: ConstrainedBox(
@@ -185,122 +177,105 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
           child: Form(
             key: _formKey,
             child: ListView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               children: [
                 Text(
                   'Perfil',
                   style: Theme.of(context).textTheme.headlineSmall,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.md),
                 Card(
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(AppSpacing.lg),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Datos personales',
-                          style: TextStyle(
-                            fontSize: 16,
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: AppSpacing.md),
                         Row(
                           children: [
                             Expanded(
                               child: TextFormField(
                                 controller: _nameCtrl,
-                                decoration: const InputDecoration(
-                                  labelText: 'Nombre',
-                                ),
+                                decoration: const InputDecoration(labelText: 'Nombre'),
                                 validator: (v) => _required(v, 'Nombre'),
                               ),
                             ),
-                            const SizedBox(width: 12),
+                            const SizedBox(width: AppSpacing.md),
                             Expanded(
                               child: TextFormField(
                                 controller: _surnameCtrl,
-                                decoration: const InputDecoration(
-                                  labelText: 'Apellido',
-                                ),
+                                decoration: const InputDecoration(labelText: 'Apellido'),
                                 validator: (v) => _required(v, 'Apellido'),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: AppSpacing.md),
                         TextFormField(
                           controller: _dniCtrl,
                           keyboardType: TextInputType.number,
                           decoration: const InputDecoration(labelText: 'DNI'),
                           validator: (v) => _requiredInt(v, 'DNI'),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: AppSpacing.md),
                         InkWell(
                           onTap: _saving ? null : _pickDate,
                           child: InputDecorator(
-                            decoration: const InputDecoration(
-                              labelText: 'Nacimiento',
-                            ),
+                            decoration: const InputDecoration(labelText: 'Nacimiento'),
                             child: Row(
                               children: [
-                                Expanded(
-                                  child: Text(_formatDate(_dateOfBirth)),
-                                ),
-                                const Icon(Icons.calendar_today_outlined),
+                                Expanded(child: Text(_formatDate(_dateOfBirth))),
+                                const Icon(PhosphorIconsRegular.calendarBlank),
                               ],
                             ),
                           ),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: AppSpacing.md),
                         TextFormField(
                           controller: _addressCtrl,
-                          decoration: const InputDecoration(
-                            labelText: 'Domicilio',
-                          ),
+                          decoration: const InputDecoration(labelText: 'Domicilio'),
                           validator: (v) => _required(v, 'Domicilio'),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: AppSpacing.md),
                         TextFormField(
                           controller: _numberCtrl,
                           keyboardType: TextInputType.phone,
-                          decoration: const InputDecoration(
-                            labelText: 'Celular',
-                          ),
+                          decoration: const InputDecoration(labelText: 'Celular'),
                           validator: (v) => _requiredInt(v, 'Celular'),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: AppSpacing.lg),
+                        _ReadOnlyRow(label: 'Email', value: me.email ?? '-'),
                         _ReadOnlyRow(
-                          label: 'Email',
-                          value: widget.me.email ?? '-',
-                        ),
-                        _ReadOnlyRow(
-                          label: 'Medico',
-                          value: widget.me.doctorName ?? 'Sin medico asociado',
+                          label: 'Médico',
+                          value: me.doctorName ?? 'Sin médico asociado',
                         ),
                       ],
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.md),
                 Card(
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(AppSpacing.lg),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Concentraciones',
-                          style: TextStyle(
-                            fontSize: 16,
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: AppSpacing.sm),
                         Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
+                          spacing: AppSpacing.sm,
+                          runSpacing: AppSpacing.sm,
                           children: [
                             const Chip(label: Text('Amarillo 1,5%')),
                             const Chip(label: Text('Verde 2,4%')),
@@ -315,25 +290,24 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: AppSpacing.md),
                         Row(
                           children: [
                             Expanded(
                               child: TextField(
                                 controller: _customConcentrationCtrl,
-                                keyboardType:
-                                    const TextInputType.numberWithOptions(
-                                      decimal: true,
-                                    ),
+                                keyboardType: const TextInputType.numberWithOptions(
+                                  decimal: true,
+                                ),
                                 decoration: const InputDecoration(
-                                  labelText: 'Nueva concentracion',
+                                  labelText: 'Nueva concentración',
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: AppSpacing.sm),
                             FilledButton.icon(
                               onPressed: _addCustomConcentration,
-                              icon: const Icon(Icons.add),
+                              icon: const Icon(PhosphorIconsRegular.plus),
                               label: const Text('Agregar'),
                             ),
                           ],
@@ -342,28 +316,22 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.md),
                 Align(
                   alignment: Alignment.centerRight,
                   child: Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
+                    spacing: AppSpacing.sm,
+                    runSpacing: AppSpacing.sm,
                     alignment: WrapAlignment.end,
                     children: [
                       OutlinedButton.icon(
                         onPressed: () async {
-                          await widget.authController.logout();
+                          await ref.read(authStateProvider.notifier).logout();
                           if (!context.mounted) return;
-                          Navigator.pushAndRemoveUntil(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const LoginScreen(),
-                            ),
-                            (_) => false,
-                          );
+                          context.go(AppRoutes.login);
                         },
-                        icon: const Icon(Icons.logout),
-                        label: const Text('Cerrar sesion'),
+                        icon: const Icon(PhosphorIconsRegular.signOut),
+                        label: const Text('Cerrar sesión'),
                       ),
                       FilledButton.icon(
                         onPressed: _saving ? null : _save,
@@ -371,14 +339,10 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                             ? const SizedBox(
                                 width: 18,
                                 height: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
+                                child: CircularProgressIndicator(strokeWidth: 2),
                               )
-                            : const Icon(Icons.save_outlined),
-                        label: Text(
-                          _saving ? 'Guardando...' : 'Guardar perfil',
-                        ),
+                            : const Icon(PhosphorIconsRegular.floppyDisk),
+                        label: Text(_saving ? 'Guardando...' : 'Guardar perfil'),
                       ),
                     ],
                   ),
@@ -401,14 +365,16 @@ class _ReadOnlyRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
       child: Row(
         children: [
           SizedBox(
             width: 90,
             child: Text(
               label,
-              style: TextStyle(color: Theme.of(context).hintColor),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
           Expanded(child: Text(value)),

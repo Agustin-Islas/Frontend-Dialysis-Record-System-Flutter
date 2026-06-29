@@ -1,230 +1,172 @@
 import 'package:flutter/material.dart';
-import 'package:frontend_dialysis_record/core/di/app_di.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:frontend_dialysis_record/core/design/design.dart';
+import 'package:frontend_dialysis_record/core/providers/providers.dart';
+import 'package:frontend_dialysis_record/core/router/app_router.dart';
+import 'package:frontend_dialysis_record/core/widgets/widgets.dart';
 import 'package:frontend_dialysis_record/core/network/app_exception.dart';
-import 'package:frontend_dialysis_record/features/auth/views/login_screen.dart';
 
-class DoctorRegisterScreen extends StatefulWidget {
+class DoctorRegisterScreen extends ConsumerStatefulWidget {
   const DoctorRegisterScreen({super.key});
 
   @override
-  State<DoctorRegisterScreen> createState() => _DoctorRegisterScreenState();
+  ConsumerState<DoctorRegisterScreen> createState() => _DoctorRegisterScreenState();
 }
 
-class _DoctorRegisterScreenState extends State<DoctorRegisterScreen> {
+class _DoctorRegisterScreenState extends ConsumerState<DoctorRegisterScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _nameCtrl = TextEditingController();
+  final _surnameCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
+  final _passwordCtrl = TextEditingController();
 
-  final emailController = TextEditingController();
-  final passwordController = TextEditingController();
-  final nameController = TextEditingController();
-  final surnameController = TextEditingController();
-
-  bool isLoading = false;
+  bool _obscurePassword = true;
+  bool _loading = false;
 
   @override
   void dispose() {
-    emailController.dispose();
-    passwordController.dispose();
-    nameController.dispose();
-    surnameController.dispose();
+    _nameCtrl.dispose();
+    _surnameCtrl.dispose();
+    _emailCtrl.dispose();
+    _passwordCtrl.dispose();
     super.dispose();
   }
 
-  bool _isValidEmail(String value) {
-    final emailRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
-    return emailRegex.hasMatch(value);
-  }
-
-  String? _validateName(String? value, {required String label}) {
-    final v = (value ?? '').trim();
-    if (v.isEmpty) return '$label requerido';
-    if (v.length < 2) return '$label demasiado corto';
-    if (v.length > 60) return '$label demasiado largo';
-    return null;
-  }
-
-  String? _validatePassword(String? value) {
-    final v = value ?? '';
-    if (v.trim().isEmpty) return 'Password requerido';
-    if (v.length < 8) return 'Debe tener al menos 8 caracteres';
-    if (v.length > 72) return 'Maximo 72 caracteres';
-    return null;
-  }
-
-  Future<void> _submit() async {
-    final isValid = _formKey.currentState?.validate() ?? false;
-    if (!isValid) return;
+  Future<void> _register() async {
+    if (!_formKey.currentState!.validate()) return;
 
     FocusScope.of(context).unfocus();
-    setState(() => isLoading = true);
+    setState(() => _loading = true);
 
     try {
-      await AppDI.authController.registerDoctor(
-        email: emailController.text.trim(),
-        password: passwordController.text,
-        name: nameController.text.trim(),
-        surname: surnameController.text.trim(),
+      final authCtrl = ref.read(authControllerProvider);
+      await authCtrl.registerDoctor(
+        name: _nameCtrl.text.trim(),
+        surname: _surnameCtrl.text.trim(),
+        email: _emailCtrl.text.trim(),
+        password: _passwordCtrl.text,
       );
-
       if (!mounted) return;
-      setState(() => isLoading = false);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Registro medico exitoso. Inicia sesion.'),
-        ),
-      );
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-      );
+      AppSnackBar.success(context, 'Registro exitoso. Ya podés iniciar sesión.');
+      context.go(AppRoutes.login);
     } catch (e) {
-      if (!mounted) return;
-      setState(() => isLoading = false);
-      final message = e is AppException
-          ? e.message
-          : 'No se pudo registrar el medico.';
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      final message = e is AppException ? e.message : 'No se pudo completar el registro.';
+      if (mounted) AppSnackBar.error(context, message);
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
-  InputDecoration _dec(String label, {IconData? icon, String? hint}) {
-    return InputDecoration(
-      labelText: label,
-      hintText: hint,
-      prefixIcon: icon != null ? Icon(icon) : null,
-    );
+  String? _required(String? value, String label) {
+    if (value == null || value.trim().isEmpty) return '$label requerido';
+    return null;
+  }
+
+  bool _isValidEmail(String value) {
+    return RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(value);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Registro de medico')),
+      appBar: AppBar(
+        title: const Text('Registrar médico'),
+        leading: IconButton(
+          icon: const Icon(PhosphorIconsRegular.arrowLeft),
+          onPressed: () => context.go(AppRoutes.login),
+        ),
+      ),
       body: SafeArea(
         child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 560),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Form(
-                key: _formKey,
-                autovalidateMode: AutovalidateMode.onUserInteraction,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      'Crea tu cuenta medica',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      textInputAction: TextInputAction.next,
-                      decoration: _dec('Email', icon: Icons.email_outlined),
-                      validator: (value) {
-                        final v = (value ?? '').trim();
-                        if (v.isEmpty) return 'Email requerido';
-                        if (!_isValidEmail(v)) return 'Email invalido';
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: passwordController,
-                      obscureText: true,
-                      textInputAction: TextInputAction.next,
-                      decoration: _dec(
-                        'Password',
-                        hint: 'Minimo 8 caracteres',
-                        icon: Icons.lock_outline,
-                      ),
-                      validator: _validatePassword,
-                    ),
-                    const SizedBox(height: 20),
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
-                      children: [
-                        _ResponsiveField(
-                          child: TextFormField(
-                            controller: nameController,
-                            textInputAction: TextInputAction.next,
-                            decoration: _dec(
-                              'Nombre',
-                              icon: Icons.person_outline,
+          child: SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 520),
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.xxl),
+                child: Form(
+                  key: _formKey,
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _nameCtrl,
+                              decoration: const InputDecoration(labelText: 'Nombre'),
+                              validator: (v) => _required(v, 'Nombre'),
                             ),
-                            validator: (v) => _validateName(v, label: 'Nombre'),
+                          ),
+                          const SizedBox(width: AppSpacing.md),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _surnameCtrl,
+                              decoration: const InputDecoration(labelText: 'Apellido'),
+                              validator: (v) => _required(v, 'Apellido'),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      TextFormField(
+                        controller: _emailCtrl,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: InputDecoration(
+                          labelText: 'Email',
+                          prefixIcon: const Icon(PhosphorIconsRegular.envelope),
+                        ),
+                        validator: (v) {
+                          final t = (v ?? '').trim();
+                          if (t.isEmpty) return 'Email requerido';
+                          if (!_isValidEmail(t)) return 'Email inválido';
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      TextFormField(
+                        controller: _passwordCtrl,
+                        obscureText: _obscurePassword,
+                        decoration: InputDecoration(
+                          labelText: 'Contraseña',
+                          prefixIcon: const Icon(PhosphorIconsRegular.lock),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword
+                                  ? PhosphorIconsRegular.eye
+                                  : PhosphorIconsRegular.eyeSlash,
+                            ),
+                            onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                           ),
                         ),
-                        _ResponsiveField(
-                          child: TextFormField(
-                            controller: surnameController,
-                            textInputAction: TextInputAction.done,
-                            decoration: _dec(
-                              'Apellido',
-                              icon: Icons.person_outline,
-                            ),
-                            validator: (v) =>
-                                _validateName(v, label: 'Apellido'),
-                            onFieldSubmitted: (_) =>
-                                isLoading ? null : _submit(),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: SizedBox(
-                        height: 48,
-                        width: 220,
-                        child: isLoading
-                            ? const Center(child: CircularProgressIndicator())
-                            : FilledButton.icon(
-                                onPressed: _submit,
-                                icon: const Icon(Icons.check),
-                                label: const Text('Crear cuenta'),
-                              ),
+                        validator: (v) {
+                          if ((v ?? '').isEmpty) return 'Contraseña requerida';
+                          if (v!.length < 8) return 'Mínimo 8 caracteres';
+                          return null;
+                        },
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextButton(
-                      onPressed: isLoading
-                          ? null
-                          : () {
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const LoginScreen(),
-                                ),
-                              );
-                            },
-                      child: const Text('Ya tengo cuenta - Iniciar sesion'),
-                    ),
-                  ],
+                      const SizedBox(height: AppSpacing.xl),
+                      FilledButton.icon(
+                        onPressed: _loading ? null : _register,
+                        icon: _loading
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(PhosphorIconsRegular.stethoscope),
+                        label: Text(_loading ? 'Registrando...' : 'Registrar'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
         ),
       ),
-    );
-  }
-}
-
-class _ResponsiveField extends StatelessWidget {
-  final Widget child;
-
-  const _ResponsiveField({required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: MediaQuery.of(context).size.width < 680 ? double.infinity : 270,
-      child: child,
     );
   }
 }

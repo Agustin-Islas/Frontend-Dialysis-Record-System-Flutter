@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:frontend_dialysis_record/core/design/design.dart';
+import 'package:frontend_dialysis_record/core/providers/providers.dart';
+import 'package:frontend_dialysis_record/core/widgets/widgets.dart';
 import 'package:frontend_dialysis_record/core/network/app_exception.dart';
-import 'package:frontend_dialysis_record/features/auth/authController/auth_controller.dart';
-import 'package:frontend_dialysis_record/features/auth/models/me_response.dart';
-import 'package:frontend_dialysis_record/features/patients/patientController/patient_controller.dart';
+import 'package:frontend_dialysis_record/features/auth/providers/auth_providers.dart';
 import 'package:frontend_dialysis_record/features/patients/views/widgets/session_expansion_card.dart';
 import 'package:frontend_dialysis_record/features/reports/monthly_dialysis_pdf_service.dart';
 import 'package:frontend_dialysis_record/features/sessions/models/monthly_ultrafiltration_summary.dart';
@@ -12,23 +16,14 @@ import 'package:frontend_dialysis_record/features/sessions/models/session_summar
 import 'package:frontend_dialysis_record/features/sessions/views/session_create_bottom_sheet.dart';
 import 'package:frontend_dialysis_record/features/sessions/views/widgets/day_session_group_title.dart';
 
-class PatientHistoryScreen extends StatefulWidget {
-  final MeResponse me;
-  final AuthController authController;
-  final PatientController patientController;
-
-  const PatientHistoryScreen({
-    super.key,
-    required this.me,
-    required this.authController,
-    required this.patientController,
-  });
+class PatientHistoryScreen extends ConsumerStatefulWidget {
+  const PatientHistoryScreen({super.key});
 
   @override
-  State<PatientHistoryScreen> createState() => _PatientHistoryScreenState();
+  ConsumerState<PatientHistoryScreen> createState() => _PatientHistoryScreenState();
 }
 
-class _PatientHistoryScreenState extends State<PatientHistoryScreen> {
+class _PatientHistoryScreenState extends ConsumerState<PatientHistoryScreen> {
   late DateTime _selectedMonth;
   late Future<List<SessionDto>> _sessionsFuture;
 
@@ -50,10 +45,12 @@ class _PatientHistoryScreenState extends State<PatientHistoryScreen> {
   }
 
   Future<List<SessionDto>> _loadMonth() {
-    final patientId = widget.me.id;
+    final me = ref.read(authStateProvider).valueOrNull;
+    final patientId = me?.id;
     if (patientId == null) return Future.value([]);
 
-    return widget.patientController.getSessionsByDateRange(
+    final patientCtrl = ref.read(patientControllerProvider);
+    return patientCtrl.getSessionsByDateRange(
       patientId: patientId,
       startDate: DateTime(_selectedMonth.year, _selectedMonth.month, 1),
       endDate: DateTime(_selectedMonth.year, _selectedMonth.month + 1, 0),
@@ -83,37 +80,30 @@ class _PatientHistoryScreenState extends State<PatientHistoryScreen> {
   Future<void> _generatePdf() async {
     setState(() => _generatingPdf = true);
     try {
+      final me = ref.read(authStateProvider).valueOrNull;
       final sessions = await _loadMonth();
       final summary = MonthlyUltrafiltrationCalculator.calculate(
         month: _selectedMonth,
         sessions: sessions,
       );
       final bytes = await _pdfService.buildMonthlyReport(
-        patient: widget.me,
+        patient: me!,
         month: _selectedMonth,
         sessions: sessions,
         summary: summary,
       );
-      final name = (widget.me.name ?? 'paciente')
+      final name = (me.name ?? 'paciente')
           .replaceAll(RegExp(r'\s+'), '_')
           .toLowerCase();
       final fileName =
           'registro_dialisis_${name}_${_selectedMonth.year}_${_selectedMonth.month.toString().padLeft(2, '0')}.pdf';
       await _pdfService.download(bytes, fileName);
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('PDF generado')));
-      }
+      if (mounted) AppSnackBar.success(context, 'PDF generado');
     } catch (e) {
       final message = e is AppException
           ? e.message
           : 'No se pudo generar el PDF.';
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(message)));
-      }
+      if (mounted) AppSnackBar.error(context, message);
     } finally {
       if (mounted) setState(() => _generatingPdf = false);
     }
@@ -121,20 +111,22 @@ class _PatientHistoryScreenState extends State<PatientHistoryScreen> {
 
   Future<void> _editSession(SessionDto session) async {
     if (session.id == null) return;
+    final me = ref.read(authStateProvider).valueOrNull;
     final initialDate = session.date != null
         ? DateTime.tryParse(session.date!) ?? DateTime.now()
         : DateTime.now();
 
+    final patientCtrl = ref.read(patientControllerProvider);
+
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      showDragHandle: true,
       builder: (_) => SessionCreateBottomSheet(
         initialDate: initialDate,
         initialSession: session,
-        customConcentrations: widget.me.customConcentrations,
+        customConcentrations: me?.customConcentrations ?? [],
         onSubmit: (data) async {
-          await widget.patientController.updateSession(
+          await patientCtrl.updateSession(
             sessionId: session.id!,
             date: data.date,
             hour: data.hour,
@@ -145,9 +137,7 @@ class _PatientHistoryScreenState extends State<PatientHistoryScreen> {
             observations: data.observations,
           );
           if (!mounted) return;
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('Cambio actualizado')));
+          AppSnackBar.success(context, 'Cambio actualizado');
           _reload();
         },
       ),
@@ -156,30 +146,18 @@ class _PatientHistoryScreenState extends State<PatientHistoryScreen> {
 
   Future<void> _deleteSession(SessionDto session) async {
     if (session.id == null) return;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Eliminar cambio'),
-        content: const Text('Esta accion eliminara el registro seleccionado.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Eliminar'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
-
-    await widget.patientController.deleteSession(sessionId: session.id!);
-    if (!mounted) return;
-    ScaffoldMessenger.of(
+    final confirmed = await AppConfirmDialog.show(
       context,
-    ).showSnackBar(const SnackBar(content: Text('Cambio eliminado')));
+      title: 'Eliminar cambio',
+      message: 'Esta acción eliminará el registro seleccionado.',
+      confirmLabel: 'Eliminar',
+    );
+    if (!confirmed) return;
+
+    final patientCtrl = ref.read(patientControllerProvider);
+    await patientCtrl.deleteSession(sessionId: session.id!);
+    if (!mounted) return;
+    AppSnackBar.success(context, 'Cambio eliminado');
     _reload();
   }
 
@@ -207,10 +185,7 @@ class _PatientHistoryScreenState extends State<PatientHistoryScreen> {
   }
 
   int _dayTotal(List<SessionDto> sessions) {
-    return sessions.fold<int>(
-      0,
-      (total, session) => total + (session.partial ?? 0),
-    );
+    return sessions.fold<int>(0, (total, s) => total + (s.partial ?? 0));
   }
 
   static String _capitalize(String value) {
@@ -225,11 +200,11 @@ class _PatientHistoryScreenState extends State<PatientHistoryScreen> {
         future: _sessionsFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const AppSkeletonScreen(title: 'Historial', itemCount: 4);
           }
 
           if (snapshot.hasError) {
-            return _HistoryErrorState(
+            return AppErrorCard(
               message: 'No se pudo cargar el historial.',
               details: snapshot.error.toString(),
               onRetry: _reload,
@@ -248,7 +223,7 @@ class _PatientHistoryScreenState extends State<PatientHistoryScreen> {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 1040),
               child: ListView(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(AppSpacing.lg),
                 children: [
                   Row(
                     children: [
@@ -264,54 +239,41 @@ class _PatientHistoryScreenState extends State<PatientHistoryScreen> {
                             ? const SizedBox(
                                 width: 16,
                                 height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
+                                child: CircularProgressIndicator(strokeWidth: 2),
                               )
-                            : const Icon(Icons.picture_as_pdf_outlined),
+                            : const Icon(PhosphorIconsRegular.filePdf),
                         label: const Text('PDF'),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  _UltrafiltrationSummaryCard(summary: summary),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
+                  _UltrafiltrationSummaryCard(summary: summary).withEntryAnimation(),
+                  const SizedBox(height: AppSpacing.md),
                   _MonthFilterCard(
                     monthLabel: monthLabel,
                     onPickMonth: _pickMonth,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
                   if (sessions.isEmpty)
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Text(
-                          'No hay cambios registrados para $monthLabel.',
-                        ),
-                      ),
+                    AppEmptyState(
+                      message: 'No hay cambios registrados para $monthLabel.',
+                      icon: PhosphorIconsRegular.calendarX,
                     )
                   else
-                    ...grouped.entries.map((entry) {
+                    ...grouped.entries.toList().asMap().entries.map((mapEntry) {
+                      final entry = mapEntry.value;
                       final daySessions = entry.value;
                       final total = _dayTotal(daySessions);
                       final hasObservations = daySessions.any(
-                        (session) =>
-                            (session.observations ?? '').trim().isNotEmpty,
+                        (s) => (s.observations ?? '').trim().isNotEmpty,
                       );
                       return Card(
-                        elevation: 0,
-                        margin: const EdgeInsets.only(bottom: 8),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          side: BorderSide(
-                            color: Theme.of(context).colorScheme.outlineVariant,
-                          ),
-                        ),
+                        margin: const EdgeInsets.only(bottom: AppSpacing.sm),
                         child: ExpansionTile(
                           initiallyExpanded: false,
                           tilePadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 4,
+                            horizontal: AppSpacing.lg,
+                            vertical: AppSpacing.xs,
                           ),
                           title: DaySessionGroupTitle(
                             dayTitle: _formatDayTitle(entry.key),
@@ -320,28 +282,23 @@ class _PatientHistoryScreenState extends State<PatientHistoryScreen> {
                             hasObservations: hasObservations,
                           ),
                           childrenPadding: const EdgeInsets.fromLTRB(
-                            12,
-                            0,
-                            12,
-                            12,
+                            AppSpacing.md, 0, AppSpacing.md, AppSpacing.md,
                           ),
                           children: daySessions
                               .map(
                                 (s) => SessionExpansionCard(
                                   session: s,
-                                  onEdit: s.id == null
-                                      ? null
-                                      : () => _editSession(s),
-                                  onDelete: s.id == null
-                                      ? null
-                                      : () => _deleteSession(s),
+                                  onEdit: s.id == null ? null : () => _editSession(s),
+                                  onDelete: s.id == null ? null : () => _deleteSession(s),
                                 ),
                               )
                               .toList(),
                         ),
+                      ).withEntryAnimation(
+                        delay: Duration(milliseconds: 50 * mapEntry.key),
                       );
                     }),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: AppSpacing.xxl),
                 ],
               ),
             ),
@@ -361,24 +318,25 @@ class _MonthFilterCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: 0,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Filtrar',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             Align(
               alignment: Alignment.centerLeft,
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 280),
                 child: OutlinedButton.icon(
                   onPressed: onPickMonth,
-                  icon: const Icon(Icons.calendar_month_outlined),
+                  icon: const Icon(PhosphorIconsRegular.calendarBlank),
                   label: Text(monthLabel),
                 ),
               ),
@@ -401,20 +359,16 @@ class _UltrafiltrationSummaryCard extends StatelessWidget {
     final weeklyValues = summary.weeklyUltrafiltration;
 
     return Card(
-      elevation: 0,
       color: scheme.primaryContainer,
       child: Padding(
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(AppSpacing.xl),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(
-                  Icons.monitor_heart_outlined,
-                  color: scheme.onPrimaryContainer,
-                ),
-                const SizedBox(width: 8),
+                Icon(PhosphorIconsRegular.heartbeat, color: scheme.onPrimaryContainer),
+                const SizedBox(width: AppSpacing.sm),
                 Text(
                   'Resumen del mes',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -424,13 +378,13 @@ class _UltrafiltrationSummaryCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: AppSpacing.lg),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               decoration: BoxDecoration(
                 color: scheme.surface,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
                 border: Border.all(color: scheme.outlineVariant),
               ),
               child: Column(
@@ -438,12 +392,12 @@ class _UltrafiltrationSummaryCard extends StatelessWidget {
                 children: [
                   Text(
                     'Cambios totales',
-                    style: TextStyle(
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: scheme.onSurfaceVariant,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: AppSpacing.xs),
                   Text(
                     '${summary.totalChanges}',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -453,7 +407,7 @@ class _UltrafiltrationSummaryCard extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             LayoutBuilder(
               builder: (context, constraints) {
                 final columns = constraints.maxWidth < 560 ? 2 : 4;
@@ -463,8 +417,8 @@ class _UltrafiltrationSummaryCard extends StatelessWidget {
                   itemCount: 4,
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: columns,
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
+                    crossAxisSpacing: AppSpacing.sm,
+                    mainAxisSpacing: AppSpacing.sm,
                     mainAxisExtent: 78,
                   ),
                   itemBuilder: (context, index) => _WeeklyUfTile(
@@ -492,10 +446,10 @@ class _WeeklyUfTile extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: scheme.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
         border: Border.all(color: scheme.outlineVariant),
       ),
       child: Column(
@@ -504,17 +458,17 @@ class _WeeklyUfTile extends StatelessWidget {
         children: [
           Text(
             'UF semana $week',
-            style: TextStyle(
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
               color: scheme.onSurfaceVariant,
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           Text(
             '$value ml/día',
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
           ),
         ],
       ),
@@ -530,20 +484,21 @@ class MonthSummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: 0,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Resumen del mes',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: AppSpacing.sm),
             Wrap(
-              spacing: 8,
-              runSpacing: 8,
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
               children: [
                 Chip(label: Text('Cambios: ${summary.sessionsCount}')),
                 Chip(label: Text('Drenaje: ${summary.totalDrainage} ml')),
@@ -552,48 +507,6 @@ class MonthSummaryCard extends StatelessWidget {
               ],
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _HistoryErrorState extends StatelessWidget {
-  final String message;
-  final String details;
-  final VoidCallback onRetry;
-
-  const _HistoryErrorState({
-    required this.message,
-    required this.details,
-    required this.onRetry,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Center(
-        child: Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  message,
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 8),
-                Text(details, maxLines: 4, overflow: TextOverflow.ellipsis),
-                const SizedBox(height: 12),
-                FilledButton(
-                  onPressed: onRetry,
-                  child: const Text('Reintentar'),
-                ),
-              ],
-            ),
-          ),
         ),
       ),
     );
@@ -620,18 +533,8 @@ class _MonthYearPickerDialogState extends State<_MonthYearPickerDialog> {
   late int selectedMonth;
 
   static const monthNames = [
-    'Enero',
-    'Febrero',
-    'Marzo',
-    'Abril',
-    'Mayo',
-    'Junio',
-    'Julio',
-    'Agosto',
-    'Septiembre',
-    'Octubre',
-    'Noviembre',
-    'Diciembre',
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
   ];
 
   @override
@@ -666,30 +569,27 @@ class _MonthYearPickerDialogState extends State<_MonthYearPickerDialog> {
               initialValue: selectedYear,
               decoration: const InputDecoration(labelText: 'Año'),
               items: years
-                  .map(
-                    (year) => DropdownMenuItem(
-                      value: year,
-                      child: Text(year.toString()),
-                    ),
-                  )
+                  .map((year) => DropdownMenuItem(
+                        value: year,
+                        child: Text(year.toString()),
+                      ))
                   .toList(),
               onChanged: (value) {
                 if (value == null) return;
                 setState(() {
                   selectedYear = value;
                   if (!_isMonthEnabled(selectedMonth)) {
-                    selectedMonth = List.generate(
-                      12,
-                      (i) => i + 1,
-                    ).where(_isMonthEnabled).first;
+                    selectedMonth = List.generate(12, (i) => i + 1)
+                        .where(_isMonthEnabled)
+                        .first;
                   }
                 });
               },
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
             Wrap(
-              spacing: 8,
-              runSpacing: 8,
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
               children: List.generate(12, (index) {
                 final month = index + 1;
                 return ChoiceChip(

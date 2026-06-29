@@ -1,28 +1,32 @@
 import 'package:flutter/material.dart';
-import 'package:frontend_dialysis_record/core/di/app_di.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:frontend_dialysis_record/core/design/design.dart';
+import 'package:frontend_dialysis_record/core/router/app_router.dart';
+import 'package:frontend_dialysis_record/core/widgets/widgets.dart';
 import 'package:frontend_dialysis_record/core/network/app_exception.dart';
-import 'package:frontend_dialysis_record/features/auth/views/session_gate.dart';
-import 'package:frontend_dialysis_record/features/doctors/views/doctor_register_screen.dart';
-import 'package:frontend_dialysis_record/features/patients/views/patient_register_screen.dart';
+import 'package:frontend_dialysis_record/features/auth/providers/auth_providers.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final emailController = TextEditingController();
-  final passwordController = TextEditingController();
-
-  bool isLoading = false;
+  final _emailCtrl = TextEditingController();
+  final _passwordCtrl = TextEditingController();
+  bool _obscurePassword = true;
+  bool _isLoading = false;
 
   @override
   void dispose() {
-    emailController.dispose();
-    passwordController.dispose();
+    _emailCtrl.dispose();
+    _passwordCtrl.dispose();
     super.dispose();
   }
 
@@ -31,134 +35,163 @@ class _LoginScreenState extends State<LoginScreen> {
     return emailRegex.hasMatch(value);
   }
 
-  Future<void> login() async {
+  Future<void> _login() async {
     final isValid = _formKey.currentState?.validate() ?? false;
     if (!isValid) return;
 
     FocusScope.of(context).unfocus();
-    setState(() => isLoading = true);
+    setState(() => _isLoading = true);
 
     try {
-      final me = await AppDI.authController.login(
-        emailController.text.trim(),
-        passwordController.text,
+      final me = await ref.read(authStateProvider.notifier).login(
+        _emailCtrl.text.trim(),
+        _passwordCtrl.text,
       );
 
       if (!mounted) return;
-      setState(() => isLoading = false);
+      setState(() => _isLoading = false);
 
       if (me == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No se pudo iniciar sesión.')),
-        );
+        AppSnackBar.error(context, 'No se pudo iniciar sesión.');
         return;
       }
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const SessionGate()),
-      );
+      // GoRouter redirect handles navigation
     } catch (e) {
       if (!mounted) return;
-      setState(() => isLoading = false);
+      setState(() => _isLoading = false);
       final message = e is AppException
           ? e.message
           : 'Error al iniciar sesión.';
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      AppSnackBar.error(context, message);
     }
-  }
-
-  void registerPatient() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const PatientRegisterScreen()),
-    );
-  }
-
-  void registerDoctor() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const DoctorRegisterScreen()),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Iniciar sesión')),
       body: SafeArea(
         child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 440),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Form(
-                key: _formKey,
-                autovalidateMode: AutovalidateMode.onUserInteraction,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextFormField(
-                      controller: emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(
-                        labelText: 'Email',
-                        prefixIcon: Icon(Icons.email_outlined),
+          child: SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 440),
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.xxl),
+                child: Form(
+                  key: _formKey,
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // ── Logo / Header ──
+                      Icon(
+                        PhosphorIconsDuotone.heartbeat,
+                        size: 56,
+                        color: scheme.primary,
+                      )
+                          .animate()
+                          .fadeIn(duration: AppAnimations.slow)
+                          .scale(
+                            begin: const Offset(0.8, 0.8),
+                            end: const Offset(1, 1),
+                            duration: AppAnimations.slow,
+                            curve: AppAnimations.defaultCurve,
+                          ),
+                      const SizedBox(height: AppSpacing.md),
+                      Text(
+                        'Dialysis Record',
+                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: scheme.primary,
+                        ),
+                      ).animate().fadeIn(duration: AppAnimations.slow, delay: 100.ms),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        'Registro de diálisis peritoneal',
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ).animate().fadeIn(duration: AppAnimations.slow, delay: 150.ms),
+                      const SizedBox(height: AppSpacing.xxxl),
+
+                      // ── Email field ──
+                      TextFormField(
+                        controller: _emailCtrl,
+                        keyboardType: TextInputType.emailAddress,
+                        textInputAction: TextInputAction.next,
+                        decoration: InputDecoration(
+                          labelText: 'Email',
+                          prefixIcon: const Icon(PhosphorIconsRegular.envelope),
+                          hintText: 'tu@email.com',
+                        ),
+                        validator: (value) {
+                          final v = (value ?? '').trim();
+                          if (v.isEmpty) return 'Email requerido';
+                          if (!_isValidEmail(v)) return 'Email inválido';
+                          return null;
+                        },
                       ),
-                      validator: (value) {
-                        final v = (value ?? '').trim();
-                        if (v.isEmpty) return 'Email requerido';
-                        if (!_isValidEmail(v)) return 'Email inválido';
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: passwordController,
-                      obscureText: true,
-                      textInputAction: TextInputAction.done,
-                      decoration: const InputDecoration(
-                        labelText: 'Password',
-                        prefixIcon: Icon(Icons.lock_outline),
+                      const SizedBox(height: AppSpacing.md),
+
+                      // ── Password field ──
+                      TextFormField(
+                        controller: _passwordCtrl,
+                        obscureText: _obscurePassword,
+                        textInputAction: TextInputAction.done,
+                        decoration: InputDecoration(
+                          labelText: 'Contraseña',
+                          prefixIcon: const Icon(PhosphorIconsRegular.lock),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword
+                                  ? PhosphorIconsRegular.eye
+                                  : PhosphorIconsRegular.eyeSlash,
+                            ),
+                            onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                          ),
+                        ),
+                        onFieldSubmitted: (_) => _isLoading ? null : _login(),
+                        validator: (value) {
+                          final v = value ?? '';
+                          if (v.trim().isEmpty) return 'Contraseña requerida';
+                          if (v.length < 8) return 'Debe tener al menos 8 caracteres';
+                          if (v.length > 72) return 'Máximo 72 caracteres';
+                          return null;
+                        },
                       ),
-                      onFieldSubmitted: (_) => isLoading ? null : login(),
-                      validator: (value) {
-                        final v = value ?? '';
-                        if (v.trim().isEmpty) return 'Password requerido';
-                        if (v.length < 8) {
-                          return 'Debe tener al menos 8 caracteres';
-                        }
-                        if (v.length > 72) return 'Máximo 72 caracteres';
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 20),
-                    if (isLoading)
-                      const CircularProgressIndicator()
-                    else ...[
+                      const SizedBox(height: AppSpacing.xl),
+
+                      // ── Submit button ──
                       SizedBox(
                         width: double.infinity,
-                        child: FilledButton(
-                          onPressed: login,
-                          child: const Text('Iniciar sesión'),
+                        child: FilledButton.icon(
+                          onPressed: _isLoading ? null : _login,
+                          icon: _isLoading
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(PhosphorIconsRegular.signIn),
+                          label: Text(_isLoading ? 'Iniciando...' : 'Iniciar sesión'),
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: AppSpacing.lg),
+
+                      // ── Register buttons ──
                       LayoutBuilder(
                         builder: (context, constraints) {
                           final wide = constraints.maxWidth >= 420;
                           final buttons = [
                             OutlinedButton.icon(
-                              onPressed: registerPatient,
-                              icon: const Icon(Icons.person_add_alt_1_outlined),
+                              onPressed: _isLoading ? null : () => context.push(AppRoutes.registerPatient),
+                              icon: const Icon(PhosphorIconsRegular.userPlus),
                               label: const Text('Paciente'),
                             ),
                             OutlinedButton.icon(
-                              onPressed: registerDoctor,
-                              icon: const Icon(Icons.medical_services_outlined),
+                              onPressed: _isLoading ? null : () => context.push(AppRoutes.registerDoctor),
+                              icon: const Icon(PhosphorIconsRegular.stethoscope),
                               label: const Text('Médico'),
                             ),
                           ];
@@ -167,15 +200,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: buttons[0],
-                                ),
-                                const SizedBox(height: 8),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: buttons[1],
-                                ),
+                                SizedBox(width: double.infinity, child: buttons[0]),
+                                const SizedBox(height: AppSpacing.sm),
+                                SizedBox(width: double.infinity, child: buttons[1]),
                               ],
                             );
                           }
@@ -183,14 +210,14 @@ class _LoginScreenState extends State<LoginScreen> {
                           return Row(
                             children: [
                               Expanded(child: buttons[0]),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: AppSpacing.sm),
                               Expanded(child: buttons[1]),
                             ],
                           );
                         },
                       ),
                     ],
-                  ],
+                  ),
                 ),
               ),
             ),

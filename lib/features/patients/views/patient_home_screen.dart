@@ -1,149 +1,71 @@
 import 'package:flutter/material.dart';
-import 'package:frontend_dialysis_record/features/auth/models/me_response.dart';
-import 'package:frontend_dialysis_record/features/auth/authController/auth_controller.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:frontend_dialysis_record/core/design/design.dart';
+import 'package:frontend_dialysis_record/core/router/app_router.dart';
+import 'package:frontend_dialysis_record/features/auth/providers/auth_providers.dart';
 import 'package:frontend_dialysis_record/features/patients/views/patient_today_screen.dart';
-import 'package:frontend_dialysis_record/features/patients/views/patient_history_screen.dart';
-import 'package:frontend_dialysis_record/features/patients/views/patient_profile_screen.dart';
-import 'package:frontend_dialysis_record/features/patients/patientController/patient_controller.dart';
 
-class PatientHomeScreen extends StatefulWidget {
-  final MeResponse me;
-  final AuthController authController;
-  final PatientController patientController;
+/// Patient home screen acting as a shell for GoRouter's StatefulShellRoute.
+///
+/// Contains the bottom NavigationBar and renders the current branch.
+class PatientHomeScreen extends ConsumerWidget {
+  final StatefulNavigationShell navigationShell;
 
   const PatientHomeScreen({
     super.key,
-    required this.me,
-    required this.authController,
-    required this.patientController,
+    required this.navigationShell,
   });
 
   @override
-  State<PatientHomeScreen> createState() => _PatientHomeScreenState();
-}
-
-class _PatientHomeScreenState extends State<PatientHomeScreen> {
-  int _currentIndex = 0;
-  final GlobalKey<PatientTodayScreenState> _todayKey = GlobalKey<PatientTodayScreenState>();
-  late MeResponse _me;
-
-  @override
-  void initState() {
-    super.initState();
-    _me = widget.me;
-  }
-
-  void _goTo(int index) {
-    if (index == _currentIndex) return;
-    setState(() => _currentIndex = index);
-  }
-
-  void _onNewRecord() {
-    _todayKey.currentState?.openCreateSession();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final pages = <Widget>[
-      PatientTodayScreen(key: _todayKey, me: _me, authController: widget.authController, patientController: widget.patientController),
-      PatientHistoryScreen(me: _me, authController: widget.authController, patientController: widget.patientController),
-      PatientProfileScreen(
-        me: _me,
-        authController: widget.authController,
-        patientController: widget.patientController,
-        onUpdated: (updated) => setState(() => _me = updated),
-      ),
-    ];
+  Widget build(BuildContext context, WidgetRef ref) {
+    final me = ref.watch(authStateProvider).valueOrNull;
+    final patientId = me?.id;
 
     return Scaffold(
-      extendBody: true,
+      body: navigationShell,
 
-      body: IndexedStack(
-        index: _currentIndex,
-        children: pages,
-      ),
-
-      floatingActionButton: _currentIndex == 0
+      floatingActionButton: navigationShell.currentIndex == 0 && patientId != null
           ? FloatingActionButton(
-              onPressed: _onNewRecord,
-              child: const Icon(Icons.add),
+              onPressed: () {
+                // The PatientTodayScreen handles the create session via a key
+                // We trigger it through a callback mechanism
+                patientTodayKey.currentState?.openCreateSession();
+              },
+              tooltip: 'Nuevo cambio',
+              child: const Icon(PhosphorIconsBold.plus),
             )
           : null,
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
 
-      bottomNavigationBar: _PatientBottomBar(
-        currentIndex: _currentIndex,
-        onTap: _goTo,
-      ),
-    );
-  }
-}
-
-/// Barra inferior custom con espacio al medio para el FAB.
-class _PatientBottomBar extends StatelessWidget {
-  final int currentIndex;
-  final ValueChanged<int> onTap;
-
-  const _PatientBottomBar({
-    required this.currentIndex,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    Widget item({
-      required int index,
-      required IconData icon,
-      required String label,
-    }) {
-      final selected = currentIndex == index;
-      final color = selected
-          ? theme.colorScheme.primary
-          : theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7);
-
-      return Expanded(
-        child: InkWell(
-          onTap: () => onTap(index),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 6),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, color: color, size: 22),
-                const SizedBox(height: 2),
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: color,
-                    fontSize: 11,
-                    height: 1.0,
-                    fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                  ),
-                ),
-              ],
-            ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: navigationShell.currentIndex,
+        onDestinationSelected: (index) {
+          navigationShell.goBranch(
+            index,
+            initialLocation: index == navigationShell.currentIndex,
+          );
+        },
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(PhosphorIconsRegular.house),
+            selectedIcon: Icon(PhosphorIconsFill.house),
+            label: 'Hoy',
           ),
-        ),
-      );
-    }
-
-    return BottomAppBar(
-      shape: const CircularNotchedRectangle(),
-      notchMargin: 8,
-      child: SizedBox(
-        height: 76, // <- más alto para evitar overflow (web/desktop)
-        child: Row(
-          children: [
-            item(index: 0, icon: Icons.home_rounded, label: 'Hoy'),
-            item(index: 1, icon: Icons.view_agenda_rounded, label: 'Historial'),
-            item(index: 2, icon: Icons.person_rounded, label: 'Perfil'),
-          ],
-        ),
+          NavigationDestination(
+            icon: Icon(PhosphorIconsRegular.clockCounterClockwise),
+            selectedIcon: Icon(PhosphorIconsFill.clockCounterClockwise),
+            label: 'Historial',
+          ),
+          NavigationDestination(
+            icon: Icon(PhosphorIconsRegular.user),
+            selectedIcon: Icon(PhosphorIconsFill.user),
+            label: 'Perfil',
+          ),
+        ],
       ),
     );
   }
 }
+
+

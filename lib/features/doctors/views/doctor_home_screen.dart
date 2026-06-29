@@ -1,57 +1,47 @@
 import 'package:flutter/material.dart';
-import 'package:frontend_dialysis_record/features/auth/authController/auth_controller.dart';
-import 'package:frontend_dialysis_record/features/auth/models/me_response.dart';
-import 'package:frontend_dialysis_record/features/auth/views/login_screen.dart';
-import 'package:frontend_dialysis_record/features/doctors/doctorController/doctor_controller.dart';
-import 'package:frontend_dialysis_record/features/doctors/views/doctor_patients_screen.dart';
-import 'package:frontend_dialysis_record/features/patients/patientController/patient_controller.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:frontend_dialysis_record/core/design/design.dart';
+import 'package:frontend_dialysis_record/core/router/app_router.dart';
+import 'package:frontend_dialysis_record/core/widgets/widgets.dart';
+import 'package:frontend_dialysis_record/features/auth/providers/auth_providers.dart';
 
-class DoctorHomeScreen extends StatefulWidget {
-  final MeResponse me;
-  final AuthController authController;
-  final DoctorController doctorController;
-  final PatientController patientController;
+/// Doctor home screen acting as a shell for GoRouter's StatefulShellRoute.
+///
+/// Contains the bottom NavigationBar and renders the current branch.
+class DoctorHomeScreen extends ConsumerWidget {
+  final StatefulNavigationShell navigationShell;
 
   const DoctorHomeScreen({
     super.key,
-    required this.me,
-    required this.authController,
-    required this.doctorController,
-    required this.patientController,
+    required this.navigationShell,
   });
 
   @override
-  State<DoctorHomeScreen> createState() => _DoctorHomeScreenState();
-}
-
-class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
-  int _currentIndex = 0;
-
-  @override
-  Widget build(BuildContext context) {
-    final pages = [
-      DoctorPatientsScreen(
-        doctorController: widget.doctorController,
-        patientController: widget.patientController,
-      ),
-      _DoctorProfileScreen(
-        me: widget.me,
-        authController: widget.authController,
-      ),
-    ];
-
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      body: IndexedStack(index: _currentIndex, children: pages),
+      body: navigationShell.currentIndex == 1
+          ? _DoctorProfileContent()
+          : navigationShell,
+
       bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (index) => setState(() => _currentIndex = index),
+        selectedIndex: navigationShell.currentIndex,
+        onDestinationSelected: (index) {
+          navigationShell.goBranch(
+            index,
+            initialLocation: index == navigationShell.currentIndex,
+          );
+        },
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.people_outline),
+            icon: Icon(PhosphorIconsRegular.users),
+            selectedIcon: Icon(PhosphorIconsFill.users),
             label: 'Pacientes',
           ),
           NavigationDestination(
-            icon: Icon(Icons.person_outline),
+            icon: Icon(PhosphorIconsRegular.user),
+            selectedIcon: Icon(PhosphorIconsFill.user),
             label: 'Perfil',
           ),
         ],
@@ -60,56 +50,97 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   }
 }
 
-class _DoctorProfileScreen extends StatelessWidget {
-  final MeResponse me;
-  final AuthController authController;
-
-  const _DoctorProfileScreen({required this.me, required this.authController});
-
+/// Doctor profile content rendered inline when the profile tab is selected.
+class _DoctorProfileContent extends ConsumerWidget {
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authStateProvider);
+    final me = authState.valueOrNull;
+
+    if (me == null) {
+      return const AppErrorCard(message: 'No se pudo cargar el perfil.');
+    }
+
+    final scheme = Theme.of(context).colorScheme;
+
     return SafeArea(
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 720),
           child: ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpacing.lg),
             children: [
               Text(
                 'Perfil médico',
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               Card(
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(AppSpacing.lg),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('${me.name ?? "-"} ${me.surname ?? ""}'.trim()),
-                      if (me.email != null) Text(me.email!),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Pacientes asociados: ${me.patientCount ?? me.patientIds.length}',
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 24,
+                            backgroundColor: scheme.primaryContainer,
+                            child: Icon(
+                              PhosphorIconsRegular.stethoscope,
+                              color: scheme.primary,
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.md),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '${me.name ?? "-"} ${me.surname ?? ""}'.trim(),
+                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                if (me.email != null)
+                                  Text(
+                                    me.email!,
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: scheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      const Divider(),
+                      const SizedBox(height: AppSpacing.sm),
+                      Row(
+                        children: [
+                          Icon(PhosphorIconsRegular.usersThree, size: 20, color: scheme.onSurfaceVariant),
+                          const SizedBox(width: AppSpacing.sm),
+                          Text(
+                            'Pacientes asociados: ${me.patientCount ?? me.patientIds.length}',
+                            style: Theme.of(context).textTheme.bodyLarge,
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.lg),
               Align(
                 alignment: Alignment.centerRight,
                 child: FilledButton.icon(
                   onPressed: () async {
-                    await authController.logout();
+                    await ref.read(authStateProvider.notifier).logout();
                     if (!context.mounted) return;
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(builder: (_) => const LoginScreen()),
-                      (_) => false,
-                    );
+                    context.go(AppRoutes.login);
                   },
-                  icon: const Icon(Icons.logout),
+                  icon: const Icon(PhosphorIconsRegular.signOut),
                   label: const Text('Cerrar sesión'),
                 ),
               ),

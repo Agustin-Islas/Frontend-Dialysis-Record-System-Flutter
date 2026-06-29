@@ -1,34 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:frontend_dialysis_record/core/network/app_exception.dart';
+import 'package:frontend_dialysis_record/core/providers/providers.dart';
 import 'package:frontend_dialysis_record/features/auth/models/me_response.dart';
-import 'package:frontend_dialysis_record/features/patients/patientController/patient_controller.dart';
+import 'package:frontend_dialysis_record/features/doctors/providers/doctor_providers.dart';
+import 'package:frontend_dialysis_record/features/patients/providers/patient_providers.dart';
 import 'package:frontend_dialysis_record/features/patients/views/widgets/session_expansion_card.dart';
 import 'package:frontend_dialysis_record/features/reports/monthly_dialysis_pdf_service.dart';
 import 'package:frontend_dialysis_record/features/sessions/models/monthly_ultrafiltration_summary.dart';
 import 'package:frontend_dialysis_record/features/sessions/models/session_dto.dart';
 import 'package:frontend_dialysis_record/features/sessions/views/widgets/day_session_group_title.dart';
+import 'package:frontend_dialysis_record/core/widgets/widgets.dart';
+import 'package:frontend_dialysis_record/core/design/design.dart';
 
-class PatientDetailForDoctorScreen extends StatefulWidget {
-  final MeResponse patient;
-  final PatientController patientController;
+class PatientDetailForDoctorScreen extends ConsumerStatefulWidget {
+  final String patientId;
 
   const PatientDetailForDoctorScreen({
     super.key,
-    required this.patient,
-    required this.patientController,
+    required this.patientId,
   });
 
   @override
-  State<PatientDetailForDoctorScreen> createState() =>
+  ConsumerState<PatientDetailForDoctorScreen> createState() =>
       _PatientDetailForDoctorScreenState();
 }
 
-class _PatientDetailForDoctorScreenState
-    extends State<PatientDetailForDoctorScreen> {
+class _PatientDetailForDoctorScreenState extends ConsumerState<PatientDetailForDoctorScreen> {
   late DateTime _selectedMonth;
-  late Future<List<SessionDto>> _sessionsFuture;
-
   final DateFormat _monthFormat = DateFormat('MMMM yyyy', 'es');
   final DateFormat _dayFormat = DateFormat('EEEE dd/MM', 'es');
   final MonthlyDialysisPdfService _pdfService = MonthlyDialysisPdfService();
@@ -39,24 +39,6 @@ class _PatientDetailForDoctorScreenState
     super.initState();
     final now = DateTime.now();
     _selectedMonth = DateTime(now.year, now.month);
-    _sessionsFuture = _loadSessions();
-  }
-
-  Future<List<SessionDto>> _loadSessions() {
-    final patientId = widget.patient.id;
-    if (patientId == null) return Future.value([]);
-
-    return widget.patientController.getSessionsByDateRange(
-      patientId: patientId,
-      startDate: DateTime(_selectedMonth.year, _selectedMonth.month, 1),
-      endDate: DateTime(_selectedMonth.year, _selectedMonth.month + 1, 0),
-    );
-  }
-
-  void _reload() {
-    setState(() {
-      _sessionsFuture = _loadSessions();
-    });
   }
 
   void _changeMonth(int delta) {
@@ -64,10 +46,7 @@ class _PatientDetailForDoctorScreenState
     final currentMonth = DateTime(DateTime.now().year, DateTime.now().month);
     if (next.isAfter(currentMonth)) return;
 
-    setState(() {
-      _selectedMonth = next;
-      _sessionsFuture = _loadSessions();
-    });
+    setState(() => _selectedMonth = next);
   }
 
   Future<void> _pickMonth() async {
@@ -79,15 +58,12 @@ class _PatientDetailForDoctorScreenState
         lastDate: DateTime.now(),
       ),
     );
-    if (picked == null) return;
-
-    setState(() {
-      _selectedMonth = DateTime(picked.year, picked.month);
-      _sessionsFuture = _loadSessions();
-    });
+    if (picked != null) {
+      setState(() => _selectedMonth = DateTime(picked.year, picked.month));
+    }
   }
 
-  Future<void> _generatePdf(List<SessionDto> sessions) async {
+  Future<void> _generatePdf(MeResponse patient, List<SessionDto> sessions) async {
     setState(() => _generatingPdf = true);
     try {
       final summary = MonthlyUltrafiltrationCalculator.calculate(
@@ -95,31 +71,21 @@ class _PatientDetailForDoctorScreenState
         sessions: sessions,
       );
       final bytes = await _pdfService.buildMonthlyReport(
-        patient: widget.patient,
+        patient: patient,
         month: _selectedMonth,
         sessions: sessions,
         summary: summary,
       );
-      final name = (widget.patient.name ?? 'paciente')
+      final name = (patient.name ?? 'paciente')
           .replaceAll(RegExp(r'\s+'), '_')
           .toLowerCase();
       final fileName =
           'registro_dialisis_${name}_${_selectedMonth.year}_${_selectedMonth.month.toString().padLeft(2, '0')}.pdf';
       await _pdfService.download(bytes, fileName);
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('PDF generado')));
-      }
+      if (mounted) AppSnackBar.success(context, 'PDF generado');
     } catch (e) {
-      final message = e is AppException
-          ? e.message
-          : 'No se pudo generar el PDF.';
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(message)));
-      }
+      final message = e is AppException ? e.message : 'No se pudo generar el PDF.';
+      if (mounted) AppSnackBar.error(context, message);
     } finally {
       if (mounted) setState(() => _generatingPdf = false);
     }
@@ -134,8 +100,7 @@ class _PatientDetailForDoctorScreenState
     final sortedKeys = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
     return {
       for (final key in sortedKeys)
-        key: (grouped[key]!
-          ..sort((a, b) => (a.bag ?? 999).compareTo(b.bag ?? 999))),
+        key: (grouped[key]!..sort((a, b) => (a.bag ?? 999).compareTo(b.bag ?? 999))),
     };
   }
 
@@ -147,226 +112,161 @@ class _PatientDetailForDoctorScreenState
   String _formatDayTitle(String isoDate) {
     final parsed = DateTime.tryParse(isoDate);
     if (parsed == null) return isoDate;
-    return _capitalize(_dayFormat.format(parsed));
+    final text = _dayFormat.format(parsed);
+    return text.isEmpty ? text : text[0].toUpperCase() + text.substring(1);
   }
 
   int _dayTotal(List<SessionDto> sessions) {
-    return sessions.fold<int>(
-      0,
-      (total, session) => total + (session.partial ?? 0),
-    );
-  }
-
-  String _capitalize(String value) {
-    if (value.isEmpty) return value;
-    return value[0].toUpperCase() + value.substring(1);
+    return sessions.fold<int>(0, (t, s) => t + (s.partial ?? 0));
   }
 
   @override
   Widget build(BuildContext context) {
-    final patientName =
-        '${widget.patient.name ?? "-"} ${widget.patient.surname ?? ""}'.trim();
-    final currentMonth = DateTime(DateTime.now().year, DateTime.now().month);
-    final canGoForward =
-        DateTime(
-          _selectedMonth.year,
-          _selectedMonth.month + 1,
-        ).isBefore(currentMonth) ||
-        DateTime(
-          _selectedMonth.year,
-          _selectedMonth.month + 1,
-        ).isAtSameMomentAs(currentMonth);
+    final patientsAsync = ref.watch(doctorPatientsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: Text(patientName)),
-      body: SafeArea(
-        child: FutureBuilder<List<SessionDto>>(
-          future: _sessionsFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
+      appBar: AppBar(title: const Text('Detalle del paciente')),
+      body: patientsAsync.when(
+        loading: () => const AppSkeletonScreen(itemCount: 4),
+        error: (e, _) => AppErrorCard(
+          message: 'Error al cargar pacientes',
+          details: e.toString(),
+          onRetry: () => ref.invalidate(doctorPatientsProvider),
+        ),
+        data: (patients) {
+          final patient = patients.firstWhere(
+            (p) => p.id == widget.patientId,
+            orElse: () => MeResponse(id: widget.patientId, name: 'Desconocido', role: 'PATIENT'),
+          );
 
-            if (snapshot.hasError) {
-              return Padding(
-                padding: const EdgeInsets.all(16),
-                child: Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text(
-                          'No se pudo cargar el paciente.',
-                          style: TextStyle(fontWeight: FontWeight.w700),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          snapshot.error.toString(),
-                          maxLines: 4,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 12),
-                        FilledButton(
-                          onPressed: _reload,
-                          child: const Text('Reintentar'),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            }
+          final sessionsAsync = ref.watch(
+            monthSessionsProvider((patientId: widget.patientId, month: _selectedMonth)),
+          );
 
-            final sessions = snapshot.data ?? [];
-            final summary = MonthlyUltrafiltrationCalculator.calculate(
-              month: _selectedMonth,
-              sessions: sessions,
-            );
-            final grouped = _groupByDay(sessions);
-
-            return Center(
+          return SafeArea(
+            child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 1120),
                 child: ListView(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(AppSpacing.lg),
                   children: [
-                    _PatientMonthPanel(
-                      patient: widget.patient,
-                      patientName: patientName,
-                      summary: summary,
-                      monthLabel: _monthLabel(),
-                    ),
-                    const SizedBox(height: 12),
-                    _MonthFilterCard(
-                      monthLabel: _monthLabel(),
-                      onPickMonth: _pickMonth,
-                    ),
-                    const SizedBox(height: 12),
-                    Card(
-                      elevation: 0,
-                      child: Column(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    'Historial de cambios',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium
-                                        ?.copyWith(fontWeight: FontWeight.w700),
-                                  ),
-                                ),
-                                IconButton(
-                                  tooltip: 'Mes anterior',
-                                  onPressed: () => _changeMonth(-1),
-                                  icon: const Icon(Icons.chevron_left),
-                                ),
-                                IconButton(
-                                  tooltip: 'Mes siguiente',
-                                  onPressed: canGoForward
-                                      ? () => _changeMonth(1)
-                                      : null,
-                                  icon: const Icon(Icons.chevron_right),
-                                ),
-                                FilledButton.icon(
-                                  onPressed: _generatingPdf
-                                      ? null
-                                      : () => _generatePdf(sessions),
-                                  icon: _generatingPdf
-                                      ? const SizedBox(
-                                          width: 16,
-                                          height: 16,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                          ),
-                                        )
-                                      : const Icon(
-                                          Icons.picture_as_pdf_outlined,
-                                        ),
-                                  label: const Text('PDF'),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                            child: sessions.isEmpty
-                                ? const Text(
-                                    'No hay cambios registrados para este mes.',
-                                  )
-                                : Column(
-                                    children: grouped.entries.map((entry) {
-                                      final daySessions = entry.value;
-                                      final total = _dayTotal(daySessions);
-                                      final hasObservations = daySessions.any(
-                                        (session) =>
-                                            (session.observations ?? '')
-                                                .trim()
-                                                .isNotEmpty,
-                                      );
-                                      return Card(
-                                        elevation: 0,
-                                        margin: const EdgeInsets.only(
-                                          bottom: 8,
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                          side: BorderSide(
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.outlineVariant,
-                                          ),
-                                        ),
-                                        child: ExpansionTile(
-                                          initiallyExpanded: false,
-                                          tilePadding:
-                                              const EdgeInsets.symmetric(
-                                                horizontal: 16,
-                                                vertical: 4,
-                                              ),
-                                          title: DaySessionGroupTitle(
-                                            dayTitle: _formatDayTitle(
-                                              entry.key,
-                                            ),
-                                            changesCount: daySessions.length,
-                                            totalMl: total,
-                                            hasObservations: hasObservations,
-                                          ),
-                                          childrenPadding:
-                                              const EdgeInsets.fromLTRB(
-                                                12,
-                                                0,
-                                                12,
-                                                12,
-                                              ),
-                                          children: daySessions
-                                              .map(
-                                                (session) =>
-                                                    SessionExpansionCard(
-                                                      session: session,
-                                                    ),
-                                              )
-                                              .toList(),
-                                        ),
-                                      );
-                                    }).toList(),
-                                  ),
-                          ),
-                        ],
+                    sessionsAsync.when(
+                      loading: () => const AppSkeletonScreen(itemCount: 4),
+                      error: (e, _) => AppErrorCard(
+                        message: 'Error al cargar cambios',
+                        details: e.toString(),
+                        onRetry: () => ref.invalidate(monthSessionsProvider),
                       ),
+                      data: (sessions) {
+                        final summary = MonthlyUltrafiltrationCalculator.calculate(
+                          month: _selectedMonth,
+                          sessions: sessions,
+                        );
+                        final grouped = _groupByDay(sessions);
+                        final currentMonth = DateTime(DateTime.now().year, DateTime.now().month);
+                        final canGoForward = !DateTime(
+                          _selectedMonth.year,
+                          _selectedMonth.month + 1,
+                        ).isAfter(currentMonth);
+
+                        return Column(
+                          children: [
+                            _PatientMonthPanel(
+                              patient: patient,
+                              patientName: '${patient.name ?? "-"} ${patient.surname ?? ""}'.trim(),
+                              summary: summary,
+                              monthLabel: _monthLabel(),
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                            _MonthFilterCard(
+                              monthLabel: _monthLabel(),
+                              onPickMonth: _pickMonth,
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                            Card(
+                              elevation: 0,
+                              child: Column(
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg, 0),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            'Historial de cambios',
+                                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                        ),
+                                        IconButton(
+                                          tooltip: 'Mes anterior',
+                                          onPressed: () => _changeMonth(-1),
+                                          icon: const Icon(Icons.chevron_left),
+                                        ),
+                                        IconButton(
+                                          tooltip: 'Mes siguiente',
+                                          onPressed: canGoForward ? () => _changeMonth(1) : null,
+                                          icon: const Icon(Icons.chevron_right),
+                                        ),
+                                        FilledButton.icon(
+                                          onPressed: _generatingPdf ? null : () => _generatePdf(patient, sessions),
+                                          icon: _generatingPdf
+                                              ? const SizedBox(
+                                                  width: 16,
+                                                  height: 16,
+                                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                                )
+                                              : const Icon(Icons.picture_as_pdf_outlined),
+                                          label: const Text('PDF'),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.all(AppSpacing.lg),
+                                    child: sessions.isEmpty
+                                        ? const AppEmptyState(
+                                            message: 'No hay cambios para este mes.',
+                                            icon: Icons.calendar_today,
+                                          )
+                                        : Column(
+                                            children: grouped.entries.map((entry) {
+                                              final daySessions = entry.value;
+                                              return Card(
+                                                elevation: 0,
+                                                margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+                                                  side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+                                                ),
+                                                child: ExpansionTile(
+                                                  initiallyExpanded: false,
+                                                  title: DaySessionGroupTitle(
+                                                    dayTitle: _formatDayTitle(entry.key),
+                                                    changesCount: daySessions.length,
+                                                    totalMl: _dayTotal(daySessions),
+                                                    hasObservations: daySessions.any((s) => (s.observations ?? '').trim().isNotEmpty),
+                                                  ),
+                                                  children: daySessions.map((s) => SessionExpansionCard(session: s)).toList(),
+                                                ),
+                                              );
+                                            }).toList(),
+                                          ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ],
                 ),
               ),
-            );
-          },
-        ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -394,7 +294,7 @@ class _PatientMonthPanel extends StatelessWidget {
       elevation: 0,
       color: scheme.primaryContainer,
       child: Padding(
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -405,60 +305,35 @@ class _PatientMonthPanel extends StatelessWidget {
                 color: scheme.onPrimaryContainer,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: AppSpacing.xs),
             Wrap(
-              spacing: 12,
-              runSpacing: 4,
+              spacing: AppSpacing.md,
+              runSpacing: AppSpacing.xs,
               children: [
-                if (patient.email != null)
-                  Text(
-                    patient.email!,
-                    style: TextStyle(color: scheme.onPrimaryContainer),
-                  ),
-                if (patient.dni != null)
-                  Text(
-                    'DNI: ${patient.dni}',
-                    style: TextStyle(color: scheme.onPrimaryContainer),
-                  ),
-                Text(
-                  monthLabel,
-                  style: TextStyle(
-                    color: scheme.onPrimaryContainer,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+                if (patient.email != null) Text(patient.email!, style: TextStyle(color: scheme.onPrimaryContainer)),
+                if (patient.dni != null) Text('DNI: ${patient.dni}', style: TextStyle(color: scheme.onPrimaryContainer)),
+                Text(monthLabel, style: TextStyle(color: scheme.onPrimaryContainer, fontWeight: FontWeight.w700)),
               ],
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: AppSpacing.md),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
                 color: scheme.surface,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
                 border: Border.all(color: scheme.outlineVariant),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Cambios totales',
-                    style: TextStyle(
-                      color: scheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${summary.totalChanges}',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
+                  Text('Cambios totales', style: TextStyle(color: scheme.onSurfaceVariant, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text('${summary.totalChanges}', style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800)),
                 ],
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             LayoutBuilder(
               builder: (context, constraints) {
                 final columns = constraints.maxWidth < 560 ? 2 : 4;
@@ -468,14 +343,11 @@ class _PatientMonthPanel extends StatelessWidget {
                   itemCount: 4,
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: columns,
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
+                    crossAxisSpacing: AppSpacing.sm,
+                    mainAxisSpacing: AppSpacing.sm,
                     mainAxisExtent: 78,
                   ),
-                  itemBuilder: (context, index) => _DoctorWeeklyUfTile(
-                    week: index + 1,
-                    value: weeklyValues[index],
-                  ),
+                  itemBuilder: (context, index) => _DoctorWeeklyUfTile(week: index + 1, value: weeklyValues[index]),
                 );
               },
             ),
@@ -495,32 +367,20 @@ class _DoctorWeeklyUfTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(AppSpacing.sm),
       decoration: BoxDecoration(
         color: scheme.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
         border: Border.all(color: scheme.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
-            'UF semana $week',
-            style: TextStyle(
-              color: scheme.onSurfaceVariant,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '$value ml/día',
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-          ),
+          Text('UF semana $week', style: TextStyle(color: scheme.onSurfaceVariant, fontWeight: FontWeight.w600)),
+          const SizedBox(height: AppSpacing.xs),
+          Text('$value ml/día', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
         ],
       ),
     );
@@ -538,15 +398,12 @@ class _MonthFilterCard extends StatelessWidget {
     return Card(
       elevation: 0,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Filtrar',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 12),
+            const Text('Filtrar', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+            const SizedBox(height: AppSpacing.md),
             Align(
               alignment: Alignment.centerLeft,
               child: ConstrainedBox(
@@ -583,21 +440,7 @@ class _MonthYearPickerDialog extends StatefulWidget {
 class _MonthYearPickerDialogState extends State<_MonthYearPickerDialog> {
   late int selectedYear;
   late int selectedMonth;
-
-  static const monthNames = [
-    'Enero',
-    'Febrero',
-    'Marzo',
-    'Abril',
-    'Mayo',
-    'Junio',
-    'Julio',
-    'Agosto',
-    'Septiembre',
-    'Octubre',
-    'Noviembre',
-    'Diciembre',
-  ];
+  static const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
   @override
   void initState() {
@@ -630,39 +473,27 @@ class _MonthYearPickerDialogState extends State<_MonthYearPickerDialog> {
             DropdownButtonFormField<int>(
               initialValue: selectedYear,
               decoration: const InputDecoration(labelText: 'Año'),
-              items: years
-                  .map(
-                    (year) => DropdownMenuItem(
-                      value: year,
-                      child: Text(year.toString()),
-                    ),
-                  )
-                  .toList(),
+              items: years.map((y) => DropdownMenuItem(value: y, child: Text(y.toString()))).toList(),
               onChanged: (value) {
                 if (value == null) return;
                 setState(() {
                   selectedYear = value;
                   if (!_isMonthEnabled(selectedMonth)) {
-                    selectedMonth = List.generate(
-                      12,
-                      (i) => i + 1,
-                    ).where(_isMonthEnabled).first;
+                    selectedMonth = List.generate(12, (i) => i + 1).where(_isMonthEnabled).first;
                   }
                 });
               },
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
             Wrap(
-              spacing: 8,
-              runSpacing: 8,
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
               children: List.generate(12, (index) {
                 final month = index + 1;
                 return ChoiceChip(
                   label: Text(monthNames[index]),
                   selected: selectedMonth == month,
-                  onSelected: _isMonthEnabled(month)
-                      ? (_) => setState(() => selectedMonth = month)
-                      : null,
+                  onSelected: _isMonthEnabled(month) ? (_) => setState(() => selectedMonth = month) : null,
                 );
               }),
             ),
@@ -670,15 +501,8 @@ class _MonthYearPickerDialogState extends State<_MonthYearPickerDialog> {
         ),
       ),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancelar'),
-        ),
-        FilledButton(
-          onPressed: () =>
-              Navigator.pop(context, DateTime(selectedYear, selectedMonth)),
-          child: const Text('Aceptar'),
-        ),
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+        FilledButton(onPressed: () => Navigator.pop(context, DateTime(selectedYear, selectedMonth)), child: const Text('Aceptar')),
       ],
     );
   }
