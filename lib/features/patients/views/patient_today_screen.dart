@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:frontend_dialysis_record/core/design/design.dart';
 import 'package:frontend_dialysis_record/core/providers/providers.dart';
 import 'package:frontend_dialysis_record/core/widgets/widgets.dart';
@@ -28,6 +28,25 @@ class PatientTodayScreenState extends ConsumerState<PatientTodayScreen> {
   final DateFormat _shortDateFormat = DateFormat('dd/MM');
   final DateFormat _heroDateFormat = DateFormat('EEEE dd/MM', 'es');
   int _daysAgo = 0;
+  final Map<int, _DayData> _dayDataCache = {};
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _preloadDays());
+  }
+
+  Future<void> _preloadDays() async {
+    final me = ref.read(authStateProvider).valueOrNull;
+    if (me?.id == null) return;
+    
+    for (int i = 0; i < 5; i++) {
+      final day = DateUtils.dateOnly(DateTime.now()).subtract(Duration(days: i));
+      _loadDay(day, index: i).then((data) {
+        if (mounted) setState(() => _dayDataCache[i] = data);
+      });
+    }
+  }
 
   DateTime get _selectedDate {
     final today = DateUtils.dateOnly(DateTime.now());
@@ -37,7 +56,7 @@ class PatientTodayScreenState extends ConsumerState<PatientTodayScreen> {
   Future<void> openCreateSession() =>
       _openSessionForm(initialDate: _selectedDate);
 
-  Future<_DayData> _loadDay(DateTime day) async {
+  Future<_DayData> _loadDay(DateTime day, {int? index}) async {
     final me = ref.read(authStateProvider).valueOrNull;
     final patientId = me?.id;
     if (patientId == null) return _DayData.empty();
@@ -48,13 +67,23 @@ class PatientTodayScreenState extends ConsumerState<PatientTodayScreen> {
       patientCtrl.getSessionSummaryByDay(patientId: patientId, day: day),
     ]);
 
-    return _DayData(
+    final data = _DayData(
       sessions: results[0] as List<SessionDto>,
       summary: results[1] as SessionSummary,
     );
+    
+    if (index != null && mounted) {
+      _dayDataCache[index] = data;
+    }
+    
+    return data;
   }
 
-  void _refresh() => setState(() {});
+  void _refresh() {
+    _dayDataCache.clear();
+    _preloadDays();
+    setState(() {});
+  }
 
   void _goToDay(int daysAgo) {
     if (daysAgo < 0) return;
@@ -153,7 +182,8 @@ class PatientTodayScreenState extends ConsumerState<PatientTodayScreen> {
     final diff = today.difference(DateUtils.dateOnly(day)).inDays;
     if (diff == 0) return 'Hoy';
     if (diff == 1) return 'Ayer';
-    final text = _longDateFormat.format(day);
+    final format = DateFormat('EEEE', 'es');
+    final text = format.format(day);
     return text[0].toUpperCase() + text.substring(1);
   }
 
@@ -168,6 +198,8 @@ class PatientTodayScreenState extends ConsumerState<PatientTodayScreen> {
 
     return SafeArea(
       child: PageView.builder(
+        itemCount: 5,
+        reverse: true,
         controller: _pageController,
         onPageChanged: (index) => setState(() => _daysAgo = index),
         itemBuilder: (context, index) {
@@ -176,9 +208,10 @@ class PatientTodayScreenState extends ConsumerState<PatientTodayScreen> {
           ).subtract(Duration(days: index));
           return FutureBuilder<_DayData>(
             key: ValueKey('$index-${day.toIso8601String()}'),
-            future: _loadDay(day),
+            initialData: _dayDataCache[index],
+            future: _loadDay(day, index: index),
             builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
+              if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
                 return const AppSkeletonScreen(title: 'Hoy', itemCount: 3);
               }
 
@@ -262,11 +295,32 @@ class _GreetingHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final displayName = (name ?? '').trim();
-    return Text(
-      displayName.isEmpty ? 'Hola!' : 'Hola $displayName!',
-      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-        fontWeight: FontWeight.w800,
-      ),
+    final scheme = Theme.of(context).colorScheme;
+    final hour = DateTime.now().hour;
+    final greeting = hour < 12 ? 'Buenos días' : hour < 19 ? 'Buenas tardes' : 'Buenas noches';
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              greeting,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
+            Text(
+              displayName.isEmpty ? 'Usuario' : displayName,
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: scheme.primary,
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -290,51 +344,63 @@ class _DayHero extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xl),
       decoration: BoxDecoration(
         color: scheme.primaryContainer,
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+        boxShadow: [
+          BoxShadow(
+            color: scheme.primary.withValues(alpha: 0.1),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          )
+        ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             title,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
               color: scheme.onPrimaryContainer,
               fontWeight: FontWeight.w800,
             ),
           ),
-          const SizedBox(height: AppSpacing.sm),
+          const SizedBox(height: AppSpacing.lg),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              IconButton.filledTonal(
+              IconButton(
+                style: IconButton.styleFrom(
+                  backgroundColor: scheme.onPrimaryContainer.withValues(alpha: 0.1),
+                  foregroundColor: scheme.onPrimaryContainer,
+                ),
                 tooltip: 'Día anterior',
                 onPressed: onPrevious,
-                icon: const Icon(PhosphorIconsRegular.caretLeft),
+                icon: const Icon(PhosphorIconsBold.caretLeft),
               ),
-              const SizedBox(width: AppSpacing.sm),
-              IconButton.filledTonal(
-                tooltip: 'Volver a hoy',
+              const SizedBox(width: AppSpacing.md),
+              FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  backgroundColor: scheme.onPrimaryContainer,
+                  foregroundColor: scheme.primaryContainer,
+                  elevation: 0,
+                ),
                 onPressed: onToday,
-                icon: const Icon(PhosphorIconsRegular.calendarBlank),
+                icon: const Icon(PhosphorIconsBold.calendarBlank),
+                label: const Text('Volver a hoy', style: TextStyle(fontWeight: FontWeight.w700)),
               ),
-              const SizedBox(width: AppSpacing.sm),
-              IconButton.filledTonal(
+              const SizedBox(width: AppSpacing.md),
+              IconButton(
+                style: IconButton.styleFrom(
+                  backgroundColor: scheme.onPrimaryContainer.withValues(alpha: 0.1),
+                  foregroundColor: scheme.onPrimaryContainer,
+                ),
                 tooltip: canGoForward ? 'Día siguiente' : 'No hay días futuros',
                 onPressed: onNext,
-                icon: const Icon(PhosphorIconsRegular.caretRight),
+                icon: const Icon(PhosphorIconsBold.caretRight),
               ),
             ],
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            'Desliza o usa los días para revisar registros anteriores.',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: scheme.onPrimaryContainer.withValues(alpha: 0.72),
-            ),
           ),
         ],
       ),
@@ -358,19 +424,33 @@ class _DayStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final today = DateUtils.dateOnly(DateTime.now());
+    final scheme = Theme.of(context).colorScheme;
+    
     return SizedBox(
-      height: 58,
+      height: 68,
       child: ListView.separated(
+        reverse: true, // This puts index 0 on the far right
         scrollDirection: Axis.horizontal,
-        itemCount: 15,
+        itemCount: 5,
         separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.sm),
         itemBuilder: (context, index) {
           final day = today.subtract(Duration(days: index));
-          return ChoiceChip(
-            selected: index == selectedDaysAgo,
-            onSelected: (_) => onSelected(index),
-            label: SizedBox(
-              width: 76,
+          final isSelected = index == selectedDaysAgo;
+          
+          return InkWell(
+            onTap: () => onSelected(index),
+            borderRadius: BorderRadius.circular(16),
+            child: AnimatedContainer(
+              duration: AppAnimations.fast,
+              width: 90,
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              decoration: BoxDecoration(
+                color: isSelected ? scheme.primary : scheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: isSelected
+                    ? [BoxShadow(color: scheme.primary.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 4))]
+                    : null,
+              ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -378,14 +458,19 @@ class _DayStrip extends StatelessWidget {
                     titleFor(day),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 12,
+                      color: isSelected ? scheme.onPrimary : scheme.onSurfaceVariant,
                     ),
                   ),
+                  const SizedBox(height: 2),
                   Text(
                     shortDateFormat.format(day),
-                    style: const TextStyle(fontSize: 11),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: isSelected ? scheme.onPrimary.withValues(alpha: 0.8) : scheme.onSurfaceVariant.withValues(alpha: 0.7),
+                    ),
                   ),
                 ],
               ),

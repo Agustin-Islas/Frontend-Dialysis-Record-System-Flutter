@@ -29,7 +29,7 @@ dependencies:
   # Design system
   google_fonts: ^6.2.1
   flutter_animate: ^4.5.2
-  phosphor_flutter: ^2.1.0
+  phosphoricons_flutter: any
   skeletonizer: ^2.1.3
   responsive_framework: ^1.5.1
 

@@ -32,6 +32,29 @@ abstract final class AppRoutes {
   static const String doctorPatientDetail = '/doctor/patients/:patientId';
 }
 
+// Helper for premium page transitions
+Page<dynamic> _premiumTransition(Widget child, GoRouterState state) {
+  return CustomTransitionPage<void>(
+    key: state.pageKey,
+    child: child,
+    transitionDuration: const Duration(milliseconds: 400),
+    reverseTransitionDuration: const Duration(milliseconds: 400),
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      final curve = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
+      return FadeTransition(
+        opacity: curve,
+        child: SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0.0, 0.05),
+            end: Offset.zero,
+          ).animate(curve),
+          child: child,
+        ),
+      );
+    },
+  );
+}
+
 /// GoRouter configuration provider.
 ///
 /// Uses [authStateProvider] for redirect guards. When not authenticated,
@@ -74,21 +97,21 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Splash / initial loading
       GoRoute(
         path: AppRoutes.splash,
-        builder: (context, state) => const SessionGate(),
+        pageBuilder: (context, state) => _premiumTransition(const SessionGate(), state),
       ),
 
       // Auth routes
       GoRoute(
         path: AppRoutes.login,
-        builder: (context, state) => const LoginScreen(),
+        pageBuilder: (context, state) => _premiumTransition(const LoginScreen(), state),
       ),
       GoRoute(
         path: AppRoutes.registerPatient,
-        builder: (context, state) => const PatientRegisterScreen(),
+        pageBuilder: (context, state) => _premiumTransition(const PatientRegisterScreen(), state),
       ),
       GoRoute(
         path: AppRoutes.registerDoctor,
-        builder: (context, state) => const DoctorRegisterScreen(),
+        pageBuilder: (context, state) => _premiumTransition(const DoctorRegisterScreen(), state),
       ),
 
       // Patient shell with bottom navigation
@@ -101,7 +124,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: AppRoutes.patientToday,
-                builder: (context, state) => PatientTodayScreen(),
+                pageBuilder: (context, state) => NoTransitionPage(child: PatientTodayScreen()),
               ),
             ],
           ),
@@ -109,7 +132,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: AppRoutes.patientHistory,
-                builder: (context, state) => const PatientHistoryScreen(),
+                pageBuilder: (context, state) => const NoTransitionPage(child: PatientHistoryScreen()),
               ),
             ],
           ),
@@ -117,7 +140,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: AppRoutes.patientProfile,
-                builder: (context, state) => const PatientProfileScreen(),
+                pageBuilder: (context, state) => const NoTransitionPage(child: PatientProfileScreen()),
               ),
             ],
           ),
@@ -134,7 +157,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: AppRoutes.doctorPatients,
-                builder: (context, state) => const DoctorPatientsScreen(),
+                pageBuilder: (context, state) => const NoTransitionPage(child: DoctorPatientsScreen()),
               ),
             ],
           ),
@@ -142,7 +165,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: AppRoutes.doctorProfile,
-                builder: (context, state) => const _DoctorProfilePlaceholder(),
+                pageBuilder: (context, state) => const NoTransitionPage(child: _DoctorProfilePlaceholder()),
               ),
             ],
           ),
@@ -152,9 +175,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Doctor patient detail (push route, not shell)
       GoRoute(
         path: AppRoutes.doctorPatientDetail,
-        builder: (context, state) {
+        pageBuilder: (context, state) {
           final patientId = state.pathParameters['patientId']!;
-          return PatientDetailForDoctorScreen(patientId: patientId);
+          return _premiumTransition(PatientDetailForDoctorScreen(patientId: patientId), state);
         },
       ),
     ],
