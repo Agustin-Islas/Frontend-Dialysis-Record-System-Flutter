@@ -251,6 +251,28 @@ class PatientTodayScreenState extends ConsumerState<PatientTodayScreen> {
                       ),
                       const SizedBox(height: AppSpacing.md),
                       _DaySummaryCard(summary: data.summary).withEntryAnimation(),
+                      const SizedBox(height: AppSpacing.xl),
+                      Row(
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.primary,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          Expanded(
+                            child: Text(
+                              'Registros del día',
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                       const SizedBox(height: AppSpacing.md),
                       if (sessions.isEmpty)
                         AppEmptyState(
@@ -299,26 +321,21 @@ class _GreetingHeader extends StatelessWidget {
     final hour = DateTime.now().hour;
     final greeting = hour < 12 ? 'Buenos días' : hour < 19 ? 'Buenas tardes' : 'Buenas noches';
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              greeting,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: scheme.onSurfaceVariant,
-              ),
-            ),
-            Text(
-              displayName.isEmpty ? 'Usuario' : displayName,
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-                color: scheme.primary,
-              ),
-            ),
-          ],
+        Text(
+          '$greeting,',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            color: scheme.onSurfaceVariant,
+          ),
+        ),
+        Text(
+          '${displayName.isEmpty ? 'Usuario' : displayName} 👋',
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+            fontWeight: FontWeight.w800,
+            color: scheme.primary,
+          ),
         ),
       ],
     );
@@ -348,59 +365,74 @@ class _DayHero extends StatelessWidget {
       decoration: BoxDecoration(
         color: scheme.primaryContainer,
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-        boxShadow: [
-          BoxShadow(
-            color: scheme.primary.withValues(alpha: 0.1),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          )
-        ],
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+      child: Stack(
+        alignment: Alignment.center,
         children: [
-          Text(
-            title,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: scheme.onPrimaryContainer,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              IconButton(
-                style: IconButton.styleFrom(
-                  backgroundColor: scheme.onPrimaryContainer.withValues(alpha: 0.1),
-                  foregroundColor: scheme.onPrimaryContainer,
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                decoration: BoxDecoration(
+                  color: scheme.surface,
+                  shape: BoxShape.circle,
                 ),
-                tooltip: 'Día anterior',
-                onPressed: onPrevious,
-                icon: const Icon(PhosphorIconsBold.caretLeft),
+                child: Icon(PhosphorIconsRegular.calendarBlank, color: scheme.primary, size: 24),
               ),
-              const SizedBox(width: AppSpacing.md),
-              FilledButton.icon(
-                style: FilledButton.styleFrom(
-                  backgroundColor: scheme.onPrimaryContainer,
-                  foregroundColor: scheme.primaryContainer,
-                  elevation: 0,
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                title,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  color: scheme.onPrimaryContainer,
+                  fontWeight: FontWeight.w800,
                 ),
-                onPressed: onToday,
-                icon: const Icon(PhosphorIconsBold.calendarBlank),
-                label: const Text('Volver a hoy', style: TextStyle(fontWeight: FontWeight.w700)),
               ),
-              const SizedBox(width: AppSpacing.md),
-              IconButton(
-                style: IconButton.styleFrom(
-                  backgroundColor: scheme.onPrimaryContainer.withValues(alpha: 0.1),
-                  foregroundColor: scheme.onPrimaryContainer,
+              const SizedBox(height: AppSpacing.xs),
+              InkWell(
+                onTap: onToday,
+                child: Text(
+                  'Volver a hoy',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: scheme.onPrimaryContainer.withValues(alpha: 0.8),
+                  ),
                 ),
-                tooltip: canGoForward ? 'Día siguiente' : 'No hay días futuros',
-                onPressed: onNext,
-                icon: const Icon(PhosphorIconsBold.caretRight),
               ),
             ],
+          ),
+          Positioned(
+            left: 0,
+            child: InkWell(
+              onTap: onPrevious,
+              borderRadius: BorderRadius.circular(30),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: scheme.surface,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(PhosphorIconsRegular.caretLeft, color: scheme.onPrimaryContainer, size: 20),
+              ),
+            ),
+          ),
+          Positioned(
+            right: 0,
+            child: InkWell(
+              onTap: onNext,
+              borderRadius: BorderRadius.circular(30),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: scheme.surface,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  PhosphorIconsRegular.caretRight,
+                  color: canGoForward ? scheme.onPrimaryContainer : scheme.onPrimaryContainer.withValues(alpha: 0.3),
+                  size: 20,
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -427,7 +459,7 @@ class _DayStrip extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     
     return SizedBox(
-      height: 68,
+      height: 86,
       child: ListView.separated(
         reverse: true, // This puts index 0 on the far right
         scrollDirection: Axis.horizontal,
@@ -443,24 +475,31 @@ class _DayStrip extends StatelessWidget {
             child: AnimatedContainer(
               duration: AppAnimations.fast,
               width: 90,
-              padding: const EdgeInsets.symmetric(vertical: 8),
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
               decoration: BoxDecoration(
-                color: isSelected ? scheme.primary : scheme.surfaceContainerHighest,
+                color: isSelected ? scheme.primary : scheme.surface,
                 borderRadius: BorderRadius.circular(16),
+                border: isSelected ? null : Border.all(color: scheme.outlineVariant.withValues(alpha: 0.5)),
                 boxShadow: isSelected
-                    ? [BoxShadow(color: scheme.primary.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 4))]
+                    ? [BoxShadow(color: scheme.primary.withValues(alpha: 0.3), blurRadius: 12, offset: const Offset(0, 4))]
                     : null,
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  Icon(
+                    PhosphorIconsRegular.calendarBlank,
+                    color: isSelected ? scheme.onPrimary : scheme.onSurfaceVariant,
+                    size: 18,
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
                   Text(
                     titleFor(day),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12,
+                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                      fontSize: 13,
                       color: isSelected ? scheme.onPrimary : scheme.onSurfaceVariant,
                     ),
                   ),
@@ -468,8 +507,8 @@ class _DayStrip extends StatelessWidget {
                   Text(
                     shortDateFormat.format(day),
                     style: TextStyle(
-                      fontSize: 11,
-                      color: isSelected ? scheme.onPrimary.withValues(alpha: 0.8) : scheme.onSurfaceVariant.withValues(alpha: 0.7),
+                      fontSize: 12,
+                      color: isSelected ? scheme.onPrimary.withValues(alpha: 0.9) : scheme.onSurfaceVariant.withValues(alpha: 0.7),
                     ),
                   ),
                 ],
@@ -489,23 +528,24 @@ class _DaySummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: AppSpacing.sm,
-      crossAxisSpacing: AppSpacing.sm,
-      childAspectRatio: 2.4,
+    return Row(
       children: [
-        _MetricTile(
-          label: 'Cambios',
-          value: summary.sessionsCount.toString(),
-          icon: PhosphorIconsRegular.notepad,
+        Expanded(
+          child: _MetricTile(
+            label: 'Cambios',
+            value: summary.sessionsCount.toString(),
+            subtitle: 'Registros en el día',
+            icon: PhosphorIconsRegular.arrowsClockwise,
+          ),
         ),
-        _MetricTile(
-          label: 'Total del día',
-          value: '${summary.totalBalance} ml',
-          icon: PhosphorIconsRegular.scales,
+        const SizedBox(width: AppSpacing.md),
+        Expanded(
+          child: _MetricTile(
+            label: 'Total del día',
+            value: '${summary.totalBalance} ml',
+            subtitle: 'Balance acumulado',
+            icon: PhosphorIconsRegular.drop,
+          ),
         ),
       ],
     );
@@ -515,49 +555,67 @@ class _DaySummaryCard extends StatelessWidget {
 class _MetricTile extends StatelessWidget {
   final String label;
   final String value;
+  final String subtitle;
   final IconData icon;
 
   const _MetricTile({
     required this.label,
     required this.value,
+    required this.subtitle,
     required this.icon,
   });
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Card(
-      color: scheme.surfaceContainerHighest,
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Row(
-          children: [
-            Icon(icon, color: scheme.primary),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    label,
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: scheme.onSurfaceVariant,
-                    ),
-                  ),
-                  Text(
-                    value,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: scheme.primaryContainer,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: scheme.primary, size: 24),
               ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  label,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+              color: scheme.primary,
+              fontWeight: FontWeight.w800,
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            subtitle,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: scheme.onSurfaceVariant,
+            ),
+          ),
+        ],
       ),
     );
   }

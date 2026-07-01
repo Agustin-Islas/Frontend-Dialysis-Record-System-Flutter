@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'app_colors.dart';
 import 'app_spacing.dart';
 import 'app_typography.dart';
@@ -109,7 +109,7 @@ abstract final class AppTheme {
         backgroundColor: colorScheme.primary,
         foregroundColor: colorScheme.onPrimary,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.lg),
+          borderRadius: BorderRadius.circular(50),
         ),
       ),
 
@@ -119,15 +119,18 @@ abstract final class AppTheme {
         height: 72,
         backgroundColor: AppColors.surface,
         surfaceTintColor: AppColors.surface,
-        indicatorColor: colorScheme.primaryContainer,
-        labelTextStyle: WidgetStatePropertyAll(
-          textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
-        ),
+        indicatorColor: Colors.transparent,
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w700, color: colorScheme.primary);
+          }
+          return textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600, color: colorScheme.onSurfaceVariant);
+        }),
         iconTheme: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return IconThemeData(color: colorScheme.primary, size: 24);
+            return IconThemeData(color: colorScheme.primary, size: 28);
           }
-          return IconThemeData(color: colorScheme.onSurfaceVariant, size: 24);
+          return IconThemeData(color: colorScheme.onSurfaceVariant, size: 28);
         }),
       ),
 

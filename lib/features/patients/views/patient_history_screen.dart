@@ -277,9 +277,32 @@ class _PatientHistoryScreenState extends ConsumerState<PatientHistoryScreen> {
                 itemCount: 4 + (sessions.isEmpty ? 1 : grouped.length),
                 itemBuilder: (context, index) {
                   if (index == 0) {
-                    return _UltrafiltrationSummaryCard(summary: summary).withEntryAnimation();
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Historial',
+                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                          Text(
+                            'Tus registros de diálisis',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ).withEntryAnimation();
                   }
                   if (index == 1) {
+                    return _UltrafiltrationSummaryCard(summary: summary).withEntryAnimation();
+                  }
+                  if (index == 2) {
                     return Padding(
                       padding: const EdgeInsets.only(top: AppSpacing.md),
                       child: _MonthFilterCard(
@@ -288,19 +311,13 @@ class _PatientHistoryScreenState extends ConsumerState<PatientHistoryScreen> {
                       ),
                     );
                   }
-                  if (index == 2) {
-                    return const SizedBox(height: AppSpacing.md);
-                  }
                   if (index == 3) {
-                    return Card(
-                      elevation: 0,
-                      margin: EdgeInsets.zero,
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.cardRadius)),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.md),
-                        child: Row(
+                    return const SizedBox(height: AppSpacing.lg);
+                  }
+                  if (index == 4) {
+                    return Padding(
+                      padding: const EdgeInsets.fromLTRB(AppSpacing.xs, AppSpacing.md, AppSpacing.xs, AppSpacing.md),
+                      child: Row(
                           children: [
                             Expanded(
                               child: Text(
@@ -347,7 +364,6 @@ class _PatientHistoryScreenState extends ConsumerState<PatientHistoryScreen> {
                               ),
                           ],
                         ),
-                      ),
                     );
                   }
 
@@ -368,8 +384,8 @@ class _PatientHistoryScreenState extends ConsumerState<PatientHistoryScreen> {
                     );
                   }
 
-                  final isLast = index - 4 == grouped.length - 1;
-                  final entry = grouped.entries.elementAt(index - 4);
+                  final isLast = index - 5 == grouped.length - 1;
+                  final entry = grouped.entries.elementAt(index - 5);
                   final daySessions = entry.value;
                   final total = _dayTotal(daySessions);
                   final hasObservations = daySessions.any((s) => (s.observations ?? '').trim().isNotEmpty);
@@ -414,7 +430,7 @@ class _PatientHistoryScreenState extends ConsumerState<PatientHistoryScreen> {
                               )
                               .toList(),
                         ),
-                      ).withEntryAnimation(delay: Duration(milliseconds: 50 * (index - 4))),
+                      ).withEntryAnimation(delay: Duration(milliseconds: 50 * (index - 5))),
                     ),
                   );
                 },
@@ -438,6 +454,7 @@ class _MonthFilterCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
@@ -445,20 +462,34 @@ class _MonthFilterCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Filtrar',
+              'Filtrar por fecha',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: AppSpacing.md),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 280),
-                child: FilledButton.tonalIcon(
-                  onPressed: onPickMonth,
-                  icon: const Icon(PhosphorIconsRegular.calendarBlank),
-                  label: Text(monthLabel),
+            InkWell(
+              onTap: onPickMonth,
+              borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: scheme.surfaceContainerLowest,
+                  borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
+                  border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.5)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      monthLabel,
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: scheme.onSurface,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Icon(PhosphorIconsRegular.caretDown, color: scheme.onSurfaceVariant, size: 20),
+                  ],
                 ),
               ),
             ),
@@ -480,58 +511,48 @@ class _UltrafiltrationSummaryCard extends StatelessWidget {
     final weeklyValues = summary.weeklyUltrafiltration;
 
     return Card(
-      color: scheme.primaryContainer,
       child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xl),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(PhosphorIconsRegular.heartbeat, color: scheme.onPrimaryContainer),
-                const SizedBox(width: AppSpacing.sm),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: scheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(PhosphorIconsRegular.heartbeat, color: scheme.primary),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Promedio de cambios diarios',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(width: AppSpacing.md),
                 Text(
-                  'Resumen del mes',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  _formatAvg(summary.totalChanges, summary.weekDayCounts.reduce((a, b) => a + b)),
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.w800,
-                    color: scheme.onPrimaryContainer,
+                    color: scheme.primary,
                   ),
                 ),
               ],
             ),
             const SizedBox(height: AppSpacing.lg),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              decoration: BoxDecoration(
-                color: scheme.surface,
-                borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-                border: Border.all(color: scheme.outlineVariant),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Promedio de cambios diarios',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: scheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    _formatAvg(summary.totalChanges, summary.weekDayCounts.reduce((a, b) => a + b)),
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
             LayoutBuilder(
               builder: (context, constraints) {
-                final columns = constraints.maxWidth < 560 ? 2 : 4;
+                final columns = constraints.maxWidth < 650 ? 2 : 4;
                 return GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -574,11 +595,12 @@ class _WeeklyUfTile extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
 
     return Container(
+      width: 140,
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: scheme.surface,
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-        border: Border.all(color: scheme.outlineVariant),
+        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -596,6 +618,7 @@ class _WeeklyUfTile extends StatelessWidget {
             '$value ml/día',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w800,
+              color: scheme.primary,
             ),
           ),
         ],

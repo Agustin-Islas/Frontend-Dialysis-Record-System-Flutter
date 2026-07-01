@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:frontend_dialysis_record/core/providers/providers.dart';
 import 'package:intl/intl.dart';
 import 'package:frontend_dialysis_record/core/network/app_exception.dart';
@@ -434,8 +435,6 @@ class _PatientMonthPanel extends StatelessWidget {
     final weeklyValues = summary.weeklyUltrafiltration;
 
     return Card(
-      elevation: 0,
-      color: scheme.primaryContainer,
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
@@ -445,7 +444,7 @@ class _PatientMonthPanel extends StatelessWidget {
               patientName,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w800,
-                color: scheme.onPrimaryContainer,
+                color: scheme.onSurface,
               ),
             ),
             const SizedBox(height: AppSpacing.xs),
@@ -453,30 +452,45 @@ class _PatientMonthPanel extends StatelessWidget {
               spacing: AppSpacing.md,
               runSpacing: AppSpacing.xs,
               children: [
-                if (patient.email != null) Text(patient.email!, style: TextStyle(color: scheme.onPrimaryContainer)),
-                if (patient.dni != null) Text('DNI: ${patient.dni}', style: TextStyle(color: scheme.onPrimaryContainer)),
-                Text(monthLabel, style: TextStyle(color: scheme.onPrimaryContainer, fontWeight: FontWeight.w700)),
+                if (patient.email != null) Text(patient.email!, style: TextStyle(color: scheme.onSurfaceVariant)),
+                if (patient.dni != null) Text('DNI: ${patient.dni}', style: TextStyle(color: scheme.onSurfaceVariant)),
               ],
             ),
-            const SizedBox(height: AppSpacing.md),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(AppSpacing.md),
-              decoration: BoxDecoration(
-                color: scheme.surface,
-                borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-                border: Border.all(color: scheme.outlineVariant),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Promedio de cambios diarios', style: TextStyle(color: scheme.onSurfaceVariant, fontWeight: FontWeight.w600)),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(_formatAvg(summary.totalChanges, summary.weekDayCounts.reduce((a, b) => a + b)), style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800)),
-                ],
-              ),
+            const SizedBox(height: AppSpacing.lg),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: scheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(PhosphorIconsRegular.heartbeat, color: scheme.primary),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Promedio de cambios diarios',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Text(
+                  _formatAvg(summary.totalChanges, summary.weekDayCounts.reduce((a, b) => a + b)),
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: scheme.primary,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: AppSpacing.md),
+            const SizedBox(height: AppSpacing.lg),
             LayoutBuilder(
               builder: (context, constraints) {
                 final columns = constraints.maxWidth < 650 ? 2 : 4;
@@ -521,19 +535,38 @@ class _DoctorWeeklyUfTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.sm),
+      width: 140,
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: scheme.surface,
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-        border: Border.all(color: scheme.outlineVariant),
+        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          FittedBox(fit: BoxFit.scaleDown, child: Text('UF semana $week', style: TextStyle(color: scheme.onSurfaceVariant, fontWeight: FontWeight.w600))),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              'UF semana $week',
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: scheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
           const SizedBox(height: AppSpacing.xs),
-          FittedBox(fit: BoxFit.scaleDown, child: Text('$value ml/día', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800))),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              '$value ml/día',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: scheme.primary,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -548,23 +581,42 @@ class _MonthFilterCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Card(
-      elevation: 0,
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Filtrar', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+            Text(
+              'Filtrar por fecha',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
             const SizedBox(height: AppSpacing.md),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 280),
-                child: FilledButton.tonalIcon(
-                  onPressed: onPickMonth,
-                  icon: const Icon(Icons.calendar_month_outlined),
-                  label: Text(monthLabel),
+            InkWell(
+              onTap: onPickMonth,
+              borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: scheme.surfaceContainerLowest,
+                  borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
+                  border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.5)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      monthLabel,
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: scheme.onSurface,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Icon(PhosphorIconsRegular.caretDown, color: scheme.onSurfaceVariant, size: 20),
+                  ],
                 ),
               ),
             ),
@@ -582,7 +634,7 @@ class _ChartData {
   _ChartData(this.day, this.value, this.color);
 }
 
-class _DailyUltrafiltrationChart extends StatelessWidget {
+class _DailyUltrafiltrationChart extends StatefulWidget {
   final DateTime month;
   final List<SessionDto> sessions;
   final void Function(int day)? onDayTapped;
@@ -590,15 +642,22 @@ class _DailyUltrafiltrationChart extends StatelessWidget {
   const _DailyUltrafiltrationChart({required this.month, required this.sessions, this.onDayTapped});
 
   @override
+  State<_DailyUltrafiltrationChart> createState() => _DailyUltrafiltrationChartState();
+}
+
+class _DailyUltrafiltrationChartState extends State<_DailyUltrafiltrationChart> {
+  int? _lastTappedIndex;
+
+  @override
   Widget build(BuildContext context) {
-    final daysInMonth = DateUtils.getDaysInMonth(month.year, month.month);
+    final daysInMonth = DateUtils.getDaysInMonth(widget.month.year, widget.month.month);
     final dailyTotals = List<double>.filled(daysInMonth, 0);
     
-    for (final s in sessions) {
+    for (final s in widget.sessions) {
       if (s.date == null) continue;
       final date = DateTime.tryParse(s.date!);
       if (date == null) continue;
-      if (date.year == month.year && date.month == month.month) {
+      if (date.year == widget.month.year && date.month == widget.month.month) {
         final total = s.partial ?? ((s.infusion ?? 0) - (s.drainage ?? 0));
         dailyTotals[date.day - 1] += total;
       }
@@ -653,9 +712,16 @@ class _DailyUltrafiltrationChart extends StatelessWidget {
             borderRadius: BorderRadius.circular(2),
             animationDuration: 1000,
             onPointTap: (ChartPointDetails details) {
-              if (onDayTapped != null && details.pointIndex != null) {
-                final day = int.tryParse(chartData[details.pointIndex!].day);
-                if (day != null) onDayTapped!(day);
+              if (widget.onDayTapped != null && details.pointIndex != null) {
+                if (_lastTappedIndex == details.pointIndex) {
+                  final day = int.tryParse(chartData[details.pointIndex!].day);
+                  if (day != null) widget.onDayTapped!(day);
+                  _lastTappedIndex = null;
+                } else {
+                  setState(() {
+                    _lastTappedIndex = details.pointIndex;
+                  });
+                }
               }
             },
           )

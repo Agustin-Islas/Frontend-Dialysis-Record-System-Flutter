@@ -179,9 +179,23 @@ class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
             child: ListView(
               padding: const EdgeInsets.all(AppSpacing.lg),
               children: [
-                Text(
-                  'Perfil',
-                  style: Theme.of(context).textTheme.headlineSmall,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Mi perfil',
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                    Text(
+                      'Tus datos personales y de contacto',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: AppSpacing.md),
                 Card(
@@ -202,7 +216,10 @@ class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
                             Expanded(
                               child: TextFormField(
                                 controller: _nameCtrl,
-                                decoration: const InputDecoration(labelText: 'Nombre'),
+                                decoration: const InputDecoration(
+                                  labelText: 'Nombre',
+                                  prefixIcon: Icon(PhosphorIconsRegular.user),
+                                ),
                                 validator: (v) => _required(v, 'Nombre'),
                               ),
                             ),
@@ -210,7 +227,10 @@ class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
                             Expanded(
                               child: TextFormField(
                                 controller: _surnameCtrl,
-                                decoration: const InputDecoration(labelText: 'Apellido'),
+                                decoration: const InputDecoration(
+                                  labelText: 'Apellido',
+                                  prefixIcon: Icon(PhosphorIconsRegular.user),
+                                ),
                                 validator: (v) => _required(v, 'Apellido'),
                               ),
                             ),
@@ -220,40 +240,52 @@ class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
                         TextFormField(
                           controller: _dniCtrl,
                           keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(labelText: 'DNI'),
+                          decoration: const InputDecoration(
+                            labelText: 'DNI',
+                            prefixIcon: Icon(PhosphorIconsRegular.identificationCard),
+                          ),
                           validator: (v) => _requiredInt(v, 'DNI'),
                         ),
                         const SizedBox(height: AppSpacing.md),
                         InkWell(
                           onTap: _saving ? null : _pickDate,
                           child: InputDecorator(
-                            decoration: const InputDecoration(labelText: 'Nacimiento'),
-                            child: Row(
-                              children: [
-                                Expanded(child: Text(_formatDate(_dateOfBirth))),
-                                const Icon(PhosphorIconsRegular.calendarBlank),
-                              ],
+                            decoration: const InputDecoration(
+                              labelText: 'Nacimiento',
+                              prefixIcon: Icon(PhosphorIconsRegular.calendarBlank),
                             ),
+                            child: Text(_formatDate(_dateOfBirth)),
                           ),
                         ),
                         const SizedBox(height: AppSpacing.md),
                         TextFormField(
                           controller: _addressCtrl,
-                          decoration: const InputDecoration(labelText: 'Domicilio'),
+                          decoration: const InputDecoration(
+                            labelText: 'Domicilio',
+                            prefixIcon: Icon(PhosphorIconsRegular.house),
+                          ),
                           validator: (v) => _required(v, 'Domicilio'),
                         ),
                         const SizedBox(height: AppSpacing.md),
                         TextFormField(
                           controller: _numberCtrl,
                           keyboardType: TextInputType.phone,
-                          decoration: const InputDecoration(labelText: 'Celular'),
+                          decoration: const InputDecoration(
+                            labelText: 'Celular',
+                            prefixIcon: Icon(PhosphorIconsRegular.phone),
+                          ),
                           validator: (v) => _requiredInt(v, 'Celular'),
                         ),
                         const SizedBox(height: AppSpacing.lg),
-                        _ReadOnlyRow(label: 'Email', value: me.email ?? '-'),
+                        _ReadOnlyRow(
+                          label: 'Email',
+                          value: me.email ?? '-',
+                          icon: PhosphorIconsRegular.envelope,
+                        ),
                         _ReadOnlyRow(
                           label: 'Médico',
                           value: me.doctorName ?? 'Sin médico asociado',
+                          icon: PhosphorIconsRegular.stethoscope,
                         ),
                       ],
                     ),
@@ -274,15 +306,16 @@ class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
                         ),
                         const SizedBox(height: AppSpacing.sm),
                         Wrap(
-                          spacing: AppSpacing.sm,
+                          spacing: AppSpacing.md,
                           runSpacing: AppSpacing.sm,
                           children: [
-                            const Chip(label: Text('Amarillo 1,5%')),
-                            const Chip(label: Text('Verde 2,4%')),
-                            const Chip(label: Text('Rojo 3,8%')),
+                            _DotChip(label: 'Amarillo 1,5%', color: Colors.yellow.shade700),
+                            _DotChip(label: 'Verde 2,4%', color: Colors.green.shade600),
+                            _DotChip(label: 'Rojo 3,8%', color: Colors.red.shade600),
                             ..._customConcentrations.map(
-                              (value) => InputChip(
-                                label: Text('${_formatConcentration(value)}%'),
+                              (value) => _DotChip(
+                                label: '${_formatConcentration(value)}%',
+                                color: Theme.of(context).colorScheme.primary,
                                 onDeleted: () => setState(
                                   () => _customConcentrations.remove(value),
                                 ),
@@ -359,25 +392,78 @@ class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
 class _ReadOnlyRow extends StatelessWidget {
   final String label;
   final String value;
+  final IconData? icon;
 
-  const _ReadOnlyRow({required this.label, required this.value});
+  const _ReadOnlyRow({required this.label, required this.value, this.icon});
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
       child: Row(
         children: [
+          if (icon != null) ...[
+            Icon(icon, color: scheme.onSurfaceVariant, size: 20),
+            const SizedBox(width: AppSpacing.sm),
+          ],
           SizedBox(
             width: 90,
             child: Text(
               label,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: scheme.onSurfaceVariant,
               ),
             ),
           ),
-          Expanded(child: Text(value)),
+          Expanded(child: Text(value, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600))),
+        ],
+      ),
+    );
+  }
+}
+
+class _DotChip extends StatelessWidget {
+  final String label;
+  final Color color;
+  final VoidCallback? onDeleted;
+
+  const _DotChip({required this.label, required this.color, this.onDeleted});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.5)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+          if (onDeleted != null) ...[
+            const SizedBox(width: AppSpacing.sm),
+            InkWell(
+              onTap: onDeleted,
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.all(2.0),
+                child: Icon(PhosphorIconsRegular.x, size: 14, color: scheme.onSurfaceVariant),
+              ),
+            ),
+          ],
         ],
       ),
     );

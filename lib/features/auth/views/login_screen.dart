@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
@@ -43,10 +43,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final me = await ref.read(authStateProvider.notifier).login(
-        _emailCtrl.text.trim(),
-        _passwordCtrl.text,
-      );
+      final me = await ref
+          .read(authStateProvider.notifier)
+          .login(_emailCtrl.text.trim(), _passwordCtrl.text);
 
       if (!mounted) return;
       setState(() => _isLoading = false);
@@ -85,11 +84,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       // ── Logo / Header ──
-                      PhosphorIcon(
-                        PhosphorIconsDuotone.heartbeat,
-                        size: 56,
-                        color: scheme.primary,
-                      )
+                      Image.asset(
+                            'assets/images/logo RenApp.jpg',
+                            height: 180,
+                            fit: BoxFit.contain,
+                          )
                           .animate()
                           .fadeIn(duration: AppAnimations.slow)
                           .scale(
@@ -98,21 +97,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             duration: AppAnimations.slow,
                             curve: AppAnimations.defaultCurve,
                           ),
-                      const SizedBox(height: AppSpacing.md),
-                      Text(
-                        'RenApp',
-                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: scheme.primary,
-                        ),
-                      ).animate().fadeIn(duration: AppAnimations.slow, delay: 100.ms),
-                      const SizedBox(height: AppSpacing.xs),
-                      Text(
-                        'Registro de diálisis peritoneal',
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: scheme.onSurfaceVariant,
-                        ),
-                      ).animate().fadeIn(duration: AppAnimations.slow, delay: 150.ms),
                       const SizedBox(height: AppSpacing.xxxl),
 
                       // ── Email field ──
@@ -148,14 +132,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   ? PhosphorIconsRegular.eye
                                   : PhosphorIconsRegular.eyeSlash,
                             ),
-                            onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                            onPressed: () => setState(
+                              () => _obscurePassword = !_obscurePassword,
+                            ),
                           ),
                         ),
                         onFieldSubmitted: (_) => _isLoading ? null : _login(),
                         validator: (value) {
                           final v = value ?? '';
                           if (v.trim().isEmpty) return 'Contraseña requerida';
-                          if (v.length < 8) return 'Debe tener al menos 8 caracteres';
+                          if (v.length < 8)
+                            return 'Debe tener al menos 8 caracteres';
                           if (v.length > 72) return 'Máximo 72 caracteres';
                           return null;
                         },
@@ -171,50 +158,163 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ? const SizedBox(
                                   width: 18,
                                   height: 18,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
                                 )
                               : const Icon(PhosphorIconsRegular.signIn),
-                          label: Text(_isLoading ? 'Iniciando...' : 'Iniciar sesión'),
+                          label: Text(
+                            _isLoading ? 'Iniciando...' : 'Iniciar sesión',
+                          ),
                         ),
                       ),
                       const SizedBox(height: AppSpacing.lg),
 
                       // ── Register buttons ──
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          final wide = constraints.maxWidth >= 420;
-                          final buttons = [
-                            OutlinedButton.icon(
-                              onPressed: _isLoading ? null : () => context.push(AppRoutes.registerPatient),
-                              icon: const Icon(PhosphorIconsRegular.userPlus),
-                              label: const Text('Paciente'),
+                      const Divider(height: 32),
+                      Text(
+                        '¿Eres nuevo?',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Card(
+                              elevation: 0,
+                              color: scheme.surfaceVariant.withOpacity(0.5),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: InkWell(
+                                onTap: _isLoading
+                                    ? null
+                                    : () => context.push(
+                                        AppRoutes.registerPatient,
+                                      ),
+                                borderRadius: BorderRadius.circular(16),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: AppSpacing.lg,
+                                    horizontal: AppSpacing.sm,
+                                  ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          PhosphorIcon(
+                                            PhosphorIconsDuotone.user,
+                                            size: 28,
+                                            color: scheme.primary,
+                                          ),
+                                          const SizedBox(width: AppSpacing.sm),
+                                          Text(
+                                            'Paciente',
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .titleMedium
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: AppSpacing.md),
+                                      Divider(
+                                        color: scheme.outlineVariant
+                                            .withOpacity(0.5),
+                                        height: 1,
+                                      ),
+                                      const SizedBox(height: AppSpacing.sm),
+                                      Text(
+                                        'Crear cuenta de Paciente',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(
+                                              color: scheme.onSurfaceVariant,
+                                            ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
                             ),
-                            OutlinedButton.icon(
-                              onPressed: _isLoading ? null : () => context.push(AppRoutes.registerDoctor),
-                              icon: const Icon(PhosphorIconsRegular.stethoscope),
-                              label: const Text('Médico'),
+                          ),
+                          const SizedBox(width: AppSpacing.md),
+                          Expanded(
+                            child: Card(
+                              elevation: 0,
+                              color: scheme.surfaceVariant.withOpacity(0.5),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: InkWell(
+                                onTap: _isLoading
+                                    ? null
+                                    : () => context.push(
+                                        AppRoutes.registerDoctor,
+                                      ),
+                                borderRadius: BorderRadius.circular(16),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: AppSpacing.lg,
+                                    horizontal: AppSpacing.sm,
+                                  ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          PhosphorIcon(
+                                            PhosphorIconsDuotone.stethoscope,
+                                            size: 28,
+                                            color: scheme.primary,
+                                          ),
+                                          const SizedBox(width: AppSpacing.sm),
+                                          Text(
+                                            'Médico',
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .titleMedium
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: AppSpacing.md),
+                                      Divider(
+                                        color: scheme.outlineVariant
+                                            .withOpacity(0.5),
+                                        height: 1,
+                                      ),
+                                      const SizedBox(height: AppSpacing.sm),
+                                      Text(
+                                        'Crear cuenta de Médico',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(
+                                              color: scheme.onSurfaceVariant,
+                                            ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
                             ),
-                          ];
-
-                          if (!wide) {
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                SizedBox(width: double.infinity, child: buttons[0]),
-                                const SizedBox(height: AppSpacing.sm),
-                                SizedBox(width: double.infinity, child: buttons[1]),
-                              ],
-                            );
-                          }
-
-                          return Row(
-                            children: [
-                              Expanded(child: buttons[0]),
-                              const SizedBox(width: AppSpacing.sm),
-                              Expanded(child: buttons[1]),
-                            ],
-                          );
-                        },
+                          ),
+                        ],
                       ),
                     ],
                   ),

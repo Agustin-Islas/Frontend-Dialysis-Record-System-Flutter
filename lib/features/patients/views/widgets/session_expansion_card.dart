@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:frontend_dialysis_record/features/sessions/models/session_dto.dart';
+import 'package:frontend_dialysis_record/core/design/design.dart';
 
 class SessionExpansionCard extends StatelessWidget {
   final SessionDto session;
@@ -18,22 +20,37 @@ class SessionExpansionCard extends StatelessWidget {
     final title = _formatHour(session.hour);
     final partial = session.partial ?? 0;
     final hasObservation = (session.observations ?? '').trim().isNotEmpty;
+    final scheme = Theme.of(context).colorScheme;
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: ExpansionTile(
-        tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        tilePadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+        childrenPadding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.lg),
         title: Row(
           children: [
-            Expanded(child: Text(title, style: const TextStyle(fontWeight: FontWeight.w700))),
-            if (hasObservation) ...[
-              const SizedBox(width: 8),
-              Icon(Icons.sticky_note_2_outlined, size: 18, color: Theme.of(context).colorScheme.primary),
-            ],
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: scheme.primaryContainer,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(PhosphorIconsRegular.clock, color: scheme.primary, size: 20),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Row(
+                children: [
+                  Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                  if (hasObservation) ...[
+                    const SizedBox(width: 8),
+                    Icon(PhosphorIconsRegular.note, size: 16, color: scheme.primary),
+                  ],
+                ],
+              ),
+            ),
           ],
         ),
-        subtitle: Text('Parcial: ${_ml(session.partial)}'),
         trailing: _BalancePill(balance: partial),
         children: [
           const SizedBox(height: 8),
@@ -57,13 +74,13 @@ class SessionExpansionCard extends StatelessWidget {
                 if (onEdit != null)
                   TextButton.icon(
                     onPressed: onEdit,
-                    icon: const Icon(Icons.edit_outlined),
+                    icon: const Icon(PhosphorIconsRegular.pencilSimple),
                     label: const Text('Editar'),
                   ),
                 if (onDelete != null)
                   TextButton.icon(
                     onPressed: onDelete,
-                    icon: const Icon(Icons.delete_outline),
+                    icon: const Icon(PhosphorIconsRegular.trash),
                     label: const Text('Eliminar'),
                   ),
               ],
@@ -98,14 +115,15 @@ class _BalancePill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = balance >= 0 ? '+$balance' : '$balance';
+    final scheme = Theme.of(context).colorScheme;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
+        color: scheme.primaryContainer,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Theme.of(context).dividerColor),
       ),
-      child: Text('$text ml', style: const TextStyle(fontWeight: FontWeight.w700)),
+      child: Text('Parcial: $text ml', style: TextStyle(fontWeight: FontWeight.w700, color: scheme.primary)),
     );
   }
 }

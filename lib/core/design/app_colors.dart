@@ -9,19 +9,19 @@ import 'package:flutter/material.dart';
 /// - Rojo  → error / alerta crítica
 /// - Gris  → información secundaria
 abstract final class AppColors {
-  // ── Primary (azul médico) ──────────────────────────────────────────────
-  static const Color primary = Color(0xFF1565C0);
-  static const Color primaryLight = Color(0xFF42A5F5);
-  static const Color primaryDark = Color(0xFF0D47A1);
+  // ── Primary (azul médico vibrante) ──────────────────────────────────────────────
+  static const Color primary = Color(0xFF1A56DB);
+  static const Color primaryLight = Color(0xFF4C81EC);
+  static const Color primaryDark = Color(0xFF133C99);
   static const Color onPrimary = Color(0xFFFFFFFF);
-  static const Color primaryContainer = Color(0xFFD6E4FF);
-  static const Color onPrimaryContainer = Color(0xFF001A41);
+  static const Color primaryContainer = Color(0xFFEBF2FE);
+  static const Color onPrimaryContainer = Color(0xFF041F54);
 
   // ── Secondary (azul grisáceo) ──────────────────────────────────────────
   static const Color secondary = Color(0xFF546E7A);
   static const Color onSecondary = Color(0xFFFFFFFF);
-  static const Color secondaryContainer = Color(0xFFD7E3EB);
-  static const Color onSecondaryContainer = Color(0xFF0D1D26);
+  static const Color secondaryContainer = Color(0xFFF1F4F9);
+  static const Color onSecondaryContainer = Color(0xFF101C26);
 
   // ── Tertiary (teal clínico) ────────────────────────────────────────────
   static const Color tertiary = Color(0xFF00796B);
@@ -31,16 +31,16 @@ abstract final class AppColors {
 
   // ── Superficies ────────────────────────────────────────────────────────
   static const Color surface = Color(0xFFFFFFFF);
-  static const Color surfaceDim = Color(0xFFE8E8EC);
-  static const Color surfaceBright = Color(0xFFF8F9FC);
+  static const Color surfaceDim = Color(0xFFF3F4F6);
+  static const Color surfaceBright = Color(0xFFFFFFFF);
   static const Color surfaceContainerLowest = Color(0xFFFFFFFF);
-  static const Color surfaceContainerLow = Color(0xFFF3F3F7);
-  static const Color surfaceContainer = Color(0xFFEDEDF1);
-  static const Color surfaceContainerHigh = Color(0xFFE7E8EC);
-  static const Color surfaceContainerHighest = Color(0xFFE1E2E6);
-  static const Color onSurface = Color(0xFF1B1B1F);
-  static const Color onSurfaceVariant = Color(0xFF44474F);
-  static const Color scaffoldBackground = Color(0xFFF6F8FA);
+  static const Color surfaceContainerLow = Color(0xFFF9FAFB);
+  static const Color surfaceContainer = Color(0xFFF3F4F6);
+  static const Color surfaceContainerHigh = Color(0xFFE5E7EB);
+  static const Color surfaceContainerHighest = Color(0xFFD1D5DB);
+  static const Color onSurface = Color(0xFF111827);
+  static const Color onSurfaceVariant = Color(0xFF4B5563);
+  static const Color scaffoldBackground = Color(0xFFFFFFFF);
 
   // ── Bordes ─────────────────────────────────────────────────────────────
   static const Color outline = Color(0xFF74777F);
