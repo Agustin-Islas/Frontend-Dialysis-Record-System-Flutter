@@ -244,7 +244,7 @@ class _PatientDetailForDoctorScreenState extends ConsumerState<PatientDetailForD
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        const Text('Balance Diario (Ultrafiltración)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                                        const Text('Total diario', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
                                         const SizedBox(height: AppSpacing.lg),
                                         _DailyUltrafiltrationChart(
                                           month: _selectedMonth,
@@ -675,58 +675,75 @@ class _DailyUltrafiltrationChartState extends State<_DailyUltrafiltrationChart> 
       ));
     }
 
-    return SizedBox(
-      height: 250,
-      child: SfCartesianChart(
-        plotAreaBorderWidth: 0,
-        margin: EdgeInsets.zero,
-        primaryXAxis: const CategoryAxis(
-          majorGridLines: MajorGridLines(width: 0),
-          axisLine: AxisLine(width: 0),
-          labelStyle: TextStyle(fontSize: 10),
-          labelIntersectAction: AxisLabelIntersectAction.hide,
-        ),
-        primaryYAxis: NumericAxis(
-          axisLine: const AxisLine(width: 0),
-          majorTickLines: const MajorTickLines(size: 0),
-          majorGridLines: MajorGridLines(
-            width: 1,
-            color: scheme.outlineVariant.withValues(alpha: 0.3),
-            dashArray: const <double>[5, 5],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final minWidth = daysInMonth * 20.0;
+        final chartWidth = constraints.maxWidth > minWidth ? constraints.maxWidth : minWidth;
+
+        Widget chartWidget = SizedBox(
+          height: 250,
+          width: chartWidth,
+          child: SfCartesianChart(
+            plotAreaBorderWidth: 0,
+            margin: EdgeInsets.zero,
+            primaryXAxis: const CategoryAxis(
+              majorGridLines: MajorGridLines(width: 0),
+              axisLine: AxisLine(width: 0),
+              labelStyle: TextStyle(fontSize: 10),
+              labelIntersectAction: AxisLabelIntersectAction.hide,
+            ),
+            primaryYAxis: NumericAxis(
+              axisLine: const AxisLine(width: 0),
+              majorTickLines: const MajorTickLines(size: 0),
+              majorGridLines: MajorGridLines(
+                width: 1,
+                color: scheme.outlineVariant.withValues(alpha: 0.3),
+                dashArray: const <double>[5, 5],
+              ),
+              labelStyle: TextStyle(fontSize: 10, color: scheme.onSurfaceVariant),
+            ),
+            tooltipBehavior: TooltipBehavior(
+              enable: true,
+              header: 'Total diario',
+              format: 'Día point.x: point.y ml\n(Toca para ver detalles)',
+            ),
+            onDataLabelTapped: (args) {},
+            series: <CartesianSeries<_ChartData, String>>[
+              ColumnSeries<_ChartData, String>(
+                dataSource: chartData,
+                xValueMapper: (_ChartData data, _) => data.day,
+                yValueMapper: (_ChartData data, _) => data.value,
+                pointColorMapper: (_ChartData data, _) => data.color,
+                width: 0.6,
+                borderRadius: BorderRadius.circular(2),
+                animationDuration: 1000,
+                onPointTap: (ChartPointDetails details) {
+                  if (widget.onDayTapped != null && details.pointIndex != null) {
+                    if (_lastTappedIndex == details.pointIndex) {
+                      final day = int.tryParse(chartData[details.pointIndex!].day);
+                      if (day != null) widget.onDayTapped!(day);
+                      _lastTappedIndex = null;
+                    } else {
+                      setState(() {
+                        _lastTappedIndex = details.pointIndex;
+                      });
+                    }
+                  }
+                },
+              )
+            ],
           ),
-          labelStyle: TextStyle(fontSize: 10, color: scheme.onSurfaceVariant),
-        ),
-        tooltipBehavior: TooltipBehavior(
-          enable: true,
-          header: 'Balance',
-          format: 'Día point.x: point.y ml\n(Toca para ver detalles)',
-        ),
-        onDataLabelTapped: (args) {},
-        series: <CartesianSeries<_ChartData, String>>[
-          ColumnSeries<_ChartData, String>(
-            dataSource: chartData,
-            xValueMapper: (_ChartData data, _) => data.day,
-            yValueMapper: (_ChartData data, _) => data.value,
-            pointColorMapper: (_ChartData data, _) => data.color,
-            width: 0.6,
-            borderRadius: BorderRadius.circular(2),
-            animationDuration: 1000,
-            onPointTap: (ChartPointDetails details) {
-              if (widget.onDayTapped != null && details.pointIndex != null) {
-                if (_lastTappedIndex == details.pointIndex) {
-                  final day = int.tryParse(chartData[details.pointIndex!].day);
-                  if (day != null) widget.onDayTapped!(day);
-                  _lastTappedIndex = null;
-                } else {
-                  setState(() {
-                    _lastTappedIndex = details.pointIndex;
-                  });
-                }
-              }
-            },
-          )
-        ],
-      ),
+        );
+
+        if (chartWidth > constraints.maxWidth) {
+          chartWidget = SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: chartWidget,
+          );
+        }
+
+        return chartWidget;
+      },
     );
   }
 }

@@ -274,7 +274,7 @@ class _PatientHistoryScreenState extends ConsumerState<PatientHistoryScreen> {
               constraints: const BoxConstraints(maxWidth: 1040),
               child: ListView.builder(
                 padding: const EdgeInsets.all(AppSpacing.lg),
-                itemCount: 4 + (sessions.isEmpty ? 1 : grouped.length),
+                itemCount: 5 + (sessions.isEmpty ? 1 : grouped.length),
                 itemBuilder: (context, index) {
                   if (index == 0) {
                     return Padding(
