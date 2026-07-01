@@ -141,8 +141,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         validator: (value) {
                           final v = value ?? '';
                           if (v.trim().isEmpty) return 'Contraseña requerida';
-                          if (v.length < 8)
+                          if (v.length < 8) {
                             return 'Debe tener al menos 8 caracteres';
+                          }
                           if (v.length > 72) return 'Máximo 72 caracteres';
                           return null;
                         },
@@ -184,7 +185,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           Expanded(
                             child: Card(
                               elevation: 0,
-                              color: scheme.surfaceVariant.withOpacity(0.5),
+                              color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
                               ),
@@ -227,7 +228,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                       const SizedBox(height: AppSpacing.md),
                                       Divider(
                                         color: scheme.outlineVariant
-                                            .withOpacity(0.5),
+                                            .withValues(alpha: 0.5),
                                         height: 1,
                                       ),
                                       const SizedBox(height: AppSpacing.sm),
@@ -251,7 +252,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           Expanded(
                             child: Card(
                               elevation: 0,
-                              color: scheme.surfaceVariant.withOpacity(0.5),
+                              color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
                               ),
@@ -294,7 +295,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                       const SizedBox(height: AppSpacing.md),
                                       Divider(
                                         color: scheme.outlineVariant
-                                            .withOpacity(0.5),
+                                            .withValues(alpha: 0.5),
                                         height: 1,
                                       ),
                                       const SizedBox(height: AppSpacing.sm),
