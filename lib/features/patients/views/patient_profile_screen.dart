@@ -31,7 +31,7 @@ class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
   bool _saving = false;
   bool _loaded = false;
 
-  static const _fixedConcentrations = [1.5, 2.4, 3.8];
+  static const _fixedConcentrations = [1.5, 2.3, 3.8];
 
   @override
   void dispose() {
@@ -59,6 +59,7 @@ class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
     final now = DateUtils.dateOnly(DateTime.now());
     final picked = await showDatePicker(
       context: context,
+      locale: const Locale('es', 'ES'),
       initialDate: _dateOfBirth.isAfter(now)
           ? DateTime(now.year - 18)
           : _dateOfBirth,

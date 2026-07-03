@@ -214,7 +214,7 @@ class _PatientHistoryScreenState extends ConsumerState<PatientHistoryScreen> {
   Map<String, List<SessionDto>> _groupByDay(List<SessionDto> sessions) {
     final grouped = <String, List<SessionDto>>{};
     for (final s in sessions) {
-      final key = s.date ?? 'Sin fecha';
+      final key = s.effectiveDate ?? 'Sin fecha';
       grouped.putIfAbsent(key, () => []).add(s);
     }
     final sortedKeys = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
@@ -541,7 +541,7 @@ class _UltrafiltrationSummaryCard extends StatelessWidget {
                 ),
                 const SizedBox(width: AppSpacing.md),
                 Text(
-                  _formatAvg(summary.totalChanges, summary.weekDayCounts.reduce((a, b) => a + b)),
+                  _formatAvg(summary.totalChanges, summary.elapsedDays),
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.w800,
                     color: scheme.primary,

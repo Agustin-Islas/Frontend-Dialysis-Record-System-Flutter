@@ -45,6 +45,7 @@ class _PatientRegisterScreenState extends ConsumerState<PatientRegisterScreen> {
     final now = DateUtils.dateOnly(DateTime.now());
     final picked = await showDatePicker(
       context: context,
+      locale: const Locale('es', 'ES'),
       initialDate: _dateOfBirth.isAfter(now) ? DateTime(now.year - 18) : _dateOfBirth,
       firstDate: DateTime(1900),
       lastDate: now,

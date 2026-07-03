@@ -20,8 +20,8 @@ class DioClient {
         dio = Dio(
           BaseOptions(
             baseUrl: baseUrl,
-            connectTimeout: const Duration(milliseconds: 10000),
-            receiveTimeout: const Duration(milliseconds: 7000),
+            connectTimeout: const Duration(milliseconds: 30000),
+            receiveTimeout: const Duration(milliseconds: 30000),
             headers: const {'Content-Type': 'application/json'},
           ),
         ) {
@@ -123,8 +123,8 @@ class DioClient {
       final res = await Dio(
         BaseOptions(
           baseUrl: baseUrl,
-          connectTimeout: const Duration(milliseconds: 10000),
-          receiveTimeout: const Duration(milliseconds: 7000),
+          connectTimeout: const Duration(milliseconds: 30000),
+          receiveTimeout: const Duration(milliseconds: 30000),
           headers: const {'Content-Type': 'application/json'},
         ),
       ).post('/auth/refresh', data: {'refreshToken': refresh});

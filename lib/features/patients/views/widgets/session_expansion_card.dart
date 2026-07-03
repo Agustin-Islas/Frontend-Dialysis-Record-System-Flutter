@@ -42,6 +42,28 @@ class SessionExpansionCard extends StatelessWidget {
               child: Row(
                 children: [
                   Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                  if (session.isNightShift) ...[
+                    const SizedBox(width: 8),
+                    Tooltip(
+                      message: 'Registrado el ${session.date} a las $title',
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.amber.shade700, width: 1),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(PhosphorIconsRegular.moon, size: 14, color: Colors.amber.shade800),
+                            const SizedBox(width: 4),
+                            Text('Noche', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.amber.shade900)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                   if (hasObservation) ...[
                     const SizedBox(width: 8),
                     Icon(PhosphorIconsRegular.note, size: 16, color: scheme.primary),
@@ -53,6 +75,28 @@ class SessionExpansionCard extends StatelessWidget {
         ),
         trailing: _BalancePill(balance: partial),
         children: [
+          if (session.isNightShift) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.amber.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(PhosphorIconsRegular.moon, size: 16, color: Colors.amber.shade800),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Cambio nocturno registrado el ${session.date} después de medianoche, asignado a esta jornada clínica.',
+                      style: TextStyle(fontSize: 12, color: Colors.amber.shade900),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 8),
           _DetailRow(label: 'Bolsa', value: _bag(session.bag)),
           _DetailRow(label: 'Concentracion', value: _conc(session.concentration)),

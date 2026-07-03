@@ -1,10 +1,9 @@
-
 class SessionDto {
   final String? id;
 
   final String? date;
-
   final String? hour;
+  final String? clinicalDate;
 
   final int? bag;
 
@@ -22,6 +21,7 @@ class SessionDto {
     this.id,
     this.date,
     this.hour,
+    this.clinicalDate,
     this.bag,
     this.concentration,
     this.drainage,
@@ -31,6 +31,10 @@ class SessionDto {
     this.patientName,
     this.patientId,
   });
+
+  String? get effectiveDate => clinicalDate ?? date;
+
+  bool get isNightShift => date != null && clinicalDate != null && date != clinicalDate;
 
   factory SessionDto.fromJson(Map<String, dynamic> json) {
     int? toInt(dynamic v) {
@@ -51,6 +55,7 @@ class SessionDto {
       id: json['id']?.toString(),
       date: json['date']?.toString(),
       hour: json['hour']?.toString(),
+      clinicalDate: json['clinicalDate']?.toString(),
       bag: toInt(json['bag']),
       concentration: toDouble(json['concentration']),
       drainage: toInt(json['drainage']),

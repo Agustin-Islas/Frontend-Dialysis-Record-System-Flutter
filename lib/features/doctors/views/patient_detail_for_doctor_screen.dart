@@ -138,7 +138,7 @@ class _PatientDetailForDoctorScreenState extends ConsumerState<PatientDetailForD
   Map<String, List<SessionDto>> _groupByDay(List<SessionDto> sessions) {
     final grouped = <String, List<SessionDto>>{};
     for (final session in sessions) {
-      final key = session.date ?? 'Sin fecha';
+      final key = session.effectiveDate ?? 'Sin fecha';
       grouped.putIfAbsent(key, () => []).add(session);
     }
     final sortedKeys = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
@@ -244,7 +244,18 @@ class _PatientDetailForDoctorScreenState extends ConsumerState<PatientDetailForD
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        const Text('Total diario', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            const Text('Evolución de Balance Diario', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                                            Icon(Icons.touch_app_outlined, size: 18, color: Theme.of(context).colorScheme.primary),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Desliza para ver la tendencia o toca para ir al detalle del día',
+                                          style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                                        ),
                                         const SizedBox(height: AppSpacing.lg),
                                         _DailyUltrafiltrationChart(
                                           month: _selectedMonth,
@@ -482,7 +493,7 @@ class _PatientMonthPanel extends StatelessWidget {
                 ),
                 const SizedBox(width: AppSpacing.md),
                 Text(
-                  _formatAvg(summary.totalChanges, summary.weekDayCounts.reduce((a, b) => a + b)),
+                  _formatAvg(summary.totalChanges, summary.elapsedDays),
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.w800,
                     color: scheme.primary,
@@ -646,16 +657,14 @@ class _DailyUltrafiltrationChart extends StatefulWidget {
 }
 
 class _DailyUltrafiltrationChartState extends State<_DailyUltrafiltrationChart> {
-  int? _lastTappedIndex;
-
   @override
   Widget build(BuildContext context) {
     final daysInMonth = DateUtils.getDaysInMonth(widget.month.year, widget.month.month);
     final dailyTotals = List<double>.filled(daysInMonth, 0);
     
     for (final s in widget.sessions) {
-      if (s.date == null) continue;
-      final date = DateTime.tryParse(s.date!);
+      if (s.effectiveDate == null) continue;
+      final date = DateTime.tryParse(s.effectiveDate!);
       if (date == null) continue;
       if (date.year == widget.month.year && date.month == widget.month.month) {
         final total = s.partial ?? ((s.infusion ?? 0) - (s.drainage ?? 0));
@@ -675,75 +684,76 @@ class _DailyUltrafiltrationChartState extends State<_DailyUltrafiltrationChart> 
       ));
     }
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final minWidth = daysInMonth * 20.0;
-        final chartWidth = constraints.maxWidth > minWidth ? constraints.maxWidth : minWidth;
-
-        Widget chartWidget = SizedBox(
-          height: 250,
-          width: chartWidth,
-          child: SfCartesianChart(
-            plotAreaBorderWidth: 0,
-            margin: EdgeInsets.zero,
-            primaryXAxis: const CategoryAxis(
-              majorGridLines: MajorGridLines(width: 0),
-              axisLine: AxisLine(width: 0),
-              labelStyle: TextStyle(fontSize: 10),
-              labelIntersectAction: AxisLabelIntersectAction.hide,
-            ),
-            primaryYAxis: NumericAxis(
-              axisLine: const AxisLine(width: 0),
-              majorTickLines: const MajorTickLines(size: 0),
-              majorGridLines: MajorGridLines(
-                width: 1,
-                color: scheme.outlineVariant.withValues(alpha: 0.3),
-                dashArray: const <double>[5, 5],
-              ),
-              labelStyle: TextStyle(fontSize: 10, color: scheme.onSurfaceVariant),
-            ),
-            tooltipBehavior: TooltipBehavior(
-              enable: true,
-              header: 'Total diario',
-              format: 'Día point.x: point.y ml\n(Toca para ver detalles)',
-            ),
-            onDataLabelTapped: (args) {},
-            series: <CartesianSeries<_ChartData, String>>[
-              ColumnSeries<_ChartData, String>(
-                dataSource: chartData,
-                xValueMapper: (_ChartData data, _) => data.day,
-                yValueMapper: (_ChartData data, _) => data.value,
-                pointColorMapper: (_ChartData data, _) => data.color,
-                width: 0.6,
-                borderRadius: BorderRadius.circular(2),
-                animationDuration: 1000,
-                onPointTap: (ChartPointDetails details) {
-                  if (widget.onDayTapped != null && details.pointIndex != null) {
-                    if (_lastTappedIndex == details.pointIndex) {
-                      final day = int.tryParse(chartData[details.pointIndex!].day);
-                      if (day != null) widget.onDayTapped!(day);
-                      _lastTappedIndex = null;
-                    } else {
-                      setState(() {
-                        _lastTappedIndex = details.pointIndex;
-                      });
-                    }
-                  }
-                },
-              )
-            ],
+    return SizedBox(
+      height: 250,
+      width: double.infinity,
+      child: SfCartesianChart(
+        plotAreaBorderWidth: 0,
+        margin: const EdgeInsets.only(top: 10, right: 10, bottom: 5),
+        trackballBehavior: TrackballBehavior(
+          enable: true,
+          activationMode: ActivationMode.singleTap,
+          lineType: TrackballLineType.vertical,
+          lineColor: scheme.primary.withValues(alpha: 0.5),
+          lineWidth: 1.5,
+          lineDashArray: const <double>[5, 5],
+          tooltipSettings: InteractiveTooltip(
+            enable: true,
+            color: scheme.surfaceContainerHighest,
+            textStyle: TextStyle(color: scheme.onSurface, fontSize: 12, fontWeight: FontWeight.w600),
+            format: 'Día point.x\npoint.y ml',
           ),
-        );
-
-        if (chartWidth > constraints.maxWidth) {
-          chartWidget = SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: chartWidget,
-          );
-        }
-
-        return chartWidget;
-      },
+        ),
+        primaryXAxis: CategoryAxis(
+          majorGridLines: const MajorGridLines(width: 0),
+          axisLine: const AxisLine(width: 0),
+          labelStyle: TextStyle(fontSize: 10, color: scheme.onSurfaceVariant),
+          interval: daysInMonth > 15 ? 5 : 2,
+          labelIntersectAction: AxisLabelIntersectAction.hide,
+        ),
+        primaryYAxis: NumericAxis(
+          axisLine: const AxisLine(width: 0),
+          majorTickLines: const MajorTickLines(size: 0),
+          majorGridLines: MajorGridLines(
+            width: 1,
+            color: scheme.outlineVariant.withValues(alpha: 0.3),
+            dashArray: const <double>[5, 5],
+          ),
+          labelStyle: TextStyle(fontSize: 10, color: scheme.onSurfaceVariant),
+        ),
+        series: <CartesianSeries<_ChartData, String>>[
+          SplineAreaSeries<_ChartData, String>(
+            dataSource: chartData,
+            xValueMapper: (_ChartData data, _) => data.day,
+            yValueMapper: (_ChartData data, _) => data.value,
+            gradient: LinearGradient(
+              colors: [
+                scheme.primary.withValues(alpha: 0.35),
+                scheme.primary.withValues(alpha: 0.02),
+              ],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+            borderColor: scheme.primary,
+            borderWidth: 2.5,
+            animationDuration: 1000,
+            markerSettings: MarkerSettings(
+              isVisible: true,
+              height: 7,
+              width: 7,
+              color: scheme.surface,
+              borderColor: scheme.primary,
+              borderWidth: 2,
+            ),
+            onPointTap: (ChartPointDetails details) {
+              if (widget.onDayTapped != null && details.pointIndex != null) {
+                final day = int.tryParse(chartData[details.pointIndex!].day);
+                if (day != null) widget.onDayTapped!(day);
+              }
+            },
+          ),
+        ],
+      ),
     );
   }
 }

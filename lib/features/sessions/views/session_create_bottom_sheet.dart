@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:frontend_dialysis_record/core/providers/providers.dart';
+import 'package:frontend_dialysis_record/features/auth/providers/auth_providers.dart';
 import 'package:frontend_dialysis_record/features/sessions/models/session_dto.dart';
 
 class SessionCreateFormData {
@@ -21,11 +24,12 @@ class SessionCreateFormData {
   });
 }
 
-class SessionCreateBottomSheet extends StatefulWidget {
+class SessionCreateBottomSheet extends ConsumerStatefulWidget {
   final Future<void> Function(SessionCreateFormData data) onSubmit;
   final DateTime initialDate;
   final SessionDto? initialSession;
   final List<double> customConcentrations;
+  final List<SessionDto> existingSessions;
 
   const SessionCreateBottomSheet({
     super.key,
@@ -33,13 +37,14 @@ class SessionCreateBottomSheet extends StatefulWidget {
     required this.initialDate,
     this.initialSession,
     this.customConcentrations = const [],
+    this.existingSessions = const [],
   });
 
   @override
-  State<SessionCreateBottomSheet> createState() => _SessionCreateBottomSheetState();
+  ConsumerState<SessionCreateBottomSheet> createState() => _SessionCreateBottomSheetState();
 }
 
-class _SessionCreateBottomSheetState extends State<SessionCreateBottomSheet> {
+class _SessionCreateBottomSheetState extends ConsumerState<SessionCreateBottomSheet> {
   final _formKey = GlobalKey<FormState>();
 
   late DateTime _date;
@@ -56,9 +61,54 @@ class _SessionCreateBottomSheetState extends State<SessionCreateBottomSheet> {
   bool get _isEditing => widget.initialSession != null;
   static const _fixedConcentrations = [
     _ConcentrationOption(label: 'Amarillo', value: 1.5),
-    _ConcentrationOption(label: 'Verde', value: 2.4),
+    _ConcentrationOption(label: 'Verde', value: 2.3),
     _ConcentrationOption(label: 'Rojo', value: 3.8),
   ];
+
+  bool _isSameDay(String? dateStr, DateTime target) {
+    if (dateStr == null || dateStr.isEmpty) return false;
+    final isoStr = DateUtils.dateOnly(target).toIso8601String().substring(0, 10);
+    if (dateStr.startsWith(isoStr)) return true;
+    final parsed = DateTime.tryParse(dateStr);
+    if (parsed != null) {
+      return parsed.year == target.year && parsed.month == target.month && parsed.day == target.day;
+    }
+    final dayStr = target.day.toString().padLeft(2, '0');
+    final monthStr = target.month.toString().padLeft(2, '0');
+    final yearStr = target.year.toString();
+    if (dateStr.startsWith('$dayStr/$monthStr/$yearStr') || dateStr.startsWith('$dayStr-$monthStr-$yearStr')) {
+      return true;
+    }
+    return false;
+  }
+
+  int _calculateSuggestedBag(DateTime date) {
+    int count = 0;
+    for (final s in widget.existingSessions) {
+      if (_isSameDay(s.date, date)) {
+        count++;
+      }
+    }
+    return count + 1;
+  }
+
+  Future<void> _fetchSuggestedBagForDate(DateTime date) async {
+    if (_isEditing) return;
+    try {
+      final me = ref.read(authStateProvider).valueOrNull;
+      final patientId = me?.id;
+      if (patientId == null) return;
+      final patientCtrl = ref.read(patientControllerProvider);
+      final sessions = await patientCtrl.getSessionsByDay(patientId: patientId, day: date);
+      if (mounted && _date == date && !_isEditing) {
+        setState(() {
+          _bagCtrl.text = (sessions.length + 1).toString();
+        });
+      }
+    } catch (_) {
+      // Ignorar fallo de red y mantener valor local
+    }
+  }
 
   @override
   void initState() {
@@ -66,7 +116,12 @@ class _SessionCreateBottomSheetState extends State<SessionCreateBottomSheet> {
     final session = widget.initialSession;
     _date = session?.date != null ? DateTime.tryParse(session!.date!) ?? widget.initialDate : widget.initialDate;
     _time = _parseTime(session?.hour) ?? TimeOfDay.now();
-    _bagCtrl.text = session?.bag?.toString() ?? '';
+    if (session != null && session.bag != null) {
+      _bagCtrl.text = session.bag!.toString();
+    } else {
+      _bagCtrl.text = _calculateSuggestedBag(_date).toString();
+      _fetchSuggestedBagForDate(_date);
+    }
     _infusionCtrl.text = session?.infusion?.toString() ?? '';
     _drainageCtrl.text = session?.drainage?.toString() ?? '';
     _obsCtrl.text = session?.observations ?? '';
@@ -111,16 +166,34 @@ class _SessionCreateBottomSheetState extends State<SessionCreateBottomSheet> {
     final now = DateUtils.dateOnly(DateTime.now());
     final picked = await showDatePicker(
       context: context,
+      locale: const Locale('es', 'ES'),
       initialDate: _date.isAfter(now) ? now : _date,
       firstDate: DateTime(now.year - 2),
       lastDate: now,
     );
 
-    if (picked != null) setState(() => _date = DateUtils.dateOnly(picked));
+    if (picked != null) {
+      setState(() {
+        _date = DateUtils.dateOnly(picked);
+        if (!_isEditing) {
+          _bagCtrl.text = _calculateSuggestedBag(_date).toString();
+        }
+      });
+      if (!_isEditing) {
+        _fetchSuggestedBagForDate(DateUtils.dateOnly(picked));
+      }
+    }
   }
 
   Future<void> _pickTime() async {
-    final picked = await showTimePicker(context: context, initialTime: _time);
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _time,
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+        child: child!,
+      ),
+    );
     if (picked != null) setState(() => _time = picked);
   }
 
@@ -212,7 +285,7 @@ class _SessionCreateBottomSheetState extends State<SessionCreateBottomSheet> {
                     decoration: const InputDecoration(labelText: 'Hora'),
                     child: Row(
                       children: [
-                        Expanded(child: Text(_time.format(context))),
+                        Expanded(child: Text('${_time.hour.toString().padLeft(2, '0')}:${_time.minute.toString().padLeft(2, '0')}')),
                         const Icon(Icons.schedule),
                       ],
                     ),

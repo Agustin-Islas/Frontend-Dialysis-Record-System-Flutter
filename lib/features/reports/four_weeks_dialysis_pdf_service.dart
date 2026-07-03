@@ -1,4 +1,4 @@
-﻿import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -22,13 +22,15 @@ class FourWeeksDialysisPdfService {
   }) async {
     final document = pw.Document();
     final sorted = [...sessions]..sort((a, b) {
-        final dateCompare = (a.date ?? '').compareTo(b.date ?? '');
+        final dateCompare = (a.effectiveDate ?? '').compareTo(b.effectiveDate ?? '');
         if (dateCompare != 0) return dateCompare;
         return (a.hour ?? '').compareTo(b.hour ?? '');
       });
 
     final startDate = endDate.subtract(const Duration(days: 27));
     final dateRangeLabel = '${_fullDateFormat.format(startDate)} - ${_fullDateFormat.format(endDate)}';
+
+    final hasNightShifts = sorted.any((s) => s.isNightShift);
 
     document.addPage(
       pw.MultiPage(
@@ -39,8 +41,15 @@ class FourWeeksDialysisPdfService {
           pw.SizedBox(height: 12),
           _summary(summary),
           pw.SizedBox(height: 12),
-          _recordsTable(_groupByDate(sorted)),
+          _recordsTable(_groupByClinicalDate(sorted)),
           pw.SizedBox(height: 10),
+          if (hasNightShifts) ...[
+            pw.Text(
+              '* Registro nocturno posterior a medianoche, asignado a la jornada clínica anterior según corte médico.',
+              style: pw.TextStyle(fontSize: 8, color: PdfColors.grey800, fontStyle: pw.FontStyle.italic),
+            ),
+            pw.SizedBox(height: 4),
+          ],
           pw.Text(
             'Reporte generado digitalmente desde RenApp.',
             style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
@@ -204,9 +213,10 @@ class FourWeeksDialysisPdfService {
             5: pw.FixedColumnWidth(52),
           },
           children: sessions.map((session) {
+            final hourText = session.isNightShift ? '${_formatHour(session.hour)} *' : _formatHour(session.hour);
             return pw.TableRow(
               children: [
-                _bodyCell(_formatHour(session.hour), height: rowHeight),
+                _bodyCell(hourText, height: rowHeight),
                 _bodyCell(session.bag?.toString() ?? '', alignRight: true, height: rowHeight),
                 _bodyCell(_formatConcentration(session.concentration), alignRight: true, height: rowHeight),
                 _bodyCell(session.infusion?.toString() ?? '', alignRight: true, height: rowHeight),
@@ -280,10 +290,10 @@ class FourWeeksDialysisPdfService {
     );
   }
 
-  Map<String, List<SessionDto>> _groupByDate(List<SessionDto> sessions) {
+  Map<String, List<SessionDto>> _groupByClinicalDate(List<SessionDto> sessions) {
     final grouped = <String, List<SessionDto>>{};
     for (final session in sessions) {
-      final key = session.date ?? 'Sin fecha';
+      final key = session.effectiveDate ?? 'Sin fecha';
       grouped.putIfAbsent(key, () => []).add(session);
     }
     return grouped;

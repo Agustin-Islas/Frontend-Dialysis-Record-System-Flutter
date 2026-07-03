@@ -54,7 +54,10 @@ class PatientTodayScreenState extends ConsumerState<PatientTodayScreen> {
   }
 
   Future<void> openCreateSession() =>
-      _openSessionForm(initialDate: _selectedDate);
+      _openSessionForm(
+        initialDate: _selectedDate,
+        existingSessions: _dayDataCache.values.expand((d) => d.sessions).toList(),
+      );
 
   Future<_DayData> _loadDay(DateTime day, {int? index}) async {
     final me = ref.read(authStateProvider).valueOrNull;
@@ -97,6 +100,7 @@ class PatientTodayScreenState extends ConsumerState<PatientTodayScreen> {
   Future<void> _openSessionForm({
     required DateTime initialDate,
     SessionDto? session,
+    List<SessionDto> existingSessions = const [],
   }) async {
     final me = ref.read(authStateProvider).valueOrNull;
     final patientId = me?.id;
@@ -114,6 +118,7 @@ class PatientTodayScreenState extends ConsumerState<PatientTodayScreen> {
         initialDate: initialDate,
         initialSession: session,
         customConcentrations: me?.customConcentrations ?? [],
+        existingSessions: existingSessions,
         onSubmit: (data) async {
           try {
             if (session == null) {
@@ -288,6 +293,7 @@ class PatientTodayScreenState extends ConsumerState<PatientTodayScreen> {
                                 : () => _openSessionForm(
                                     initialDate: day,
                                     session: entry.value,
+                                    existingSessions: _dayDataCache.values.expand((d) => d.sessions).toList(),
                                   ),
                             onDelete: entry.value.id == null
                                 ? null
