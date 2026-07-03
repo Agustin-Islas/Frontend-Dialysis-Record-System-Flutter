@@ -19,16 +19,10 @@ class AuthNotifier extends AsyncNotifier<MeResponse?> {
 
   /// Attempt login and update state.
   Future<MeResponse?> login(String email, String password) async {
-    state = const AsyncLoading();
-    try {
-      final controller = ref.read(authControllerProvider);
-      final me = await controller.login(email, password);
-      state = AsyncData(me);
-      return me;
-    } catch (e, st) {
-      state = AsyncError(e, st);
-      rethrow;
-    }
+    final controller = ref.read(authControllerProvider);
+    final me = await controller.login(email, password);
+    state = AsyncData(me);
+    return me;
   }
 
   /// Clear session and redirect to login.

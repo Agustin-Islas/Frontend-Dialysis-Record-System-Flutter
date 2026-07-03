@@ -148,10 +148,7 @@ class PatientTodayScreenState extends ConsumerState<PatientTodayScreen> {
             }
             _refresh();
           } catch (e) {
-            final message = e is AppException
-                ? e.message
-                : 'No se pudo guardar el cambio.';
-            if (mounted) AppSnackBar.error(context, message);
+            if (mounted) AppSnackBar.showException(context, e, 'No se pudo guardar el cambio.');
             rethrow;
           }
         },
@@ -175,10 +172,7 @@ class PatientTodayScreenState extends ConsumerState<PatientTodayScreen> {
       if (mounted) AppSnackBar.success(context, 'Cambio eliminado');
       _refresh();
     } catch (e) {
-      final message = e is AppException
-          ? e.message
-          : 'No se pudo eliminar el cambio.';
-      if (mounted) AppSnackBar.error(context, message);
+      if (mounted) AppSnackBar.showException(context, e, 'No se pudo eliminar el cambio.');
     }
   }
 
@@ -394,16 +388,18 @@ class _DayHero extends StatelessWidget {
                   fontWeight: FontWeight.w800,
                 ),
               ),
-              const SizedBox(height: AppSpacing.xs),
-              InkWell(
-                onTap: onToday,
-                child: Text(
-                  'Volver a hoy',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: scheme.onPrimaryContainer.withValues(alpha: 0.8),
+              if (onToday != null) ...[
+                const SizedBox(height: AppSpacing.xs),
+                InkWell(
+                  onTap: onToday,
+                  child: Text(
+                    'Volver a hoy',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: scheme.onPrimaryContainer.withValues(alpha: 0.8),
+                    ),
                   ),
                 ),
-              ),
+              ],
             ],
           ),
           Positioned(

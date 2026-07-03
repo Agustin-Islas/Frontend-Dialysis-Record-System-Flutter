@@ -89,8 +89,7 @@ class _PatientDetailForDoctorScreenState extends ConsumerState<PatientDetailForD
       await _pdfService.download(bytes, fileName);
       if (mounted) AppSnackBar.success(context, 'PDF generado');
     } catch (e) {
-      final message = e is AppException ? e.message : 'No se pudo generar el PDF.';
-      if (mounted) AppSnackBar.error(context, message);
+      if (mounted) AppSnackBar.showException(context, e, 'No se pudo generar el PDF.');
     } finally {
       if (mounted) setState(() => _generatingPdf = false);
     }
@@ -128,8 +127,7 @@ class _PatientDetailForDoctorScreenState extends ConsumerState<PatientDetailForD
       await _fourWeeksPdfService.download(bytes, fileName);
       if (mounted) AppSnackBar.success(context, 'PDF de 4 semanas generado');
     } catch (e) {
-      final message = e is AppException ? e.message : 'No se pudo generar el PDF de 4 semanas.';
-      if (mounted) AppSnackBar.error(context, message);
+      if (mounted) AppSnackBar.showException(context, e, 'No se pudo generar el PDF de 4 semanas.');
     } finally {
       if (mounted) setState(() => _generatingPdf = false);
     }
@@ -144,7 +142,14 @@ class _PatientDetailForDoctorScreenState extends ConsumerState<PatientDetailForD
     final sortedKeys = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
     return {
       for (final key in sortedKeys)
-        key: (grouped[key]!..sort((a, b) => (a.bag ?? 999).compareTo(b.bag ?? 999))),
+        key: (grouped[key]!..sort((a, b) {
+          final bagComp = (a.bag ?? 999).compareTo(b.bag ?? 999);
+          if (bagComp != 0) return bagComp;
+          final aNight = a.isNightShift ? 1 : 0;
+          final bNight = b.isNightShift ? 1 : 0;
+          if (aNight != bNight) return aNight.compareTo(bNight);
+          return (a.hour ?? '').compareTo(b.hour ?? '');
+        })),
     };
   }
 

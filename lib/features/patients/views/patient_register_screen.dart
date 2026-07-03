@@ -75,8 +75,7 @@ class _PatientRegisterScreenState extends ConsumerState<PatientRegisterScreen> {
       AppSnackBar.success(context, 'Registro exitoso. Ya podés iniciar sesión.');
       context.go(AppRoutes.login);
     } catch (e) {
-      final message = e is AppException ? e.message : 'No se pudo completar el registro.';
-      if (mounted) AppSnackBar.error(context, message);
+      if (mounted) AppSnackBar.showException(context, e, 'No se pudo completar el registro.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }

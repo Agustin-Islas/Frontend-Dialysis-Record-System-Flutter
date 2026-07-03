@@ -34,8 +34,7 @@ class _DoctorPatientsScreenState extends ConsumerState<DoctorPatientsScreen> {
       AppSnackBar.success(context, 'Paciente asociado');
       ref.invalidate(doctorPatientsProvider);
     } catch (e) {
-      final message = e is AppException ? e.message : 'No se pudo asociar el paciente.';
-      if (mounted) AppSnackBar.error(context, message);
+      if (mounted) AppSnackBar.showException(context, e, 'No se pudo asociar el paciente.');
     }
   }
 
@@ -58,8 +57,7 @@ class _DoctorPatientsScreenState extends ConsumerState<DoctorPatientsScreen> {
       AppSnackBar.success(context, 'Paciente desasociado');
       ref.invalidate(doctorPatientsProvider);
     } catch (e) {
-      final message = e is AppException ? e.message : 'No se pudo desasociar el paciente.';
-      if (mounted) AppSnackBar.error(context, message);
+      if (mounted) AppSnackBar.showException(context, e, 'No se pudo desasociar el paciente.');
     }
   }
 

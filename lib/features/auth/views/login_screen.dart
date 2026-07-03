@@ -58,10 +58,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
-      final message = e is AppException
-          ? e.message
-          : 'Error al iniciar sesión.';
-      AppSnackBar.error(context, message);
+      AppSnackBar.showException(context, e, 'Error al iniciar sesión. Verificá tus datos.');
     }
   }
 

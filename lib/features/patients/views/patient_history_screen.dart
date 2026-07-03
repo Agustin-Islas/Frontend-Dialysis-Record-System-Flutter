@@ -106,10 +106,7 @@ class _PatientHistoryScreenState extends ConsumerState<PatientHistoryScreen> {
       await _pdfService.download(bytes, fileName);
       if (mounted) AppSnackBar.success(context, 'PDF generado');
     } catch (e) {
-      final message = e is AppException
-          ? e.message
-          : 'No se pudo generar el PDF.';
-      if (mounted) AppSnackBar.error(context, message);
+      if (mounted) AppSnackBar.showException(context, e, 'No se pudo generar el PDF.');
     } finally {
       if (mounted) setState(() => _generatingPdf = false);
     }
@@ -151,8 +148,7 @@ class _PatientHistoryScreenState extends ConsumerState<PatientHistoryScreen> {
       await _fourWeeksPdfService.download(bytes, fileName);
       if (mounted) AppSnackBar.success(context, 'PDF de 4 semanas generado');
     } catch (e) {
-      final message = e is AppException ? e.message : 'No se pudo generar el PDF de 4 semanas.';
-      if (mounted) AppSnackBar.error(context, message);
+      if (mounted) AppSnackBar.showException(context, e, 'No se pudo generar el PDF de 4 semanas.');
     } finally {
       if (mounted) setState(() => _generatingPdf = false);
     }
@@ -166,29 +162,34 @@ class _PatientHistoryScreenState extends ConsumerState<PatientHistoryScreen> {
         ? DateTime.tryParse(session.date!) ?? DateTime.now()
         : DateTime.now();
 
-    final patientCtrl = ref.read(patientControllerProvider);
-
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (_) => SessionCreateBottomSheet(
         initialDate: initialDate,
         initialSession: session,
         customConcentrations: me?.customConcentrations ?? [],
         onSubmit: (data) async {
-          await patientCtrl.updateSession(
-            sessionId: session.id!,
-            date: data.date,
-            hour: data.hour,
-            bag: data.bag,
-            concentration: data.concentration,
-            infusion: data.infusion,
-            drainage: data.drainage,
-            observations: data.observations,
-          );
-          if (!mounted) return;
-          AppSnackBar.success(context, 'Cambio actualizado');
-          _reload();
+          try {
+            final patientCtrl = ref.read(patientControllerProvider);
+            await patientCtrl.updateSession(
+              sessionId: session.id!,
+              date: data.date,
+              hour: data.hour,
+              bag: data.bag,
+              concentration: data.concentration,
+              infusion: data.infusion,
+              drainage: data.drainage,
+              observations: data.observations,
+            );
+            if (!mounted) return;
+            AppSnackBar.success(context, 'Cambio actualizado');
+            _reload();
+          } catch (e) {
+            if (mounted) AppSnackBar.showException(context, e, 'No se pudo actualizar el cambio.');
+            rethrow;
+          }
         },
       ),
     );
@@ -204,11 +205,15 @@ class _PatientHistoryScreenState extends ConsumerState<PatientHistoryScreen> {
     );
     if (!confirmed) return;
 
-    final patientCtrl = ref.read(patientControllerProvider);
-    await patientCtrl.deleteSession(sessionId: session.id!);
-    if (!mounted) return;
-    AppSnackBar.success(context, 'Cambio eliminado');
-    _reload();
+    try {
+      final patientCtrl = ref.read(patientControllerProvider);
+      await patientCtrl.deleteSession(sessionId: session.id!);
+      if (!mounted) return;
+      AppSnackBar.success(context, 'Cambio eliminado');
+      _reload();
+    } catch (e) {
+      if (mounted) AppSnackBar.showException(context, e, 'No se pudo eliminar el cambio.');
+    }
   }
 
   Map<String, List<SessionDto>> _groupByDay(List<SessionDto> sessions) {
@@ -221,7 +226,14 @@ class _PatientHistoryScreenState extends ConsumerState<PatientHistoryScreen> {
     return {
       for (final key in sortedKeys)
         key: (grouped[key]!
-          ..sort((a, b) => (a.bag ?? 999).compareTo(b.bag ?? 999))),
+          ..sort((a, b) {
+            final bagComp = (a.bag ?? 999).compareTo(b.bag ?? 999);
+            if (bagComp != 0) return bagComp;
+            final aNight = a.isNightShift ? 1 : 0;
+            final bNight = b.isNightShift ? 1 : 0;
+            if (aNight != bNight) return aNight.compareTo(bNight);
+            return (a.hour ?? '').compareTo(b.hour ?? '');
+          })),
     };
   }
 

@@ -82,25 +82,37 @@ class _SessionCreateBottomSheetState extends ConsumerState<SessionCreateBottomSh
     return false;
   }
 
-  int _calculateSuggestedBag(DateTime date) {
+  DateTime _computeClinicalDate(DateTime calendarDate, TimeOfDay timeOfDay) {
+    if (timeOfDay.hour < 5) {
+      return DateUtils.dateOnly(calendarDate.subtract(const Duration(days: 1)));
+    }
+    return DateUtils.dateOnly(calendarDate);
+  }
+
+  int _calculateSuggestedBag() {
+    final targetClinical = _computeClinicalDate(_date, _time);
+    final targetIso = targetClinical.toIso8601String().substring(0, 10);
     int count = 0;
     for (final s in widget.existingSessions) {
-      if (_isSameDay(s.date, date)) {
+      if (s.effectiveDate != null && s.effectiveDate!.startsWith(targetIso)) {
+        count++;
+      } else if (_isSameDay(s.date, targetClinical)) {
         count++;
       }
     }
     return count + 1;
   }
 
-  Future<void> _fetchSuggestedBagForDate(DateTime date) async {
+  Future<void> _fetchSuggestedBag() async {
     if (_isEditing) return;
     try {
       final me = ref.read(authStateProvider).valueOrNull;
       final patientId = me?.id;
       if (patientId == null) return;
+      final targetClinical = _computeClinicalDate(_date, _time);
       final patientCtrl = ref.read(patientControllerProvider);
-      final sessions = await patientCtrl.getSessionsByDay(patientId: patientId, day: date);
-      if (mounted && _date == date && !_isEditing) {
+      final sessions = await patientCtrl.getSessionsByDay(patientId: patientId, day: targetClinical);
+      if (mounted && _computeClinicalDate(_date, _time) == targetClinical && !_isEditing) {
         setState(() {
           _bagCtrl.text = (sessions.length + 1).toString();
         });
@@ -119,8 +131,8 @@ class _SessionCreateBottomSheetState extends ConsumerState<SessionCreateBottomSh
     if (session != null && session.bag != null) {
       _bagCtrl.text = session.bag!.toString();
     } else {
-      _bagCtrl.text = _calculateSuggestedBag(_date).toString();
-      _fetchSuggestedBagForDate(_date);
+      _bagCtrl.text = _calculateSuggestedBag().toString();
+      _fetchSuggestedBag();
     }
     _infusionCtrl.text = session?.infusion?.toString() ?? '';
     _drainageCtrl.text = session?.drainage?.toString() ?? '';
@@ -176,11 +188,11 @@ class _SessionCreateBottomSheetState extends ConsumerState<SessionCreateBottomSh
       setState(() {
         _date = DateUtils.dateOnly(picked);
         if (!_isEditing) {
-          _bagCtrl.text = _calculateSuggestedBag(_date).toString();
+          _bagCtrl.text = _calculateSuggestedBag().toString();
         }
       });
       if (!_isEditing) {
-        _fetchSuggestedBagForDate(DateUtils.dateOnly(picked));
+        _fetchSuggestedBag();
       }
     }
   }
@@ -194,7 +206,17 @@ class _SessionCreateBottomSheetState extends ConsumerState<SessionCreateBottomSh
         child: child!,
       ),
     );
-    if (picked != null) setState(() => _time = picked);
+    if (picked != null) {
+      setState(() {
+        _time = picked;
+        if (!_isEditing) {
+          _bagCtrl.text = _calculateSuggestedBag().toString();
+        }
+      });
+      if (!_isEditing) {
+        _fetchSuggestedBag();
+      }
+    }
   }
 
   Future<void> _submit() async {
@@ -249,6 +271,8 @@ class _SessionCreateBottomSheetState extends ConsumerState<SessionCreateBottomSh
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.of(context).viewInsets.bottom;
+    final me = ref.read(authStateProvider).valueOrNull;
+    final isPatientRole = me == null || me.role.toUpperCase() == 'PATIENT' || me.role.toUpperCase() == 'ROLE_PATIENT';
 
     return Padding(
       padding: EdgeInsets.only(left: 16, right: 16, top: 16, bottom: bottom + 16),
@@ -297,9 +321,18 @@ class _SessionCreateBottomSheetState extends ConsumerState<SessionCreateBottomSh
                     Expanded(
                       child: TextFormField(
                         controller: _bagCtrl,
-                        enabled: !_loading,
+                        enabled: !_loading && !isPatientRole,
+                        readOnly: isPatientRole,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(labelText: 'Bolsa'),
+                        decoration: InputDecoration(
+                          labelText: 'Bolsa N°',
+                          suffixIcon: isPatientRole
+                              ? const Tooltip(
+                                  message: 'Asignado automáticamente en orden clínico',
+                                  child: Icon(Icons.lock_outline, size: 18, color: Colors.grey),
+                                )
+                              : null,
+                        ),
                         validator: (v) => _requiredInt(v, 'Bolsa'),
                       ),
                     ),
@@ -354,6 +387,29 @@ class _SessionCreateBottomSheetState extends ConsumerState<SessionCreateBottomSh
                   decoration: const InputDecoration(labelText: 'Observaciones'),
                   validator: (v) => (v ?? '').length > 500 ? 'Maximo 500 caracteres' : null,
                 ),
+                if (_time.hour < 5) ...[
+                  const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.withOpacity(0.14),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.amber.shade700, width: 0.8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.nightlight_round, color: Colors.amber.shade800, size: 22),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Turno trasnoche: Al ser antes de las 05:00 AM, este recambio se asociará al historial médico del día anterior (${_formatDate(_computeClinicalDate(_date, _time))}).',
+                            style: TextStyle(fontSize: 12.5, color: Colors.amber.shade900, height: 1.35, fontWeight: FontWeight.w500),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,

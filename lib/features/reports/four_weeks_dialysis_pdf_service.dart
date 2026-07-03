@@ -168,7 +168,14 @@ class FourWeeksDialysisPdfService {
 
     final blocks = <pw.Widget>[_tableHeader()];
     grouped.forEach((date, sessions) {
-      final ordered = [...sessions]..sort((a, b) => (a.bag ?? 999).compareTo(b.bag ?? 999));
+      final ordered = [...sessions]..sort((a, b) {
+        final bagComp = (a.bag ?? 999).compareTo(b.bag ?? 999);
+        if (bagComp != 0) return bagComp;
+        final aNight = a.isNightShift ? 1 : 0;
+        final bNight = b.isNightShift ? 1 : 0;
+        if (aNight != bNight) return aNight.compareTo(bNight);
+        return (a.hour ?? '').compareTo(b.hour ?? '');
+      });
       blocks.add(_dayBlock(date: date, sessions: ordered, rowHeight: rowHeight));
     });
     return pw.Column(children: blocks);

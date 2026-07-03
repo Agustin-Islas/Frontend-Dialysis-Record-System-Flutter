@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:frontend_dialysis_record/core/design/design.dart';
+import 'package:frontend_dialysis_record/core/network/app_exception.dart';
 
 /// Semantic SnackBar helpers with consistent styling.
 ///
@@ -15,6 +16,11 @@ abstract final class AppSnackBar {
   }
 
   static void error(BuildContext context, String message) {
+    _show(context, message, AppColors.error, AppColors.onError, PhosphorIconsRegular.warningCircle);
+  }
+
+  static void showException(BuildContext context, dynamic error, [String defaultMsg = 'No se pudo completar la operación.']) {
+    final message = AppException.getMessage(error, defaultMsg);
     _show(context, message, AppColors.error, AppColors.onError, PhosphorIconsRegular.warningCircle);
   }
 

@@ -55,18 +55,26 @@ Page<dynamic> _premiumTransition(Widget child, GoRouterState state) {
   );
 }
 
+class _RouterRefreshNotifier extends ChangeNotifier {
+  _RouterRefreshNotifier(Ref ref) {
+    ref.listen(authStateProvider, (_, __) => notifyListeners());
+  }
+}
+
 /// GoRouter configuration provider.
 ///
 /// Uses [authStateProvider] for redirect guards. When not authenticated,
 /// the user is redirected to login. When authenticated, going to login
 /// redirects to the role-specific home.
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authStateProvider);
+  final refreshNotifier = _RouterRefreshNotifier(ref);
 
   return GoRouter(
     initialLocation: AppRoutes.splash,
     debugLogDiagnostics: false,
+    refreshListenable: refreshNotifier,
     redirect: (context, state) {
+      final authState = ref.read(authStateProvider);
       final isLoading = authState.isLoading;
       final me = authState.valueOrNull;
       final isAuthenticated = me != null;
