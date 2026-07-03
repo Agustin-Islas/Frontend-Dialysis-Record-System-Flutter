@@ -6,7 +6,6 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:frontend_dialysis_record/core/design/design.dart';
 import 'package:frontend_dialysis_record/core/router/app_router.dart';
 import 'package:frontend_dialysis_record/core/widgets/widgets.dart';
-import 'package:frontend_dialysis_record/core/network/app_exception.dart';
 import 'package:frontend_dialysis_record/features/auth/providers/auth_providers.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {

@@ -392,7 +392,7 @@ class _SessionCreateBottomSheetState extends ConsumerState<SessionCreateBottomSh
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.amber.withOpacity(0.14),
+                      color: Colors.amber.withValues(alpha: 0.14),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(color: Colors.amber.shade700, width: 0.8),
                     ),

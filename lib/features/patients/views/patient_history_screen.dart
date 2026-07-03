@@ -6,7 +6,6 @@ import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:frontend_dialysis_record/core/design/design.dart';
 import 'package:frontend_dialysis_record/core/providers/providers.dart';
 import 'package:frontend_dialysis_record/core/widgets/widgets.dart';
-import 'package:frontend_dialysis_record/core/network/app_exception.dart';
 import 'package:frontend_dialysis_record/features/auth/providers/auth_providers.dart';
 import 'package:frontend_dialysis_record/features/patients/views/widgets/session_expansion_card.dart';
 import 'package:frontend_dialysis_record/features/reports/four_weeks_dialysis_pdf_service.dart';

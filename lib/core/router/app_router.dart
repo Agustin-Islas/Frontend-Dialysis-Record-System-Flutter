@@ -57,7 +57,7 @@ Page<dynamic> _premiumTransition(Widget child, GoRouterState state) {
 
 class _RouterRefreshNotifier extends ChangeNotifier {
   _RouterRefreshNotifier(Ref ref) {
-    ref.listen(authStateProvider, (_, __) => notifyListeners());
+    ref.listen(authStateProvider, (_, _) => notifyListeners());
   }
 }
 
