@@ -154,17 +154,35 @@ class _PatientHistoryScreenState extends ConsumerState<PatientHistoryScreen> {
   }
 
 
+  DateTime? _parseDate(String? dateStr) {
+    if (dateStr == null || dateStr.isEmpty) return null;
+    final iso = DateTime.tryParse(dateStr);
+    if (iso != null) return iso;
+    final parts = dateStr.split(RegExp(r'[/.-]'));
+    if (parts.length == 3) {
+      final d = int.tryParse(parts[0]);
+      final m = int.tryParse(parts[1]);
+      final y = int.tryParse(parts[2]);
+      if (d != null && m != null && y != null) {
+        if (y > 1000 && m >= 1 && m <= 12 && d >= 1 && d <= 31) {
+          return DateTime(y, m, d);
+        }
+        if (d > 1000 && m >= 1 && m <= 12 && y >= 1 && y <= 31) {
+          return DateTime(d, m, y);
+        }
+      }
+    }
+    return null;
+  }
+
   Future<void> _editSession(SessionDto session) async {
     if (session.id == null) return;
     final me = ref.read(authStateProvider).valueOrNull;
-    final initialDate = session.date != null
-        ? DateTime.tryParse(session.date!) ?? DateTime.now()
-        : DateTime.now();
+    final initialDate = _parseDate(session.date) ?? DateTime.now();
 
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
       builder: (_) => SessionCreateBottomSheet(
         initialDate: initialDate,
         initialSession: session,
@@ -588,7 +606,7 @@ class _UltrafiltrationSummaryCard extends StatelessWidget {
   }
 
   String _formatAvg(int total, int days) {
-    if (days == 0) return '0';
+    if (days <= 0) return '0';
     final avg = total / days;
     if (avg == avg.truncateToDouble()) return avg.toInt().toString();
     return avg.toStringAsFixed(2).replaceFirst(RegExp(r'0*$'), '').replaceFirst(RegExp(r'\.$'), '');

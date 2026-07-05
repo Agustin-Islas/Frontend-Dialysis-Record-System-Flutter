@@ -39,15 +39,17 @@ class SessionExpansionCard extends StatelessWidget {
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
-              child: Row(
+              child: Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 6,
+                runSpacing: 4,
                 children: [
                   Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
-                  if (session.isNightShift) ...[
-                    const SizedBox(width: 8),
+                  if (session.isNightShift)
                     Tooltip(
                       message: 'Registrado el ${session.date} a las $title',
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
                           color: Colors.amber.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(12),
@@ -56,18 +58,15 @@ class SessionExpansionCard extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(PhosphorIconsRegular.moon, size: 14, color: Colors.amber.shade800),
-                            const SizedBox(width: 4),
-                            Text('Noche', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.amber.shade900)),
+                            Icon(PhosphorIconsRegular.moon, size: 12, color: Colors.amber.shade800),
+                            const SizedBox(width: 3),
+                            Text('Noche', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.amber.shade900)),
                           ],
                         ),
                       ),
                     ),
-                  ],
-                  if (hasObservation) ...[
-                    const SizedBox(width: 8),
+                  if (hasObservation)
                     Icon(PhosphorIconsRegular.note, size: 16, color: scheme.primary),
-                  ],
                 ],
               ),
             ),
@@ -162,12 +161,12 @@ class _BalancePill extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: scheme.primaryContainer,
         borderRadius: BorderRadius.circular(999),
       ),
-      child: Text('Parcial: $text ml', style: TextStyle(fontWeight: FontWeight.w700, color: scheme.primary)),
+      child: Text('Parcial: $text ml', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: scheme.primary)),
     );
   }
 }

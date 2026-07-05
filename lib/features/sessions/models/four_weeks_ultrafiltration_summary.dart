@@ -19,7 +19,7 @@ class FourWeeksUltrafiltrationSummary {
       totalChanges: 0,
       weeklyUltrafiltration: [0, 0, 0, 0],
       weekDayCounts: [7, 7, 7, 7],
-      elapsedDays: 28,
+      elapsedDays: 27,
     );
   }
 }
@@ -37,16 +37,20 @@ class FourWeeksUltrafiltrationCalculator {
     final weekTotals = List<int>.filled(4, 0);
     var totalChanges = 0;
 
+    final now = DateUtils.dateOnly(DateTime.now());
+
     for (final session in sessions) {
       final dateValue = session.date;
       if (dateValue == null) continue;
-      final date = DateTime.tryParse(dateValue);
+      final date = _parseDate(dateValue);
       if (date == null) continue;
 
       final day = DateUtils.dateOnly(date);
       if (day.isBefore(start) || day.isAfter(end)) continue;
 
-      totalChanges++;
+      if (!day.isAtSameMomentAs(now)) {
+        totalChanges++;
+      }
       
       // Calculate which week it falls into
       final differenceInDays = day.difference(start).inDays; // 0 to 27
@@ -65,7 +69,28 @@ class FourWeeksUltrafiltrationCalculator {
         growable: false,
       ),
       weekDayCounts: weekDayCounts,
-      elapsedDays: 28,
+      elapsedDays: (!now.isBefore(start) && !now.isAfter(end)) ? 27 : 28,
     );
+  }
+
+  static DateTime? _parseDate(String? dateStr) {
+    if (dateStr == null || dateStr.isEmpty) return null;
+    final iso = DateTime.tryParse(dateStr);
+    if (iso != null) return iso;
+    final parts = dateStr.split(RegExp(r'[/.-]'));
+    if (parts.length == 3) {
+      final d = int.tryParse(parts[0]);
+      final m = int.tryParse(parts[1]);
+      final y = int.tryParse(parts[2]);
+      if (d != null && m != null && y != null) {
+        if (y > 1000 && m >= 1 && m <= 12 && d >= 1 && d <= 31) {
+          return DateTime(y, m, d);
+        }
+        if (d > 1000 && m >= 1 && m <= 12 && y >= 1 && y <= 31) {
+          return DateTime(d, m, y);
+        }
+      }
+    }
+    return null;
   }
 }

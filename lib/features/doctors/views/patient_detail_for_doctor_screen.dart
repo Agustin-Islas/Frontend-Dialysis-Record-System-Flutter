@@ -533,7 +533,7 @@ class _PatientMonthPanel extends StatelessWidget {
   }
 
   String _formatAvg(int total, int days) {
-    if (days == 0) return '0';
+    if (days <= 0) return '0';
     final avg = total / days;
     if (avg == avg.truncateToDouble()) return avg.toInt().toString();
     return avg.toStringAsFixed(2).replaceFirst(RegExp(r'0*$'), '').replaceFirst(RegExp(r'\.$'), '');

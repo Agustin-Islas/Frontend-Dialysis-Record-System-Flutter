@@ -122,11 +122,32 @@ class _SessionCreateBottomSheetState extends ConsumerState<SessionCreateBottomSh
     }
   }
 
+  DateTime? _parseDate(String? dateStr) {
+    if (dateStr == null || dateStr.isEmpty) return null;
+    final iso = DateTime.tryParse(dateStr);
+    if (iso != null) return iso;
+    final parts = dateStr.split(RegExp(r'[/.-]'));
+    if (parts.length == 3) {
+      final d = int.tryParse(parts[0]);
+      final m = int.tryParse(parts[1]);
+      final y = int.tryParse(parts[2]);
+      if (d != null && m != null && y != null) {
+        if (y > 1000 && m >= 1 && m <= 12 && d >= 1 && d <= 31) {
+          return DateTime(y, m, d);
+        }
+        if (d > 1000 && m >= 1 && m <= 12 && y >= 1 && y <= 31) {
+          return DateTime(d, m, y);
+        }
+      }
+    }
+    return null;
+  }
+
   @override
   void initState() {
     super.initState();
     final session = widget.initialSession;
-    _date = session?.date != null ? DateTime.tryParse(session!.date!) ?? widget.initialDate : widget.initialDate;
+    _date = _parseDate(session?.date) ?? widget.initialDate;
     _time = _parseTime(session?.hour) ?? TimeOfDay.now();
     if (session != null && session.bag != null) {
       _bagCtrl.text = session.bag!.toString();

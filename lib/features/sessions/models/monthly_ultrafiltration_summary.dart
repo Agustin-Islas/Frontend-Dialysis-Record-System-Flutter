@@ -25,7 +25,7 @@ class MonthlyUltrafiltrationSummary {
     } else if (now.isAfter(monthEnd)) {
       elapsed = monthEnd.day;
     } else {
-      elapsed = now.day;
+      elapsed = now.day - 1;
     }
 
     return MonthlyUltrafiltrationSummary(
@@ -48,16 +48,20 @@ class MonthlyUltrafiltrationCalculator {
     final weekTotals = List<int>.filled(4, 0);
     var totalChanges = 0;
 
+    final now = DateUtils.dateOnly(DateTime.now());
+
     for (final session in sessions) {
       final dateValue = session.date;
       if (dateValue == null) continue;
-      final date = DateTime.tryParse(dateValue);
+      final date = _parseDate(dateValue);
       if (date == null) continue;
 
       final day = DateUtils.dateOnly(date);
       if (day.isBefore(monthStart) || day.isAfter(monthEnd)) continue;
 
-      totalChanges++;
+      if (!day.isAtSameMomentAs(now)) {
+        totalChanges++;
+      }
       final weekIndex = day.day <= 7
           ? 0
           : day.day <= 14
@@ -69,15 +73,13 @@ class MonthlyUltrafiltrationCalculator {
       weekTotals[weekIndex] += session.partial ?? ((session.infusion ?? 0) - (session.drainage ?? 0));
     }
 
-    final now = DateUtils.dateOnly(DateTime.now());
-    
     int elapsedDays;
     if (now.isBefore(monthStart)) {
       elapsedDays = 0;
     } else if (now.isAfter(monthEnd)) {
       elapsedDays = monthEnd.day;
     } else {
-      elapsedDays = now.day;
+      elapsedDays = now.day - 1;
     }
 
     return MonthlyUltrafiltrationSummary(
@@ -90,5 +92,26 @@ class MonthlyUltrafiltrationCalculator {
       weekDayCounts: weekDayCounts,
       elapsedDays: elapsedDays,
     );
+  }
+
+  static DateTime? _parseDate(String? dateStr) {
+    if (dateStr == null || dateStr.isEmpty) return null;
+    final iso = DateTime.tryParse(dateStr);
+    if (iso != null) return iso;
+    final parts = dateStr.split(RegExp(r'[/.-]'));
+    if (parts.length == 3) {
+      final d = int.tryParse(parts[0]);
+      final m = int.tryParse(parts[1]);
+      final y = int.tryParse(parts[2]);
+      if (d != null && m != null && y != null) {
+        if (y > 1000 && m >= 1 && m <= 12 && d >= 1 && d <= 31) {
+          return DateTime(y, m, d);
+        }
+        if (d > 1000 && m >= 1 && m <= 12 && y >= 1 && y <= 31) {
+          return DateTime(d, m, y);
+        }
+      }
+    }
+    return null;
   }
 }
