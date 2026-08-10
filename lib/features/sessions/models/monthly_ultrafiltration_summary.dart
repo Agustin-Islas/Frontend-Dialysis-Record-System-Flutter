@@ -44,11 +44,21 @@ class MonthlyUltrafiltrationCalculator {
   }) {
     final monthStart = DateUtils.dateOnly(DateTime(month.year, month.month, 1));
     final monthEnd = DateUtils.dateOnly(DateTime(month.year, month.month + 1, 0));
-    final weekDayCounts = <int>[7, 7, 7, monthEnd.day - 21];
+    final now = DateUtils.dateOnly(DateTime.now());
+
+    final actualWeekDayCounts = List<int>.filled(4, 0);
+    for (int i = 1; i <= monthEnd.day; i++) {
+      final currentDay = monthStart.add(Duration(days: i - 1));
+      if (currentDay.isAfter(now)) break;
+      
+      final weekIndex = i <= 7 ? 0 : i <= 14 ? 1 : i <= 21 ? 2 : 3;
+      actualWeekDayCounts[weekIndex]++;
+    }
+    for (int i = 0; i < 4; i++) {
+      if (actualWeekDayCounts[i] == 0) actualWeekDayCounts[i] = 1; // Prevent division by zero
+    }
     final weekTotals = List<int>.filled(4, 0);
     var totalChanges = 0;
-
-    final now = DateUtils.dateOnly(DateTime.now());
 
     for (final session in sessions) {
       final dateValue = session.date;
@@ -56,7 +66,20 @@ class MonthlyUltrafiltrationCalculator {
       final date = _parseDate(dateValue);
       if (date == null) continue;
 
-      final day = DateUtils.dateOnly(date);
+      var day = DateUtils.dateOnly(date);
+
+      // Adjust for clinical date: post-midnight sessions belong to previous day
+      final hourStr = session.hour;
+      if (hourStr != null && hourStr.isNotEmpty) {
+        final timeParts = hourStr.split(':');
+        if (timeParts.isNotEmpty) {
+          final h = int.tryParse(timeParts[0]);
+          if (h != null && h < 5) {
+            day = day.subtract(const Duration(days: 1));
+          }
+        }
+      }
+
       if (day.isBefore(monthStart) || day.isAfter(monthEnd)) continue;
 
       if (!day.isAtSameMomentAs(now)) {
@@ -86,10 +109,10 @@ class MonthlyUltrafiltrationCalculator {
       totalChanges: totalChanges,
       weeklyUltrafiltration: List.generate(
         4,
-        (index) => (weekTotals[index] / weekDayCounts[index]).round(),
+        (index) => (weekTotals[index] / actualWeekDayCounts[index]).round(),
         growable: false,
       ),
-      weekDayCounts: weekDayCounts,
+      weekDayCounts: actualWeekDayCounts,
       elapsedDays: elapsedDays,
     );
   }

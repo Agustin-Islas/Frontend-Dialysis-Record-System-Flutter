@@ -45,7 +45,20 @@ class FourWeeksUltrafiltrationCalculator {
       final date = _parseDate(dateValue);
       if (date == null) continue;
 
-      final day = DateUtils.dateOnly(date);
+      var day = DateUtils.dateOnly(date);
+
+      // Adjust for clinical date: post-midnight sessions belong to previous day
+      final hourStr = session.hour;
+      if (hourStr != null && hourStr.isNotEmpty) {
+        final timeParts = hourStr.split(':');
+        if (timeParts.isNotEmpty) {
+          final h = int.tryParse(timeParts[0]);
+          if (h != null && h < 5) {
+            day = day.subtract(const Duration(days: 1));
+          }
+        }
+      }
+
       if (day.isBefore(start) || day.isAfter(end)) continue;
 
       if (!day.isAtSameMomentAs(now)) {
