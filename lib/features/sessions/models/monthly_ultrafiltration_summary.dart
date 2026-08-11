@@ -44,12 +44,16 @@ class MonthlyUltrafiltrationCalculator {
   }) {
     final monthStart = DateUtils.dateOnly(DateTime(month.year, month.month, 1));
     final monthEnd = DateUtils.dateOnly(DateTime(month.year, month.month + 1, 0));
-    final now = DateUtils.dateOnly(DateTime.now());
+    
+    final nowDateTime = DateTime.now();
+    final currentClinicalDate = nowDateTime.hour < 5 
+        ? DateUtils.dateOnly(nowDateTime.subtract(const Duration(days: 1)))
+        : DateUtils.dateOnly(nowDateTime);
 
     final actualWeekDayCounts = List<int>.filled(4, 0);
     for (int i = 1; i <= monthEnd.day; i++) {
       final currentDay = monthStart.add(Duration(days: i - 1));
-      if (currentDay.isAfter(now)) break;
+      if (!currentDay.isBefore(currentClinicalDate)) break;
       
       final weekIndex = i <= 7 ? 0 : i <= 14 ? 1 : i <= 21 ? 2 : 3;
       actualWeekDayCounts[weekIndex]++;
@@ -82,9 +86,9 @@ class MonthlyUltrafiltrationCalculator {
 
       if (day.isBefore(monthStart) || day.isAfter(monthEnd)) continue;
 
-      if (!day.isAtSameMomentAs(now)) {
-        totalChanges++;
-      }
+      if (!day.isBefore(currentClinicalDate)) continue;
+
+      totalChanges++;
       final weekIndex = day.day <= 7
           ? 0
           : day.day <= 14
@@ -97,12 +101,12 @@ class MonthlyUltrafiltrationCalculator {
     }
 
     int elapsedDays;
-    if (now.isBefore(monthStart)) {
+    if (currentClinicalDate.isBefore(monthStart)) {
       elapsedDays = 0;
-    } else if (now.isAfter(monthEnd)) {
+    } else if (currentClinicalDate.isAfter(monthEnd)) {
       elapsedDays = monthEnd.day;
     } else {
-      elapsedDays = now.day - 1;
+      elapsedDays = currentClinicalDate.day - 1;
     }
 
     return MonthlyUltrafiltrationSummary(

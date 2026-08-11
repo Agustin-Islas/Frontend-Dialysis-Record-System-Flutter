@@ -34,10 +34,30 @@ class FourWeeksUltrafiltrationCalculator {
     final end = DateUtils.dateOnly(endDate);
     final start = end.subtract(const Duration(days: 27));
     final weekDayCounts = <int>[7, 7, 7, 7];
+    
+    final nowDateTime = DateTime.now();
+    final currentClinicalDate = nowDateTime.hour < 5 
+        ? DateUtils.dateOnly(nowDateTime.subtract(const Duration(days: 1)))
+        : DateUtils.dateOnly(nowDateTime);
+
+    // Adjust weekDayCounts if the currentClinicalDate is within the 4-week window
+    for (int i = 0; i <= 27; i++) {
+      final currentDay = start.add(Duration(days: i));
+      if (!currentDay.isBefore(currentClinicalDate)) {
+        // If currentDay is today or in the future, it hasn't ended. Subtract it from its week.
+        final weekIndex = i ~/ 7;
+        if (weekIndex >= 0 && weekIndex < 4) {
+          weekDayCounts[weekIndex]--;
+        }
+      }
+    }
+    // Prevent division by zero
+    for (int i = 0; i < 4; i++) {
+      if (weekDayCounts[i] == 0) weekDayCounts[i] = 1;
+    }
+
     final weekTotals = List<int>.filled(4, 0);
     var totalChanges = 0;
-
-    final now = DateUtils.dateOnly(DateTime.now());
 
     for (final session in sessions) {
       final dateValue = session.date;
@@ -61,9 +81,9 @@ class FourWeeksUltrafiltrationCalculator {
 
       if (day.isBefore(start) || day.isAfter(end)) continue;
 
-      if (!day.isAtSameMomentAs(now)) {
-        totalChanges++;
-      }
+      if (!day.isBefore(currentClinicalDate)) continue;
+
+      totalChanges++;
       
       // Calculate which week it falls into
       final differenceInDays = day.difference(start).inDays; // 0 to 27
@@ -82,7 +102,7 @@ class FourWeeksUltrafiltrationCalculator {
         growable: false,
       ),
       weekDayCounts: weekDayCounts,
-      elapsedDays: (!now.isBefore(start) && !now.isAfter(end)) ? 27 : 28,
+      elapsedDays: weekDayCounts.fold(0, (sum, count) => sum + count),
     );
   }
 
