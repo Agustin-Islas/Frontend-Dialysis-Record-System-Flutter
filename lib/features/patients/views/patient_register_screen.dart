@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:frontend_dialysis_record/core/design/design.dart';
-import 'package:frontend_dialysis_record/core/providers/providers.dart';
+
 import 'package:frontend_dialysis_record/core/router/app_router.dart';
 import 'package:frontend_dialysis_record/core/widgets/widgets.dart';
 
