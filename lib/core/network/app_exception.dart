@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AppException implements Exception {
   final String message;
@@ -48,6 +49,9 @@ class AppException implements Exception {
 
   static String getMessage(dynamic e, [String defaultMsg = 'No se pudo completar la operación.']) {
     if (e is AppException) return e.message;
+    if (e is AuthException) {
+      return _translateMessage(e.message, null, null);
+    }
     if (e is DioException) {
       if (e.error is AppException) {
         return (e.error as AppException).message;
@@ -68,6 +72,12 @@ class AppException implements Exception {
     }
     if (lower.contains('disabled') || lower.contains('locked')) {
       return 'Esta cuenta ha sido deshabilitada o bloqueada.';
+    }
+    if (lower.contains('email not confirmed')) {
+      return 'Debes confirmar tu correo electrónico antes de poder ingresar.';
+    }
+    if (lower.contains('rate limit') || lower.contains('too many requests')) {
+      return 'Demasiados intentos. Por favor, espera un momento y vuelve a intentar.';
     }
     if (lower.contains('already exists') || lower.contains('duplicate')) {
       return 'Ya existe un registro o cuenta con esos datos.';

@@ -1,12 +1,13 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:frontend_dialysis_record/core/design/design.dart';
 import 'package:frontend_dialysis_record/core/router/app_router.dart';
 import 'package:frontend_dialysis_record/core/widgets/widgets.dart';
-import 'package:frontend_dialysis_record/features/auth/providers/auth_providers.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -19,7 +20,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
-  bool _obscurePassword = true;
   bool _isLoading = false;
 
   @override
@@ -42,22 +42,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final me = await ref
-          .read(authStateProvider.notifier)
-          .login(_emailCtrl.text.trim(), _passwordCtrl.text);
+      // Login normal con correo y contraseña
+      await Supabase.instance.client.auth.signInWithPassword(
+        email: _emailCtrl.text.trim(),
+        password: _passwordCtrl.text,
+      );
 
       if (!mounted) return;
       setState(() => _isLoading = false);
+      
+      // No hacemos push manual porque el router detecta el cambio de sesión automáticamente y va al /home
 
-      if (me == null) {
-        AppSnackBar.error(context, 'No se pudo iniciar sesión.');
-        return;
-      }
-      // GoRouter redirect handles navigation
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
-      AppSnackBar.showException(context, e, 'Error al iniciar sesión. Verificá tus datos.');
+      if (kDebugMode) debugPrint('SUPABASE ERROR: $e');
+      AppSnackBar.showException(context, e, e.toString()); // Mostrar error real
     }
   }
 
@@ -82,7 +82,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       // ── Logo / Header ──
                       Image.asset(
                             'assets/images/logo RenApp.jpg',
-                            height: 180,
+                            height: 150,
                             fit: BoxFit.contain,
                           )
                           .animate()
@@ -93,16 +93,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             duration: AppAnimations.slow,
                             curve: AppAnimations.defaultCurve,
                           ),
-                      const SizedBox(height: AppSpacing.xxxl),
 
                       // ── Email field ──
                       TextFormField(
                         controller: _emailCtrl,
                         keyboardType: TextInputType.emailAddress,
                         textInputAction: TextInputAction.next,
-                        decoration: InputDecoration(
-                          labelText: 'Email',
-                          prefixIcon: const Icon(PhosphorIconsRegular.envelope),
+                        decoration: const InputDecoration(
+                          labelText: 'Correo electrónico',
+                          prefixIcon: Icon(PhosphorIconsRegular.envelope),
                           hintText: 'tu@email.com',
                         ),
                         validator: (value) {
@@ -113,42 +112,47 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         },
                       ),
                       const SizedBox(height: AppSpacing.md),
-
+                      
                       // ── Password field ──
                       TextFormField(
                         controller: _passwordCtrl,
-                        obscureText: _obscurePassword,
+                        obscureText: true,
                         textInputAction: TextInputAction.done,
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           labelText: 'Contraseña',
-                          prefixIcon: const Icon(PhosphorIconsRegular.lock),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscurePassword
-                                  ? PhosphorIconsRegular.eye
-                                  : PhosphorIconsRegular.eyeSlash,
-                            ),
-                            onPressed: () => setState(
-                              () => _obscurePassword = !_obscurePassword,
-                            ),
-                          ),
+                          prefixIcon: Icon(PhosphorIconsRegular.lockKey),
                         ),
-                        onFieldSubmitted: (_) => _isLoading ? null : _login(),
                         validator: (value) {
-                          final v = value ?? '';
-                          if (v.trim().isEmpty) return 'Contraseña requerida';
-                          if (v.length < 8) {
-                            return 'Debe tener al menos 8 caracteres';
-                          }
-                          if (v.length > 72) return 'Máximo 72 caracteres';
+                          if (value == null || value.isEmpty) return 'Requerido';
                           return null;
                         },
+                        onFieldSubmitted: (_) => _isLoading ? null : _login(),
                       ),
-                      const SizedBox(height: AppSpacing.xl),
+                      
+                      // ── Forgot Password ──
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: () {
+                            if (_emailCtrl.text.trim().isEmpty) {
+                              AppSnackBar.error(context, 'Ingresa tu correo para recuperar la contraseña');
+                              return;
+                            }
+                            Supabase.instance.client.auth.resetPasswordForEmail(_emailCtrl.text.trim());
+                            AppSnackBar.success(context, 'Se ha enviado un enlace de recuperación a tu correo');
+                          },
+                          child: Text(
+                            '¿Olvidaste tu contraseña?',
+                            style: TextStyle(color: scheme.primary),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
 
                       // ── Submit button ──
                       SizedBox(
                         width: double.infinity,
+                        height: 54,
                         child: FilledButton.icon(
                           onPressed: _isLoading ? null : _login,
                           icon: _isLoading
@@ -161,11 +165,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 )
                               : const Icon(PhosphorIconsRegular.signIn),
                           label: Text(
-                            _isLoading ? 'Iniciando...' : 'Iniciar sesión',
+                            _isLoading ? 'Iniciando sesión...' : 'Ingresar a la app',
                           ),
                         ),
                       ),
-                      const SizedBox(height: AppSpacing.lg),
+                      const SizedBox(height: AppSpacing.xl),
 
                       // ── Register buttons ──
                       const Divider(height: 32),
@@ -221,23 +225,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                           ),
                                         ],
                                       ),
-                                      const SizedBox(height: AppSpacing.md),
-                                      Divider(
-                                        color: scheme.outlineVariant
-                                            .withValues(alpha: 0.5),
-                                        height: 1,
-                                      ),
-                                      const SizedBox(height: AppSpacing.sm),
-                                      Text(
-                                        'Crear cuenta de Paciente',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodySmall
-                                            ?.copyWith(
-                                              color: scheme.onSurfaceVariant,
-                                            ),
-                                        textAlign: TextAlign.center,
-                                      ),
                                     ],
                                   ),
                                 ),
@@ -287,23 +274,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                                 ),
                                           ),
                                         ],
-                                      ),
-                                      const SizedBox(height: AppSpacing.md),
-                                      Divider(
-                                        color: scheme.outlineVariant
-                                            .withValues(alpha: 0.5),
-                                        height: 1,
-                                      ),
-                                      const SizedBox(height: AppSpacing.sm),
-                                      Text(
-                                        'Crear cuenta de Médico',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodySmall
-                                            ?.copyWith(
-                                              color: scheme.onSurfaceVariant,
-                                            ),
-                                        textAlign: TextAlign.center,
                                       ),
                                     ],
                                   ),

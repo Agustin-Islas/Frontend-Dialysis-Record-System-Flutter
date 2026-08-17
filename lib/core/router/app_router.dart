@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:frontend_dialysis_record/features/auth/providers/auth_providers.dart';
 import 'package:frontend_dialysis_record/features/auth/views/login_screen.dart';
+import 'package:frontend_dialysis_record/features/auth/views/otp_verification_screen.dart';
 import 'package:frontend_dialysis_record/features/auth/views/session_gate.dart';
 import 'package:frontend_dialysis_record/features/doctors/views/doctor_home_screen.dart';
 import 'package:frontend_dialysis_record/features/doctors/views/doctor_patients_screen.dart';
@@ -79,7 +80,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final me = authState.valueOrNull;
       final isAuthenticated = me != null;
 
-      final isAuthRoute = state.matchedLocation == AppRoutes.login ||
+      final isAuthRoute = state.matchedLocation.startsWith(AppRoutes.login) ||
           state.matchedLocation == AppRoutes.registerPatient ||
           state.matchedLocation == AppRoutes.registerDoctor;
       final isSplash = state.matchedLocation == AppRoutes.splash;
@@ -112,6 +113,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.login,
         pageBuilder: (context, state) => _premiumTransition(const LoginScreen(), state),
+        routes: [
+          GoRoute(
+            path: 'otp',
+            pageBuilder: (context, state) {
+              final email = state.extra as String? ?? '';
+              return _premiumTransition(OtpVerificationScreen(email: email), state);
+            },
+          ),
+        ],
       ),
       GoRoute(
         path: AppRoutes.registerPatient,

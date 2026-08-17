@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:frontend_dialysis_record/core/design/design.dart';
 import 'package:frontend_dialysis_record/core/providers/providers.dart';
 import 'package:frontend_dialysis_record/core/router/app_router.dart';
@@ -40,16 +41,25 @@ class _DoctorRegisterScreenState extends ConsumerState<DoctorRegisterScreen> {
     setState(() => _loading = true);
 
     try {
-      final authCtrl = ref.read(authControllerProvider);
-      await authCtrl.registerDoctor(
-        name: _nameCtrl.text.trim(),
-        surname: _surnameCtrl.text.trim(),
+      final res = await Supabase.instance.client.auth.signUp(
         email: _emailCtrl.text.trim(),
         password: _passwordCtrl.text,
+        data: {
+          'name': _nameCtrl.text.trim(),
+          'surname': _surnameCtrl.text.trim(),
+          'role': 'DOCTOR',
+        },
       );
+      
       if (!mounted) return;
-      AppSnackBar.success(context, 'Registro exitoso. Ya podés iniciar sesión.');
-      context.go(AppRoutes.login);
+      
+      if (res.session == null) {
+        AppSnackBar.success(context, 'Registro exitoso. Revisa tu correo (o la carpeta Spam) e ingresa el código.');
+        context.go('${AppRoutes.login}/otp', extra: _emailCtrl.text.trim());
+      } else {
+        AppSnackBar.success(context, 'Registro exitoso. Iniciando sesión...');
+        context.go(AppRoutes.login);
+      }
     } catch (e) {
       if (mounted) AppSnackBar.showException(context, e, 'No se pudo completar el registro.');
     } finally {

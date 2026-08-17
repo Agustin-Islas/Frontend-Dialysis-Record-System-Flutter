@@ -1,6 +1,5 @@
 class RegisterPatientRequest {
   final String email;
-  final String password;
   final String name;
   final String surname;
   final int dni;
@@ -10,7 +9,6 @@ class RegisterPatientRequest {
 
   RegisterPatientRequest({
     required this.email,
-    required this.password,
     required this.name,
     required this.surname,
     required this.dni,
@@ -21,7 +19,6 @@ class RegisterPatientRequest {
 
   Map<String, dynamic> toJson() => {
         "email": email,
-        "password": password,
         "name": name,
         "surname": surname,
         "dni": dni,

@@ -17,14 +17,12 @@ final tokenStorageProvider = Provider<TokenStorage>((ref) {
 });
 
 final dioClientProvider = Provider<DioClient>((ref) {
-  final tokenStorage = ref.watch(tokenStorageProvider);
-  return DioClient(tokenStorage: tokenStorage);
+  return DioClient();
 });
 
 final authControllerProvider = Provider<AuthController>((ref) {
   final dioClient = ref.watch(dioClientProvider);
-  final tokenStorage = ref.watch(tokenStorageProvider);
-  return AuthController(dioClient, tokenStorage);
+  return AuthController(dioClient);
 });
 
 final patientApiProvider = Provider<PatientApi>((ref) {
