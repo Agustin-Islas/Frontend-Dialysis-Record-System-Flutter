@@ -14,8 +14,6 @@ dependencies:
 
   # Authentication
   supabase_flutter: ^2.6.0
-  google_sign_in: ^6.2.1
-  sign_in_with_apple: ^3.3.0
 
   # Networking & Storage
   dio: ^5.9.0
