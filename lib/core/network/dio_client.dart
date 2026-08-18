@@ -10,14 +10,14 @@ class DioClient {
   static const String baseUrl = AppConfig.apiBaseUrl;
 
   DioClient()
-      : dio = Dio(
-          BaseOptions(
-            baseUrl: baseUrl,
-            connectTimeout: const Duration(milliseconds: 30000),
-            receiveTimeout: const Duration(milliseconds: 30000),
-            headers: const {'Content-Type': 'application/json'},
-          ),
-        ) {
+    : dio = Dio(
+        BaseOptions(
+          baseUrl: baseUrl,
+          connectTimeout: const Duration(milliseconds: 30000),
+          receiveTimeout: const Duration(milliseconds: 30000),
+          headers: const {'Content-Type': 'application/json'},
+        ),
+      ) {
     if (kDebugMode) {
       dio.interceptors.add(
         LogInterceptor(
@@ -58,4 +58,3 @@ class DioClient {
     );
   }
 }
-

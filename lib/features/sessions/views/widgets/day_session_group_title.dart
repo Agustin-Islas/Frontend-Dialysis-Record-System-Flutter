@@ -28,8 +28,15 @@ class DaySessionGroupTitle extends StatelessWidget {
       children: [
         if (hasObservations)
           Icon(PhosphorIconsRegular.note, size: 18, color: scheme.primary),
-        _MetaPill(label: 'Cambios: $changesCount', icon: PhosphorIconsRegular.arrowsClockwise),
-        _MetaPill(label: 'Total: ${_signed(totalMl)} ml', icon: PhosphorIconsRegular.drop, strong: true),
+        _MetaPill(
+          label: 'Cambios: $changesCount',
+          icon: PhosphorIconsRegular.arrowsClockwise,
+        ),
+        _MetaPill(
+          label: 'Total: ${_signed(totalMl)} ml',
+          icon: PhosphorIconsRegular.drop,
+          strong: true,
+        ),
       ],
     );
 
@@ -43,7 +50,9 @@ class DaySessionGroupTitle extends StatelessWidget {
                 dayTitle,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: AppSpacing.sm),
               meta,
@@ -58,7 +67,9 @@ class DaySessionGroupTitle extends StatelessWidget {
                 dayTitle,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
               ),
             ),
             const SizedBox(width: AppSpacing.md),
@@ -83,7 +94,10 @@ class _MetaPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 6),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: 6,
+      ),
       decoration: BoxDecoration(
         color: scheme.surface,
         borderRadius: BorderRadius.circular(999),

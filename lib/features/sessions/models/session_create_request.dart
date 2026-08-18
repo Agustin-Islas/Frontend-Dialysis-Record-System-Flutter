@@ -18,12 +18,12 @@ class SessionCreateRequest {
   });
 
   Map<String, dynamic> toJson() => {
-        'date': date,
-        'hour': hour,
-        'bag': bag,
-        'concentration': concentration,
-        'infusion': infusion,
-        'drainage': drainage,
-        'observations': observations,
-      };
+    'date': date,
+    'hour': hour,
+    'bag': bag,
+    'concentration': concentration,
+    'infusion': infusion,
+    'drainage': drainage,
+    'observations': observations,
+  };
 }

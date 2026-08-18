@@ -47,10 +47,7 @@ extension AppAnimateExtension on Widget {
   /// Subtle scale animation for interactive elements on appear.
   Widget withScaleAnimation({Duration? delay}) {
     return animate(delay: delay)
-        .fadeIn(
-          duration: AppAnimations.fast,
-          curve: AppAnimations.defaultCurve,
-        )
+        .fadeIn(duration: AppAnimations.fast, curve: AppAnimations.defaultCurve)
         .scale(
           begin: const Offset(0.96, 0.96),
           end: const Offset(1, 1),

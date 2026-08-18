@@ -72,11 +72,7 @@ class AppSkeletonScreen extends StatelessWidget {
   /// Number of skeleton cards.
   final int itemCount;
 
-  const AppSkeletonScreen({
-    super.key,
-    this.title,
-    this.itemCount = 4,
-  });
+  const AppSkeletonScreen({super.key, this.title, this.itemCount = 4});
 
   @override
   Widget build(BuildContext context) {
@@ -85,7 +81,10 @@ class AppSkeletonScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         children: [
           if (title != null) ...[
-            Bone.text(words: 1, style: Theme.of(context).textTheme.headlineSmall),
+            Bone.text(
+              words: 1,
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
             const SizedBox(height: 12),
           ],
           for (int i = 0; i < itemCount; i++) const AppSkeletonCard(),

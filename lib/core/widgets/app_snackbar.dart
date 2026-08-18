@@ -12,24 +12,58 @@ import 'package:frontend_dialysis_record/core/network/app_exception.dart';
 /// - warning → amber
 abstract final class AppSnackBar {
   static void success(BuildContext context, String message) {
-    _show(context, message, AppColors.success, AppColors.onSuccess, PhosphorIconsRegular.checkCircle);
+    _show(
+      context,
+      message,
+      AppColors.success,
+      AppColors.onSuccess,
+      PhosphorIconsRegular.checkCircle,
+    );
   }
 
   static void error(BuildContext context, String message) {
-    _show(context, message, AppColors.error, AppColors.onError, PhosphorIconsRegular.warningCircle);
+    _show(
+      context,
+      message,
+      AppColors.error,
+      AppColors.onError,
+      PhosphorIconsRegular.warningCircle,
+    );
   }
 
-  static void showException(BuildContext context, dynamic error, [String defaultMsg = 'No se pudo completar la operación.']) {
+  static void showException(
+    BuildContext context,
+    dynamic error, [
+    String defaultMsg = 'No se pudo completar la operación.',
+  ]) {
     final message = AppException.getMessage(error, defaultMsg);
-    _show(context, message, AppColors.error, AppColors.onError, PhosphorIconsRegular.warningCircle);
+    _show(
+      context,
+      message,
+      AppColors.error,
+      AppColors.onError,
+      PhosphorIconsRegular.warningCircle,
+    );
   }
 
   static void info(BuildContext context, String message) {
-    _show(context, message, AppColors.info, AppColors.onInfo, PhosphorIconsRegular.info);
+    _show(
+      context,
+      message,
+      AppColors.info,
+      AppColors.onInfo,
+      PhosphorIconsRegular.info,
+    );
   }
 
   static void warning(BuildContext context, String message) {
-    _show(context, message, AppColors.warning, AppColors.onWarning, PhosphorIconsRegular.warning);
+    _show(
+      context,
+      message,
+      AppColors.warning,
+      AppColors.onWarning,
+      PhosphorIconsRegular.warning,
+    );
   }
 
   static void _show(
@@ -52,7 +86,10 @@ abstract final class AppSnackBar {
               Expanded(
                 child: Text(
                   message,
-                  style: TextStyle(color: foregroundColor, fontWeight: FontWeight.w500),
+                  style: TextStyle(
+                    color: foregroundColor,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ],

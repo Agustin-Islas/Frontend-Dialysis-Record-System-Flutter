@@ -21,8 +21,11 @@ class MonthlyDialysisPdfService {
     required MonthlyUltrafiltrationSummary summary,
   }) async {
     final document = pw.Document();
-    final sorted = [...sessions]..sort((a, b) {
-        final dateCompare = (a.effectiveDate ?? '').compareTo(b.effectiveDate ?? '');
+    final sorted = [...sessions]
+      ..sort((a, b) {
+        final dateCompare = (a.effectiveDate ?? '').compareTo(
+          b.effectiveDate ?? '',
+        );
         if (dateCompare != 0) return dateCompare;
         return (a.hour ?? '').compareTo(b.hour ?? '');
       });
@@ -43,7 +46,11 @@ class MonthlyDialysisPdfService {
           if (hasNightShifts) ...[
             pw.Text(
               '* Registro nocturno posterior a medianoche, asignado a la jornada clínica anterior según corte médico.',
-              style: pw.TextStyle(fontSize: 8, color: PdfColors.grey800, fontStyle: pw.FontStyle.italic),
+              style: pw.TextStyle(
+                fontSize: 8,
+                color: PdfColors.grey800,
+                fontStyle: pw.FontStyle.italic,
+              ),
             ),
             pw.SizedBox(height: 4),
           ],
@@ -101,12 +108,30 @@ class MonthlyDialysisPdfService {
               children: [
                 pw.Text(
                   'Registro mensual de diálisis peritoneal',
-                  style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold, color: _primary),
+                  style: pw.TextStyle(
+                    fontSize: 18,
+                    fontWeight: pw.FontWeight.bold,
+                    color: _primary,
+                  ),
                 ),
                 pw.SizedBox(height: 4),
-                pw.Text('Paciente: $fullName', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
-                if (patient.dni != null) pw.Text('DNI: ${patient.dni}', style: const pw.TextStyle(fontSize: 10)),
-                if (patient.doctorName != null) pw.Text('Médico: ${patient.doctorName}', style: const pw.TextStyle(fontSize: 10)),
+                pw.Text(
+                  'Paciente: $fullName',
+                  style: pw.TextStyle(
+                    fontSize: 11,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+                if (patient.dni != null)
+                  pw.Text(
+                    'DNI: ${patient.dni}',
+                    style: const pw.TextStyle(fontSize: 10),
+                  ),
+                if (patient.doctorName != null)
+                  pw.Text(
+                    'Médico: ${patient.doctorName}',
+                    style: const pw.TextStyle(fontSize: 10),
+                  ),
               ],
             ),
           ),
@@ -116,7 +141,10 @@ class MonthlyDialysisPdfService {
               color: PdfColors.white,
               border: pw.Border.all(color: _primary, width: 0.7),
             ),
-            child: pw.Text(monthLabel, style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
+            child: pw.Text(
+              monthLabel,
+              style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+            ),
           ),
         ],
       ),
@@ -128,13 +156,27 @@ class MonthlyDialysisPdfService {
       return pw.Expanded(
         child: pw.Container(
           padding: const pw.EdgeInsets.all(7),
-          decoration: pw.BoxDecoration(border: pw.Border.all(color: PdfColors.grey400, width: 0.5)),
+          decoration: pw.BoxDecoration(
+            border: pw.Border.all(color: PdfColors.grey400, width: 0.5),
+          ),
           child: pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              pw.Text(label, style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey700)),
+              pw.Text(
+                label,
+                style: const pw.TextStyle(
+                  fontSize: 7,
+                  color: PdfColors.grey700,
+                ),
+              ),
               pw.SizedBox(height: 2),
-              pw.Text(value, style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+              pw.Text(
+                value,
+                style: pw.TextStyle(
+                  fontSize: 11,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
             ],
           ),
         ),
@@ -143,7 +185,10 @@ class MonthlyDialysisPdfService {
 
     return pw.Row(
       children: [
-        item('Promedio de cambios diarios', _formatAvg(summary.totalChanges, summary.elapsedDays)),
+        item(
+          'Promedio de cambios diarios',
+          _formatAvg(summary.totalChanges, summary.elapsedDays),
+        ),
         item('UF semana 1', '${summary.weeklyUltrafiltration[0]} ml/dia'),
         item('UF semana 2', '${summary.weeklyUltrafiltration[1]} ml/dia'),
         item('UF semana 3', '${summary.weeklyUltrafiltration[2]} ml/dia'),
@@ -158,22 +203,32 @@ class MonthlyDialysisPdfService {
       return pw.Table(
         border: pw.TableBorder.all(color: PdfColors.grey600, width: 0.45),
         children: [
-          pw.TableRow(children: [_bodyCell('Sin registros para el mes seleccionado', colspanStyle: true)]),
+          pw.TableRow(
+            children: [
+              _bodyCell(
+                'Sin registros para el mes seleccionado',
+                colspanStyle: true,
+              ),
+            ],
+          ),
         ],
       );
     }
 
     final blocks = <pw.Widget>[_tableHeader()];
     grouped.forEach((date, sessions) {
-      final ordered = [...sessions]..sort((a, b) {
-        final bagComp = (a.bag ?? 999).compareTo(b.bag ?? 999);
-        if (bagComp != 0) return bagComp;
-        final aNight = a.isNightShift ? 1 : 0;
-        final bNight = b.isNightShift ? 1 : 0;
-        if (aNight != bNight) return aNight.compareTo(bNight);
-        return (a.hour ?? '').compareTo(b.hour ?? '');
-      });
-      blocks.add(_dayBlock(date: date, sessions: ordered, rowHeight: rowHeight));
+      final ordered = [...sessions]
+        ..sort((a, b) {
+          final bagComp = (a.bag ?? 999).compareTo(b.bag ?? 999);
+          if (bagComp != 0) return bagComp;
+          final aNight = a.isNightShift ? 1 : 0;
+          final bNight = b.isNightShift ? 1 : 0;
+          if (aNight != bNight) return aNight.compareTo(bNight);
+          return (a.hour ?? '').compareTo(b.hour ?? '');
+        });
+      blocks.add(
+        _dayBlock(date: date, sessions: ordered, rowHeight: rowHeight),
+      );
     });
     return pw.Column(children: blocks);
   }
@@ -217,20 +272,47 @@ class MonthlyDialysisPdfService {
             5: pw.FixedColumnWidth(52),
           },
           children: sessions.map((session) {
-            final hourText = session.isNightShift ? '${_formatHour(session.hour)} *' : _formatHour(session.hour);
+            final hourText = session.isNightShift
+                ? '${_formatHour(session.hour)} *'
+                : _formatHour(session.hour);
             return pw.TableRow(
               children: [
                 _bodyCell(hourText, height: rowHeight),
-                _bodyCell(session.bag?.toString() ?? '', alignRight: true, height: rowHeight),
-                _bodyCell(_formatConcentration(session.concentration), alignRight: true, height: rowHeight),
-                _bodyCell(session.infusion?.toString() ?? '', alignRight: true, height: rowHeight),
-                _bodyCell(session.drainage?.toString() ?? '', alignRight: true, height: rowHeight),
-                _bodyCell(_signed(session.partial), alignRight: true, height: rowHeight),
+                _bodyCell(
+                  session.bag?.toString() ?? '',
+                  alignRight: true,
+                  height: rowHeight,
+                ),
+                _bodyCell(
+                  _formatConcentration(session.concentration),
+                  alignRight: true,
+                  height: rowHeight,
+                ),
+                _bodyCell(
+                  session.infusion?.toString() ?? '',
+                  alignRight: true,
+                  height: rowHeight,
+                ),
+                _bodyCell(
+                  session.drainage?.toString() ?? '',
+                  alignRight: true,
+                  height: rowHeight,
+                ),
+                _bodyCell(
+                  _signed(session.partial),
+                  alignRight: true,
+                  height: rowHeight,
+                ),
               ],
             );
           }).toList(),
         ),
-        _mergedCell(_signed(total), width: 54, height: blockHeight, alignRight: true),
+        _mergedCell(
+          _signed(total),
+          width: 54,
+          height: blockHeight,
+          alignRight: true,
+        ),
         pw.Expanded(
           child: pw.Table(
             border: pw.TableBorder.all(color: PdfColors.grey600, width: 0.45),
@@ -257,19 +339,30 @@ class MonthlyDialysisPdfService {
         border: pw.Border.all(color: PdfColors.grey600, width: 0.45),
       ),
       padding: const pw.EdgeInsets.symmetric(horizontal: 4),
-      child: pw.Text(text, style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.center),
+      child: pw.Text(
+        text,
+        style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold),
+        textAlign: pw.TextAlign.center,
+      ),
     );
 
     if (width != null) return pw.SizedBox(width: width, child: child);
     return pw.Expanded(flex: flex ?? 1, child: child);
   }
 
-  pw.Widget _mergedCell(String text, {required double width, required double height, bool alignRight = false}) {
+  pw.Widget _mergedCell(
+    String text, {
+    required double width,
+    required double height,
+    bool alignRight = false,
+  }) {
     return pw.Container(
       width: width,
       height: height,
       alignment: alignRight ? pw.Alignment.centerRight : pw.Alignment.center,
-      decoration: pw.BoxDecoration(border: pw.Border.all(color: PdfColors.grey600, width: 0.45)),
+      decoration: pw.BoxDecoration(
+        border: pw.Border.all(color: PdfColors.grey600, width: 0.45),
+      ),
       padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 4),
       child: pw.Text(
         text,
@@ -279,10 +372,17 @@ class MonthlyDialysisPdfService {
     );
   }
 
-  pw.Widget _bodyCell(String text, {bool alignRight = false, bool colspanStyle = false, double height = 18}) {
+  pw.Widget _bodyCell(
+    String text, {
+    bool alignRight = false,
+    bool colspanStyle = false,
+    double height = 18,
+  }) {
     return pw.Container(
       height: height,
-      alignment: alignRight ? pw.Alignment.centerRight : pw.Alignment.centerLeft,
+      alignment: alignRight
+          ? pw.Alignment.centerRight
+          : pw.Alignment.centerLeft,
       padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 3),
       child: pw.Text(
         text,
@@ -294,7 +394,9 @@ class MonthlyDialysisPdfService {
     );
   }
 
-  Map<String, List<SessionDto>> _groupByClinicalDate(List<SessionDto> sessions) {
+  Map<String, List<SessionDto>> _groupByClinicalDate(
+    List<SessionDto> sessions,
+  ) {
     final grouped = <String, List<SessionDto>>{};
     for (final session in sessions) {
       final key = session.effectiveDate ?? 'Sin fecha';
@@ -315,7 +417,9 @@ class MonthlyDialysisPdfService {
 
   String _formatConcentration(double? value) {
     if (value == null) return '';
-    return value % 1 == 0 ? value.toInt().toString() : value.toStringAsFixed(1).replaceAll('.', ',');
+    return value % 1 == 0
+        ? value.toInt().toString()
+        : value.toStringAsFixed(1).replaceAll('.', ',');
   }
 
   String _signed(int? value) {
@@ -332,6 +436,9 @@ class MonthlyDialysisPdfService {
     if (days <= 0) return '0';
     final avg = total / days;
     if (avg == avg.truncateToDouble()) return avg.toInt().toString();
-    return avg.toStringAsFixed(2).replaceFirst(RegExp(r'0*$'), '').replaceFirst(RegExp(r'\.$'), '');
+    return avg
+        .toStringAsFixed(2)
+        .replaceFirst(RegExp(r'0*$'), '')
+        .replaceFirst(RegExp(r'\.$'), '');
   }
 }

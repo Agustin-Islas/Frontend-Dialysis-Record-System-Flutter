@@ -18,12 +18,12 @@ class RegisterPatientRequest {
   });
 
   Map<String, dynamic> toJson() => {
-        "email": email,
-        "name": name,
-        "surname": surname,
-        "dni": dni,
-        "dateOfBirth": dateOfBirth,
-        "address": address,
-        "number": number,
-      };
+    "email": email,
+    "name": name,
+    "surname": surname,
+    "dni": dni,
+    "dateOfBirth": dateOfBirth,
+    "address": address,
+    "number": number,
+  };
 }

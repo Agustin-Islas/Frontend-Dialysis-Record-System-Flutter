@@ -9,32 +9,27 @@ import 'package:frontend_dialysis_record/core/widgets/widgets.dart';
 import 'package:frontend_dialysis_record/features/auth/models/me_response.dart';
 import 'package:frontend_dialysis_record/features/doctors/providers/doctor_providers.dart';
 import 'package:frontend_dialysis_record/features/patients/providers/patient_providers.dart';
+import 'package:frontend_dialysis_record/features/invitations/providers/invitations_providers.dart';
+import 'package:frontend_dialysis_record/features/invitations/models/create_invitation_dto.dart';
 
 class DoctorPatientsScreen extends ConsumerStatefulWidget {
   const DoctorPatientsScreen({super.key});
 
   @override
-  ConsumerState<DoctorPatientsScreen> createState() => _DoctorPatientsScreenState();
+  ConsumerState<DoctorPatientsScreen> createState() =>
+      _DoctorPatientsScreenState();
 }
 
 class _DoctorPatientsScreenState extends ConsumerState<DoctorPatientsScreen> {
-  Future<void> _addPatient(List<MeResponse> currentPatients) async {
-    final currentIds = currentPatients.map((p) => p.id).whereType<String>().toSet();
-    final id = await showDialog<String>(
+  Future<void> _addPatient() async {
+    final success = await showDialog<bool>(
       context: context,
-      builder: (context) => _PatientPickerDialog(associatedIds: currentIds),
+      builder: (context) => const _PatientInviteDialog(),
     );
-    if (id == null || id.isEmpty) return;
+    if (success != true) return;
 
-    try {
-      final ctrl = ref.read(doctorControllerProvider);
-      await ctrl.addPatient(id);
-      if (!mounted) return;
-      AppSnackBar.success(context, 'Paciente asociado');
-      ref.invalidate(doctorPatientsProvider);
-    } catch (e) {
-      if (mounted) AppSnackBar.showException(context, e, 'No se pudo asociar el paciente.');
-    }
+    if (!mounted) return;
+    AppSnackBar.success(context, 'Invitación enviada correctamente.');
   }
 
   Future<void> _removePatient(MeResponse patient) async {
@@ -44,7 +39,8 @@ class _DoctorPatientsScreenState extends ConsumerState<DoctorPatientsScreen> {
     final confirmed = await AppConfirmDialog.show(
       context,
       title: 'Desasociar paciente',
-      message: '¿Querés quitar a ${patient.name ?? "este paciente"} de tu lista?',
+      message:
+          '¿Querés quitar a ${patient.name ?? "este paciente"} de tu lista?',
       confirmLabel: 'Quitar',
     );
     if (!confirmed) return;
@@ -56,7 +52,12 @@ class _DoctorPatientsScreenState extends ConsumerState<DoctorPatientsScreen> {
       AppSnackBar.success(context, 'Paciente desasociado');
       ref.invalidate(doctorPatientsProvider);
     } catch (e) {
-      if (mounted) AppSnackBar.showException(context, e, 'No se pudo desasociar el paciente.');
+      if (mounted)
+        AppSnackBar.showException(
+          context,
+          e,
+          'No se pudo desasociar el paciente.',
+        );
     }
   }
 
@@ -66,7 +67,8 @@ class _DoctorPatientsScreenState extends ConsumerState<DoctorPatientsScreen> {
 
     return SafeArea(
       child: patientsAsync.when(
-        loading: () => const AppSkeletonScreen(title: 'Pacientes', itemCount: 4),
+        loading: () =>
+            const AppSkeletonScreen(title: 'Pacientes', itemCount: 4),
         error: (error, _) => AppErrorCard(
           message: 'No se pudieron cargar los pacientes.',
           details: error.toString(),
@@ -82,10 +84,13 @@ class _DoctorPatientsScreenState extends ConsumerState<DoctorPatientsScreen> {
                   Row(
                     children: [
                       Expanded(
-                        child: Text('Pacientes', style: Theme.of(context).textTheme.headlineSmall),
+                        child: Text(
+                          'Pacientes',
+                          style: Theme.of(context).textTheme.headlineSmall,
+                        ),
                       ),
                       FilledButton.icon(
-                        onPressed: () => _addPatient(patients),
+                        onPressed: _addPatient,
                         icon: const Icon(PhosphorIconsRegular.userPlus),
                         label: const Text('Agregar'),
                       ),
@@ -115,7 +120,11 @@ class _DoctorPatientsScreenState extends ConsumerState<DoctorPatientsScreen> {
                                     onRemove: () => _removePatient(patient),
                                     onOpen: () {
                                       context.push(
-                                        AppRoutes.doctorPatientDetail.replaceFirst(':patientId', patient.id!),
+                                        AppRoutes.doctorPatientDetail
+                                            .replaceFirst(
+                                              ':patientId',
+                                              patient.id!,
+                                            ),
                                       );
                                     },
                                   ),
@@ -151,9 +160,16 @@ class _PatientCard extends StatelessWidget {
     final name = '${patient.name ?? "-"} ${patient.surname ?? ""}'.trim();
     return Card(
       child: ListTile(
-        contentPadding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.sm, AppSpacing.sm),
+        contentPadding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          AppSpacing.sm,
+          AppSpacing.sm,
+          AppSpacing.sm,
+        ),
         title: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis),
-        subtitle: Text(patient.dni != null ? 'DNI: ${patient.dni}' : patient.id ?? ''),
+        subtitle: Text(
+          patient.dni != null ? 'DNI: ${patient.dni}' : patient.id ?? '',
+        ),
         trailing: IconButton(
           tooltip: 'Desasociar',
           onPressed: onRemove,
@@ -165,104 +181,120 @@ class _PatientCard extends StatelessWidget {
   }
 }
 
-class _PatientPickerDialog extends ConsumerStatefulWidget {
-  final Set<String> associatedIds;
-
-  const _PatientPickerDialog({required this.associatedIds});
+class _PatientInviteDialog extends ConsumerStatefulWidget {
+  const _PatientInviteDialog();
 
   @override
-  ConsumerState<_PatientPickerDialog> createState() => _PatientPickerDialogState();
+  ConsumerState<_PatientInviteDialog> createState() =>
+      _PatientInviteDialogState();
 }
 
-class _PatientPickerDialogState extends ConsumerState<_PatientPickerDialog> {
-  String _query = '';
+class _PatientInviteDialogState extends ConsumerState<_PatientInviteDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _emailCtrl = TextEditingController();
+  final _dniCtrl = TextEditingController();
+  bool _isLoading = false;
 
-  List<MeResponse> _filter(List<MeResponse> patients) {
-    final query = _query.trim().toLowerCase();
-    if (query.isEmpty) return patients;
+  @override
+  void dispose() {
+    _emailCtrl.dispose();
+    _dniCtrl.dispose();
+    super.dispose();
+  }
 
-    return patients.where((patient) {
-      final haystack = [
-        patient.name,
-        patient.surname,
-        patient.dni,
-        patient.email,
-      ].whereType<String>().join(' ').toLowerCase();
-      return haystack.contains(query);
-    }).toList();
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final email = _emailCtrl.text.trim();
+    final dniStr = _dniCtrl.text.trim();
+    final dni = dniStr.isNotEmpty ? int.tryParse(dniStr) : null;
+
+    if (email.isEmpty && dni == null) {
+      AppSnackBar.error(context, 'Debes ingresar un Email o un DNI.');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      final ctrl = ref.read(invitationControllerProvider);
+      await ctrl.createInvitation(
+        patientEmail: email.isEmpty ? null : email,
+        patientDni: dni,
+      );
+      if (!mounted) return;
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (mounted)
+        AppSnackBar.showException(
+          context,
+          e,
+          'No se pudo enviar la invitación.',
+        );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final allPatientsAsync = ref.watch(allPatientsProvider);
-
     return AlertDialog(
-      title: const Text('Agregar paciente'),
-      contentPadding: const EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.lg, AppSpacing.xl, 0),
+      title: const Text('Invitar paciente'),
       content: SizedBox(
-        width: 560,
-        child: allPatientsAsync.when(
-          loading: () => const SizedBox(
-            height: 220,
-            child: Center(child: CircularProgressIndicator()),
-          ),
-          error: (e, _) => SizedBox(
-            height: 220,
-            child: Center(child: Text('No se pudieron cargar los pacientes.\n$e', textAlign: TextAlign.center)),
-          ),
-          data: (patients) {
-            final filtered = _filter(patients);
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  decoration: const InputDecoration(
-                    labelText: 'Buscar por nombre, DNI o email',
-                    prefixIcon: Icon(PhosphorIconsRegular.magnifyingGlass),
-                  ),
-                  onChanged: (value) => setState(() => _query = value),
+        width: 400,
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                'Ingresá el Email o DNI del paciente para enviarle una invitación de vinculación. El paciente deberá aceptarla desde su cuenta.',
+                style: TextStyle(color: Colors.black54),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              TextFormField(
+                controller: _emailCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Email del paciente',
+                  prefixIcon: Icon(PhosphorIconsRegular.envelope),
                 ),
-                const SizedBox(height: AppSpacing.md),
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxHeight: 360),
-                  child: filtered.isEmpty
-                      ? const Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(AppSpacing.xl),
-                            child: Text('No hay pacientes para mostrar.'),
-                          ),
-                        )
-                      : ListView.separated(
-                          shrinkWrap: true,
-                          itemCount: filtered.length,
-                          separatorBuilder: (_, _) => const Divider(height: 1),
-                          itemBuilder: (context, index) {
-                            final patient = filtered[index];
-                            final id = patient.id;
-                            final associated = id != null && widget.associatedIds.contains(id);
-                            final name = '${patient.name ?? "-"} ${patient.surname ?? ""}'.trim();
-
-                            return ListTile(
-                              enabled: id != null && !associated,
-                              contentPadding: EdgeInsets.zero,
-                              leading: const CircleAvatar(child: Icon(PhosphorIconsRegular.user)),
-                              title: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis),
-                              subtitle: Text(patient.dni != null ? 'DNI: ${patient.dni}' : patient.email ?? ''),
-                              trailing: associated
-                                  ? const Chip(label: Text('Asociado'))
-                                  : const Icon(PhosphorIconsRegular.plusCircle),
-                              onTap: id == null || associated ? null : () => Navigator.pop(context, id),
-                            );
-                          },
-                        ),
+                keyboardType: TextInputType.emailAddress,
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                child: Text(
+                  'O',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontWeight: FontWeight.bold),
                 ),
-              ],
-            );
-          },
+              ),
+              TextFormField(
+                controller: _dniCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'DNI del paciente',
+                  prefixIcon: Icon(PhosphorIconsRegular.identificationCard),
+                ),
+                keyboardType: TextInputType.number,
+              ),
+            ],
+          ),
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+        TextButton(
+          onPressed: _isLoading ? null : () => Navigator.pop(context),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: _isLoading ? null : _submit,
+          child: _isLoading
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Enviar invitación'),
+        ),
       ],
     );
   }

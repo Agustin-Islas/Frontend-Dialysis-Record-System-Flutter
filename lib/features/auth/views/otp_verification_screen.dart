@@ -8,11 +8,19 @@ import 'package:frontend_dialysis_record/core/widgets/widgets.dart';
 
 class OtpVerificationScreen extends ConsumerStatefulWidget {
   final String email;
+  final OtpType type;
+  final String onSuccessRoute;
 
-  const OtpVerificationScreen({super.key, required this.email});
+  const OtpVerificationScreen({
+    super.key,
+    required this.email,
+    this.type = OtpType.signup,
+    this.onSuccessRoute = '/login',
+  });
 
   @override
-  ConsumerState<OtpVerificationScreen> createState() => _OtpVerificationScreenState();
+  ConsumerState<OtpVerificationScreen> createState() =>
+      _OtpVerificationScreenState();
 }
 
 class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
@@ -37,15 +45,19 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
       await Supabase.instance.client.auth.verifyOTP(
         email: widget.email,
         token: code,
-        type: OtpType.signup,
+        type: widget.type,
       );
-      
+
       if (!mounted) return;
-      AppSnackBar.success(context, '¡Cuenta verificada exitosamente!');
-      context.go('/login');
+      AppSnackBar.success(context, '¡Código verificado exitosamente!');
+      context.go(widget.onSuccessRoute);
     } catch (e) {
       if (mounted) {
-        AppSnackBar.showException(context, e, 'El código es inválido o expiró.');
+        AppSnackBar.showException(
+          context,
+          e,
+          'El código es inválido o expiró.',
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -56,10 +68,15 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Verificar cuenta'),
+        title: Text(
+          widget.type == OtpType.signup
+              ? 'Verificar cuenta'
+              : 'Recuperar contraseña',
+        ),
         leading: IconButton(
           icon: const Icon(PhosphorIconsRegular.arrowLeft),
-          onPressed: () => context.go('/login'),
+          onPressed: () =>
+              context.canPop() ? context.pop() : context.go('/login'),
         ),
       ),
       body: SafeArea(
@@ -73,11 +90,16 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Icon(PhosphorIconsRegular.envelopeOpen, size: 64, color: AppColors.primary),
+                    const Icon(
+                      PhosphorIconsRegular.envelopeOpen,
+                      size: 64,
+                      color: AppColors.primary,
+                    ),
                     const SizedBox(height: AppSpacing.xl),
                     Text(
                       'Revisa tu bandeja de entrada',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: AppColors.primary,
                           ),
@@ -87,8 +109,8 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                     Text(
                       'Hemos enviado un código de acceso a:\n${widget.email}\n\n(Revisa tu carpeta de Spam si no lo encuentras)',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: AppColors.secondary,
-                          ),
+                        color: AppColors.secondary,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: AppSpacing.xxl),
@@ -97,7 +119,11 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                       keyboardType: TextInputType.number,
                       textAlign: TextAlign.center,
                       maxLength: 8,
-                      style: const TextStyle(fontSize: 24, letterSpacing: 8, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        fontSize: 24,
+                        letterSpacing: 8,
+                        fontWeight: FontWeight.bold,
+                      ),
                       decoration: const InputDecoration(
                         hintText: '000000',
                         counterText: '',
@@ -111,7 +137,10 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                           ? const SizedBox(
                               width: 24,
                               height: 24,
-                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
                             )
                           : const Text('Verificar código'),
                     ),

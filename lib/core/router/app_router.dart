@@ -5,6 +5,9 @@ import 'package:frontend_dialysis_record/features/auth/providers/auth_providers.
 import 'package:frontend_dialysis_record/features/auth/views/login_screen.dart';
 import 'package:frontend_dialysis_record/features/auth/views/otp_verification_screen.dart';
 import 'package:frontend_dialysis_record/features/auth/views/session_gate.dart';
+import 'package:frontend_dialysis_record/features/auth/views/forgot_password_screen.dart';
+import 'package:frontend_dialysis_record/features/auth/views/update_password_screen.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:frontend_dialysis_record/features/doctors/views/doctor_home_screen.dart';
 import 'package:frontend_dialysis_record/features/doctors/views/doctor_patients_screen.dart';
 import 'package:frontend_dialysis_record/features/doctors/views/patient_detail_for_doctor_screen.dart';
@@ -41,7 +44,10 @@ Page<dynamic> _premiumTransition(Widget child, GoRouterState state) {
     transitionDuration: const Duration(milliseconds: 400),
     reverseTransitionDuration: const Duration(milliseconds: 400),
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
-      final curve = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
+      final curve = CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeOutCubic,
+      );
       return FadeTransition(
         opacity: curve,
         child: SlideTransition(
@@ -80,20 +86,30 @@ final routerProvider = Provider<GoRouter>((ref) {
       final me = authState.valueOrNull;
       final isAuthenticated = me != null;
 
-      final isAuthRoute = state.matchedLocation.startsWith(AppRoutes.login) ||
+      final isAuthRoute =
+          state.matchedLocation.startsWith(AppRoutes.login) ||
           state.matchedLocation == AppRoutes.registerPatient ||
-          state.matchedLocation == AppRoutes.registerDoctor;
+          state.matchedLocation == AppRoutes.registerDoctor ||
+          state.matchedLocation == '/forgot-password';
+
+      final isUnauthAllowed =
+          isAuthRoute ||
+          state.matchedLocation == '/verify-otp' ||
+          state.matchedLocation == '/update-password';
+
       final isSplash = state.matchedLocation == AppRoutes.splash;
 
       // While loading, stay on splash
       if (isLoading && isSplash) return null;
 
-      // Not authenticated → go to login (unless already on auth route)
+      // Not authenticated → go to login (unless already on allowed route)
       if (!isAuthenticated) {
-        return isAuthRoute ? null : AppRoutes.login;
+        return isUnauthAllowed ? null : AppRoutes.login;
       }
 
       // Authenticated → redirect from auth routes to home
+      // Note: we don't redirect from /verify-otp because we want the screen itself
+      // to handle the navigation (e.g. to /update-password)
       if (isAuthRoute || isSplash) {
         return me.role == 'DOCTOR'
             ? AppRoutes.doctorPatients
@@ -106,30 +122,64 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Splash / initial loading
       GoRoute(
         path: AppRoutes.splash,
-        pageBuilder: (context, state) => _premiumTransition(const SessionGate(), state),
+        pageBuilder: (context, state) =>
+            _premiumTransition(const SessionGate(), state),
       ),
 
       // Auth routes
       GoRoute(
         path: AppRoutes.login,
-        pageBuilder: (context, state) => _premiumTransition(const LoginScreen(), state),
+        pageBuilder: (context, state) =>
+            _premiumTransition(const LoginScreen(), state),
         routes: [
           GoRoute(
             path: 'otp',
             pageBuilder: (context, state) {
               final email = state.extra as String? ?? '';
-              return _premiumTransition(OtpVerificationScreen(email: email), state);
+              return _premiumTransition(
+                OtpVerificationScreen(email: email),
+                state,
+              );
             },
           ),
         ],
       ),
       GoRoute(
+        path: '/forgot-password',
+        pageBuilder: (context, state) =>
+            _premiumTransition(const ForgotPasswordScreen(), state),
+      ),
+      GoRoute(
+        path: '/verify-otp',
+        pageBuilder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          final email = extra['email'] as String? ?? '';
+          final type = extra['type'] as OtpType? ?? OtpType.signup;
+          final onSuccessRoute = extra['onSuccessRoute'] as String? ?? '/login';
+          return _premiumTransition(
+            OtpVerificationScreen(
+              email: email,
+              type: type,
+              onSuccessRoute: onSuccessRoute,
+            ),
+            state,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/update-password',
+        pageBuilder: (context, state) =>
+            _premiumTransition(const UpdatePasswordScreen(), state),
+      ),
+      GoRoute(
         path: AppRoutes.registerPatient,
-        pageBuilder: (context, state) => _premiumTransition(const PatientRegisterScreen(), state),
+        pageBuilder: (context, state) =>
+            _premiumTransition(const PatientRegisterScreen(), state),
       ),
       GoRoute(
         path: AppRoutes.registerDoctor,
-        pageBuilder: (context, state) => _premiumTransition(const DoctorRegisterScreen(), state),
+        pageBuilder: (context, state) =>
+            _premiumTransition(const DoctorRegisterScreen(), state),
       ),
 
       // Patient shell with bottom navigation
@@ -142,7 +192,8 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: AppRoutes.patientToday,
-                pageBuilder: (context, state) => NoTransitionPage(child: PatientTodayScreen()),
+                pageBuilder: (context, state) =>
+                    NoTransitionPage(child: PatientTodayScreen()),
               ),
             ],
           ),
@@ -150,7 +201,8 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: AppRoutes.patientHistory,
-                pageBuilder: (context, state) => const NoTransitionPage(child: PatientHistoryScreen()),
+                pageBuilder: (context, state) =>
+                    const NoTransitionPage(child: PatientHistoryScreen()),
               ),
             ],
           ),
@@ -158,7 +210,8 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: AppRoutes.patientProfile,
-                pageBuilder: (context, state) => const NoTransitionPage(child: PatientProfileScreen()),
+                pageBuilder: (context, state) =>
+                    const NoTransitionPage(child: PatientProfileScreen()),
               ),
             ],
           ),
@@ -175,7 +228,8 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: AppRoutes.doctorPatients,
-                pageBuilder: (context, state) => const NoTransitionPage(child: DoctorPatientsScreen()),
+                pageBuilder: (context, state) =>
+                    const NoTransitionPage(child: DoctorPatientsScreen()),
               ),
             ],
           ),
@@ -183,7 +237,8 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: AppRoutes.doctorProfile,
-                pageBuilder: (context, state) => const NoTransitionPage(child: _DoctorProfilePlaceholder()),
+                pageBuilder: (context, state) =>
+                    const NoTransitionPage(child: _DoctorProfilePlaceholder()),
               ),
             ],
           ),
@@ -195,7 +250,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.doctorPatientDetail,
         pageBuilder: (context, state) {
           final patientId = state.pathParameters['patientId']!;
-          return _premiumTransition(PatientDetailForDoctorScreen(patientId: patientId), state);
+          return _premiumTransition(
+            PatientDetailForDoctorScreen(patientId: patientId),
+            state,
+          );
         },
       ),
     ],

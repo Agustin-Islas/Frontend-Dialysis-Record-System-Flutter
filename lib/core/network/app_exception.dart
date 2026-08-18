@@ -47,7 +47,10 @@ class AppException implements Exception {
     return AppException(_messageForStatus(status), statusCode: status);
   }
 
-  static String getMessage(dynamic e, [String defaultMsg = 'No se pudo completar la operación.']) {
+  static String getMessage(
+    dynamic e, [
+    String defaultMsg = 'No se pudo completar la operación.',
+  ]) {
     if (e is AppException) return e.message;
     if (e is AuthException) {
       return _translateMessage(e.message, null, null);
@@ -64,7 +67,10 @@ class AppException implements Exception {
   static String _translateMessage(String? rawMsg, int? status, String? code) {
     if (rawMsg == null || rawMsg.isEmpty) return _messageForStatus(status);
     final lower = rawMsg.toLowerCase();
-    if (lower.contains('invalid credentials') || lower.contains('bad credentials') || code == 'UNAUTHORIZED' || status == 401) {
+    if (lower.contains('invalid credentials') ||
+        lower.contains('bad credentials') ||
+        code == 'UNAUTHORIZED' ||
+        status == 401) {
       return 'Correo electrónico o contraseña incorrectos. Por favor, verificá tus datos.';
     }
     if (lower.contains('user not found') || lower.contains('not found')) {

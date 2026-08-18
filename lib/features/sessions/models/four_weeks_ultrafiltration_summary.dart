@@ -34,9 +34,9 @@ class FourWeeksUltrafiltrationCalculator {
     final end = DateUtils.dateOnly(endDate);
     final start = end.subtract(const Duration(days: 27));
     final weekDayCounts = <int>[7, 7, 7, 7];
-    
+
     final nowDateTime = DateTime.now();
-    final currentClinicalDate = nowDateTime.hour < 5 
+    final currentClinicalDate = nowDateTime.hour < 5
         ? DateUtils.dateOnly(nowDateTime.subtract(const Duration(days: 1)))
         : DateUtils.dateOnly(nowDateTime);
 
@@ -84,14 +84,16 @@ class FourWeeksUltrafiltrationCalculator {
       if (!day.isBefore(currentClinicalDate)) continue;
 
       totalChanges++;
-      
+
       // Calculate which week it falls into
       final differenceInDays = day.difference(start).inDays; // 0 to 27
       final weekIndex = differenceInDays ~/ 7; // 0, 1, 2, or 3
 
       if (weekIndex < 0 || weekIndex > 3) continue;
-      
-      weekTotals[weekIndex] += session.partial ?? ((session.infusion ?? 0) - (session.drainage ?? 0));
+
+      weekTotals[weekIndex] +=
+          session.partial ??
+          ((session.infusion ?? 0) - (session.drainage ?? 0));
     }
 
     return FourWeeksUltrafiltrationSummary(

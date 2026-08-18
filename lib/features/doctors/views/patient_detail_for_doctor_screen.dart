@@ -22,17 +22,15 @@ import 'package:frontend_dialysis_record/core/design/design.dart';
 class PatientDetailForDoctorScreen extends ConsumerStatefulWidget {
   final String patientId;
 
-  const PatientDetailForDoctorScreen({
-    super.key,
-    required this.patientId,
-  });
+  const PatientDetailForDoctorScreen({super.key, required this.patientId});
 
   @override
   ConsumerState<PatientDetailForDoctorScreen> createState() =>
       _PatientDetailForDoctorScreenState();
 }
 
-class _PatientDetailForDoctorScreenState extends ConsumerState<PatientDetailForDoctorScreen> {
+class _PatientDetailForDoctorScreenState
+    extends ConsumerState<PatientDetailForDoctorScreen> {
   DateTime _selectedMonth = DateTime(DateTime.now().year, DateTime.now().month);
   bool _generatingPdf = false;
   final ItemScrollController _itemScrollController = ItemScrollController();
@@ -40,7 +38,8 @@ class _PatientDetailForDoctorScreenState extends ConsumerState<PatientDetailForD
   final DateFormat _monthFormat = DateFormat('MMMM yyyy', 'es');
   final DateFormat _dayFormat = DateFormat('EEEE dd/MM', 'es');
   final MonthlyDialysisPdfService _pdfService = MonthlyDialysisPdfService();
-  final FourWeeksDialysisPdfService _fourWeeksPdfService = FourWeeksDialysisPdfService();
+  final FourWeeksDialysisPdfService _fourWeeksPdfService =
+      FourWeeksDialysisPdfService();
 
   @override
   void initState() {
@@ -71,7 +70,10 @@ class _PatientDetailForDoctorScreenState extends ConsumerState<PatientDetailForD
     }
   }
 
-  Future<void> _generatePdf(MeResponse patient, List<SessionDto> sessions) async {
+  Future<void> _generatePdf(
+    MeResponse patient,
+    List<SessionDto> sessions,
+  ) async {
     setState(() => _generatingPdf = true);
     try {
       final summary = MonthlyUltrafiltrationCalculator.calculate(
@@ -84,11 +86,13 @@ class _PatientDetailForDoctorScreenState extends ConsumerState<PatientDetailForD
         sessions: sessions,
         summary: summary,
       );
-      final fileName = 'reporte_${_selectedMonth.month.toString().padLeft(2, '0')}_${_selectedMonth.year}.pdf';
+      final fileName =
+          'reporte_${_selectedMonth.month.toString().padLeft(2, '0')}_${_selectedMonth.year}.pdf';
       await _pdfService.download(bytes, fileName);
       if (mounted) AppSnackBar.success(context, 'PDF generado');
     } catch (e) {
-      if (mounted) AppSnackBar.showException(context, e, 'No se pudo generar el PDF.');
+      if (mounted)
+        AppSnackBar.showException(context, e, 'No se pudo generar el PDF.');
     } finally {
       if (mounted) setState(() => _generatingPdf = false);
     }
@@ -121,12 +125,18 @@ class _PatientDetailForDoctorScreenState extends ConsumerState<PatientDetailForD
 
       final DateFormat dayMonth = DateFormat('dd_MM');
       final DateFormat dayMonthYear = DateFormat('dd_MM_yyyy');
-      final fileName = 'reporte_${dayMonth.format(startDate)}_${dayMonthYear.format(endDate)}.pdf';
-      
+      final fileName =
+          'reporte_${dayMonth.format(startDate)}_${dayMonthYear.format(endDate)}.pdf';
+
       await _fourWeeksPdfService.download(bytes, fileName);
       if (mounted) AppSnackBar.success(context, 'PDF de 4 semanas generado');
     } catch (e) {
-      if (mounted) AppSnackBar.showException(context, e, 'No se pudo generar el PDF de 4 semanas.');
+      if (mounted)
+        AppSnackBar.showException(
+          context,
+          e,
+          'No se pudo generar el PDF de 4 semanas.',
+        );
     } finally {
       if (mounted) setState(() => _generatingPdf = false);
     }
@@ -141,14 +151,15 @@ class _PatientDetailForDoctorScreenState extends ConsumerState<PatientDetailForD
     final sortedKeys = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
     return {
       for (final key in sortedKeys)
-        key: (grouped[key]!..sort((a, b) {
-          final bagComp = (a.bag ?? 999).compareTo(b.bag ?? 999);
-          if (bagComp != 0) return bagComp;
-          final aNight = a.isNightShift ? 1 : 0;
-          final bNight = b.isNightShift ? 1 : 0;
-          if (aNight != bNight) return aNight.compareTo(bNight);
-          return (a.hour ?? '').compareTo(b.hour ?? '');
-        })),
+        key: (grouped[key]!
+          ..sort((a, b) {
+            final bagComp = (a.bag ?? 999).compareTo(b.bag ?? 999);
+            if (bagComp != 0) return bagComp;
+            final aNight = a.isNightShift ? 1 : 0;
+            final bNight = b.isNightShift ? 1 : 0;
+            if (aNight != bNight) return aNight.compareTo(bNight);
+            return (a.hour ?? '').compareTo(b.hour ?? '');
+          })),
     };
   }
 
@@ -184,11 +195,18 @@ class _PatientDetailForDoctorScreenState extends ConsumerState<PatientDetailForD
         data: (patients) {
           final patient = patients.firstWhere(
             (p) => p.id == widget.patientId,
-            orElse: () => MeResponse(id: widget.patientId, name: 'Desconocido', role: 'PATIENT'),
+            orElse: () => MeResponse(
+              id: widget.patientId,
+              name: 'Desconocido',
+              role: 'PATIENT',
+            ),
           );
 
           final sessionsAsync = ref.watch(
-            monthSessionsProvider((patientId: widget.patientId, month: _selectedMonth)),
+            monthSessionsProvider((
+              patientId: widget.patientId,
+              month: _selectedMonth,
+            )),
           );
 
           return SafeArea(
@@ -196,235 +214,319 @@ class _PatientDetailForDoctorScreenState extends ConsumerState<PatientDetailForD
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 1120),
                 child: sessionsAsync.when(
-                      loading: () => const AppSkeletonScreen(itemCount: 4),
-                      error: (e, _) => AppErrorCard(
-                        message: 'Error al cargar cambios',
-                        details: e.toString(),
-                        onRetry: () => ref.invalidate(monthSessionsProvider),
-                      ),
-                      data: (sessions) {
-                        final summary = MonthlyUltrafiltrationCalculator.calculate(
-                          month: _selectedMonth,
-                          sessions: sessions,
-                        );
-                        final grouped = _groupByDay(sessions);
-                        final currentMonth = DateTime(DateTime.now().year, DateTime.now().month);
-                        final canGoForward = !DateTime(
-                          _selectedMonth.year,
-                          _selectedMonth.month + 1,
-                        ).isAfter(currentMonth);
+                  loading: () => const AppSkeletonScreen(itemCount: 4),
+                  error: (e, _) => AppErrorCard(
+                    message: 'Error al cargar cambios',
+                    details: e.toString(),
+                    onRetry: () => ref.invalidate(monthSessionsProvider),
+                  ),
+                  data: (sessions) {
+                    final summary = MonthlyUltrafiltrationCalculator.calculate(
+                      month: _selectedMonth,
+                      sessions: sessions,
+                    );
+                    final grouped = _groupByDay(sessions);
+                    final currentMonth = DateTime(
+                      DateTime.now().year,
+                      DateTime.now().month,
+                    );
+                    final canGoForward = !DateTime(
+                      _selectedMonth.year,
+                      _selectedMonth.month + 1,
+                    ).isAfter(currentMonth);
 
-                        final dayEntries = grouped.entries.toList();
+                    final dayEntries = grouped.entries.toList();
 
-                        return ScrollablePositionedList.builder(
-                          itemScrollController: _itemScrollController,
-                          padding: const EdgeInsets.all(AppSpacing.lg),
-                          itemCount: 6 + (sessions.isEmpty ? 1 : dayEntries.length),
-                          itemBuilder: (context, index) {
-                            if (index == 0) {
-                              return _PatientMonthPanel(
-                                patient: patient,
-                                patientName: '${patient.name ?? "-"} ${patient.surname ?? ""}'.trim(),
-                                summary: summary,
-                                monthLabel: _monthLabel(),
-                              );
-                            }
-                            if (index == 1) {
-                              return Padding(
-                                padding: const EdgeInsets.only(top: AppSpacing.md),
-                                child: _MonthFilterCard(
-                                  monthLabel: _monthLabel(),
-                                  onPickMonth: _pickMonth,
-                                ),
-                              );
-                            }
-                            if (index == 2) {
-                              return Padding(
-                                padding: const EdgeInsets.only(top: AppSpacing.md),
-                                child: Card(
-                                  elevation: 0,
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(AppSpacing.lg),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                    return ScrollablePositionedList.builder(
+                      itemScrollController: _itemScrollController,
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      itemCount: 6 + (sessions.isEmpty ? 1 : dayEntries.length),
+                      itemBuilder: (context, index) {
+                        if (index == 0) {
+                          return _PatientMonthPanel(
+                            patient: patient,
+                            patientName:
+                                '${patient.name ?? "-"} ${patient.surname ?? ""}'
+                                    .trim(),
+                            summary: summary,
+                            monthLabel: _monthLabel(),
+                          );
+                        }
+                        if (index == 1) {
+                          return Padding(
+                            padding: const EdgeInsets.only(top: AppSpacing.md),
+                            child: _MonthFilterCard(
+                              monthLabel: _monthLabel(),
+                              onPickMonth: _pickMonth,
+                            ),
+                          );
+                        }
+                        if (index == 2) {
+                          return Padding(
+                            padding: const EdgeInsets.only(top: AppSpacing.md),
+                            child: Card(
+                              elevation: 0,
+                              child: Padding(
+                                padding: const EdgeInsets.all(AppSpacing.lg),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
                                       children: [
-                                        Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            const Text('Evolución de Balance Diario', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-                                            Icon(Icons.touch_app_outlined, size: 18, color: Theme.of(context).colorScheme.primary),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          'Desliza para ver la tendencia o toca para ir al detalle del día',
-                                          style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                                        ),
-                                        const SizedBox(height: AppSpacing.lg),
-                                        _DailyUltrafiltrationChart(
-                                          month: _selectedMonth,
-                                          sessions: sessions,
-                                          onDayTapped: (day) {
-                                            final entryIndex = dayEntries.indexWhere((e) {
-                                              final dt = DateTime.tryParse(e.key);
-                                              return dt != null && dt.day == day;
-                                            });
-                                            if (entryIndex != -1) {
-                                              final listIndex = 6 + entryIndex;
-                                              _itemScrollController.scrollTo(
-                                                index: listIndex,
-                                                duration: const Duration(milliseconds: 600),
-                                                curve: Curves.easeInOutCubic,
-                                              );
-                                              Future.delayed(const Duration(milliseconds: 700), () {
-                                                if (_tileControllers[entryIndex] != null && !_tileControllers[entryIndex]!.isExpanded) {
-                                                  _tileControllers[entryIndex]!.expand();
-                                                }
-                                              });
-                                            }
-                                          },
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }
-                            if (index == 3) {
-                              return const SizedBox(height: AppSpacing.md);
-                            }
-                            if (index == 4) {
-                              return Card(
-                                elevation: 0,
-                                margin: EdgeInsets.zero,
-                                shape: const RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.cardRadius)),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.md),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          'Historial de cambios',
-                                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                        const Text(
+                                          'Evolución de Balance Diario',
+                                          style: TextStyle(
+                                            fontSize: 16,
                                             fontWeight: FontWeight.w700,
                                           ),
                                         ),
-                                      ),
-                                      IconButton(
-                                        tooltip: 'Mes anterior',
-                                        onPressed: () => _changeMonth(-1),
-                                        icon: const Icon(Icons.chevron_left),
-                                      ),
-                                      IconButton(
-                                        tooltip: 'Mes siguiente',
-                                        onPressed: canGoForward ? () => _changeMonth(1) : null,
-                                        icon: const Icon(Icons.chevron_right),
-                                      ),
-                                      if (_generatingPdf)
-                                        const Padding(
-                                          padding: EdgeInsets.symmetric(horizontal: 16),
-                                          child: SizedBox(
-                                            width: 24,
-                                            height: 24,
-                                            child: CircularProgressIndicator(strokeWidth: 2),
-                                          ),
-                                        )
-                                      else
-                                        PopupMenuButton<int>(
-                                          icon: const Icon(Icons.picture_as_pdf_outlined),
-                                          tooltip: 'Generar reporte PDF',
-                                          onSelected: (value) {
-                                            if (value == 0) {
-                                              _generatePdf(patient, sessions);
-                                            } else if (value == 1) {
-                                              _generate4WeeksPdf(patient);
-                                            }
-                                          },
-                                          itemBuilder: (context) => const [
-                                            PopupMenuItem(
-                                              value: 0,
-                                              child: Text('Reporte Mensual'),
-                                            ),
-                                            PopupMenuItem(
-                                              value: 1,
-                                              child: Text('Reporte Últimas 4 Semanas'),
-                                            ),
-                                          ],
+                                        Icon(
+                                          Icons.touch_app_outlined,
+                                          size: 18,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.primary,
                                         ),
-                                    ],
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Desliza para ver la tendencia o toca para ir al detalle del día',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                    const SizedBox(height: AppSpacing.lg),
+                                    _DailyUltrafiltrationChart(
+                                      month: _selectedMonth,
+                                      sessions: sessions,
+                                      onDayTapped: (day) {
+                                        final entryIndex = dayEntries
+                                            .indexWhere((e) {
+                                              final dt = DateTime.tryParse(
+                                                e.key,
+                                              );
+                                              return dt != null &&
+                                                  dt.day == day;
+                                            });
+                                        if (entryIndex != -1) {
+                                          final listIndex = 6 + entryIndex;
+                                          _itemScrollController.scrollTo(
+                                            index: listIndex,
+                                            duration: const Duration(
+                                              milliseconds: 600,
+                                            ),
+                                            curve: Curves.easeInOutCubic,
+                                          );
+                                          Future.delayed(
+                                            const Duration(milliseconds: 700),
+                                            () {
+                                              if (_tileControllers[entryIndex] !=
+                                                      null &&
+                                                  !_tileControllers[entryIndex]!
+                                                      .isExpanded) {
+                                                _tileControllers[entryIndex]!
+                                                    .expand();
+                                              }
+                                            },
+                                          );
+                                        }
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        }
+                        if (index == 3) {
+                          return const SizedBox(height: AppSpacing.md);
+                        }
+                        if (index == 4) {
+                          return Card(
+                            elevation: 0,
+                            margin: EdgeInsets.zero,
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.vertical(
+                                top: Radius.circular(AppSpacing.cardRadius),
+                              ),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(
+                                AppSpacing.lg,
+                                AppSpacing.md,
+                                AppSpacing.lg,
+                                AppSpacing.md,
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      'Historial de cambios',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                    ),
                                   ),
-                                ),
-                              );
-                            }
-                            if (index == 5) {
-                              return Container(
-                                color: Theme.of(context).colorScheme.surface,
-                                height: 1,
-                              );
-                            }
-                            
-                            // items
-                            if (sessions.isEmpty) {
-                              return const Card(
-                                elevation: 0,
-                                margin: EdgeInsets.zero,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.vertical(bottom: Radius.circular(AppSpacing.cardRadius)),
-                                ),
-                                child: Padding(
-                                  padding: EdgeInsets.all(AppSpacing.lg),
-                                  child: AppEmptyState(
-                                    message: 'No hay cambios para este mes.',
-                                    icon: Icons.calendar_today,
+                                  IconButton(
+                                    tooltip: 'Mes anterior',
+                                    onPressed: () => _changeMonth(-1),
+                                    icon: const Icon(Icons.chevron_left),
                                   ),
-                                ),
-                              );
-                            }
-                            
-                            final isLast = index - 6 == dayEntries.length - 1;
-                            final entry = dayEntries[index - 6];
-                            final daySessions = entry.value;
-                            
-                            return Card(
+                                  IconButton(
+                                    tooltip: 'Mes siguiente',
+                                    onPressed: canGoForward
+                                        ? () => _changeMonth(1)
+                                        : null,
+                                    icon: const Icon(Icons.chevron_right),
+                                  ),
+                                  if (_generatingPdf)
+                                    const Padding(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                      ),
+                                      child: SizedBox(
+                                        width: 24,
+                                        height: 24,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      ),
+                                    )
+                                  else
+                                    PopupMenuButton<int>(
+                                      icon: const Icon(
+                                        Icons.picture_as_pdf_outlined,
+                                      ),
+                                      tooltip: 'Generar reporte PDF',
+                                      onSelected: (value) {
+                                        if (value == 0) {
+                                          _generatePdf(patient, sessions);
+                                        } else if (value == 1) {
+                                          _generate4WeeksPdf(patient);
+                                        }
+                                      },
+                                      itemBuilder: (context) => const [
+                                        PopupMenuItem(
+                                          value: 0,
+                                          child: Text('Reporte Mensual'),
+                                        ),
+                                        PopupMenuItem(
+                                          value: 1,
+                                          child: Text(
+                                            'Reporte Últimas 4 Semanas',
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }
+                        if (index == 5) {
+                          return Container(
+                            color: Theme.of(context).colorScheme.surface,
+                            height: 1,
+                          );
+                        }
+
+                        // items
+                        if (sessions.isEmpty) {
+                          return const Card(
+                            elevation: 0,
+                            margin: EdgeInsets.zero,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.vertical(
+                                bottom: Radius.circular(AppSpacing.cardRadius),
+                              ),
+                            ),
+                            child: Padding(
+                              padding: EdgeInsets.all(AppSpacing.lg),
+                              child: AppEmptyState(
+                                message: 'No hay cambios para este mes.',
+                                icon: Icons.calendar_today,
+                              ),
+                            ),
+                          );
+                        }
+
+                        final isLast = index - 6 == dayEntries.length - 1;
+                        final entry = dayEntries[index - 6];
+                        final daySessions = entry.value;
+
+                        return Card(
+                          elevation: 0,
+                          margin: EdgeInsets.zero,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: isLast
+                                ? const BorderRadius.vertical(
+                                    bottom: Radius.circular(
+                                      AppSpacing.cardRadius,
+                                    ),
+                                  )
+                                : BorderRadius.zero,
+                          ),
+                          child: Padding(
+                            padding: EdgeInsets.fromLTRB(
+                              AppSpacing.lg,
+                              0,
+                              AppSpacing.lg,
+                              isLast ? AppSpacing.lg : AppSpacing.sm,
+                            ),
+                            child: Card(
                               elevation: 0,
                               margin: EdgeInsets.zero,
                               shape: RoundedRectangleBorder(
-                                borderRadius: isLast 
-                                  ? const BorderRadius.vertical(bottom: Radius.circular(AppSpacing.cardRadius))
-                                  : BorderRadius.zero,
-                              ),
-                              child: Padding(
-                                padding: EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, isLast ? AppSpacing.lg : AppSpacing.sm),
-                                child: Card(
-                                  elevation: 0,
-                                  margin: EdgeInsets.zero,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-                                    side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
-                                  ),
-                                  child: ExpansionTile(
-                                    controller: _tileControllers.putIfAbsent(index - 6, () => ExpansibleController()),
-                                    initiallyExpanded: false,
-                                    title: DaySessionGroupTitle(
-                                      dayTitle: _formatDayTitle(entry.key),
-                                      changesCount: daySessions.length,
-                                      totalMl: _dayTotal(daySessions),
-                                      hasObservations: daySessions.any((s) => (s.observations ?? '').trim().isNotEmpty),
-                                    ),
-                                    children: daySessions.map((s) => SessionExpansionCard(session: s)).toList(),
-                                  ),
+                                borderRadius: BorderRadius.circular(
+                                  AppSpacing.cardRadius,
+                                ),
+                                side: BorderSide(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.outlineVariant,
                                 ),
                               ),
-                            );
-                          },
+                              child: ExpansionTile(
+                                controller: _tileControllers.putIfAbsent(
+                                  index - 6,
+                                  () => ExpansibleController(),
+                                ),
+                                initiallyExpanded: false,
+                                title: DaySessionGroupTitle(
+                                  dayTitle: _formatDayTitle(entry.key),
+                                  changesCount: daySessions.length,
+                                  totalMl: _dayTotal(daySessions),
+                                  hasObservations: daySessions.any(
+                                    (s) => (s.observations ?? '')
+                                        .trim()
+                                        .isNotEmpty,
+                                  ),
+                                ),
+                                children: daySessions
+                                    .map(
+                                      (s) => SessionExpansionCard(session: s),
+                                    )
+                                    .toList(),
+                              ),
+                            ),
+                          ),
                         );
                       },
-                    ),
-                  ),
+                    );
+                  },
                 ),
-              );
+              ),
+            ),
+          );
         },
       ),
     );
@@ -467,8 +569,16 @@ class _PatientMonthPanel extends StatelessWidget {
               spacing: AppSpacing.md,
               runSpacing: AppSpacing.xs,
               children: [
-                if (patient.email != null) Text(patient.email!, style: TextStyle(color: scheme.onSurfaceVariant)),
-                if (patient.dni != null) Text('DNI: ${patient.dni}', style: TextStyle(color: scheme.onSurfaceVariant)),
+                if (patient.email != null)
+                  Text(
+                    patient.email!,
+                    style: TextStyle(color: scheme.onSurfaceVariant),
+                  ),
+                if (patient.dni != null)
+                  Text(
+                    'DNI: ${patient.dni}',
+                    style: TextStyle(color: scheme.onSurfaceVariant),
+                  ),
               ],
             ),
             const SizedBox(height: AppSpacing.lg),
@@ -480,7 +590,10 @@ class _PatientMonthPanel extends StatelessWidget {
                     color: scheme.primaryContainer,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(PhosphorIconsRegular.heartbeat, color: scheme.primary),
+                  child: Icon(
+                    PhosphorIconsRegular.heartbeat,
+                    color: scheme.primary,
+                  ),
                 ),
                 const SizedBox(width: AppSpacing.md),
                 Column(
@@ -536,7 +649,10 @@ class _PatientMonthPanel extends StatelessWidget {
     if (days <= 0) return '0';
     final avg = total / days;
     if (avg == avg.truncateToDouble()) return avg.toInt().toString();
-    return avg.toStringAsFixed(2).replaceFirst(RegExp(r'0*$'), '').replaceFirst(RegExp(r'\.$'), '');
+    return avg
+        .toStringAsFixed(2)
+        .replaceFirst(RegExp(r'0*$'), '')
+        .replaceFirst(RegExp(r'\.$'), '');
   }
 }
 
@@ -605,20 +721,25 @@ class _MonthFilterCard extends StatelessWidget {
           children: [
             Text(
               'Filtrar por fecha',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: AppSpacing.md),
             InkWell(
               onTap: onPickMonth,
               borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.md),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.md,
+                ),
                 decoration: BoxDecoration(
                   color: scheme.surfaceContainerLowest,
                   borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
-                  border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.5)),
+                  border: Border.all(
+                    color: scheme.outlineVariant.withValues(alpha: 0.5),
+                  ),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -630,7 +751,11 @@ class _MonthFilterCard extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    Icon(PhosphorIconsRegular.caretDown, color: scheme.onSurfaceVariant, size: 20),
+                    Icon(
+                      PhosphorIconsRegular.caretDown,
+                      color: scheme.onSurfaceVariant,
+                      size: 20,
+                    ),
                   ],
                 ),
               ),
@@ -654,18 +779,27 @@ class _DailyUltrafiltrationChart extends StatefulWidget {
   final List<SessionDto> sessions;
   final void Function(int day)? onDayTapped;
 
-  const _DailyUltrafiltrationChart({required this.month, required this.sessions, this.onDayTapped});
+  const _DailyUltrafiltrationChart({
+    required this.month,
+    required this.sessions,
+    this.onDayTapped,
+  });
 
   @override
-  State<_DailyUltrafiltrationChart> createState() => _DailyUltrafiltrationChartState();
+  State<_DailyUltrafiltrationChart> createState() =>
+      _DailyUltrafiltrationChartState();
 }
 
-class _DailyUltrafiltrationChartState extends State<_DailyUltrafiltrationChart> {
+class _DailyUltrafiltrationChartState
+    extends State<_DailyUltrafiltrationChart> {
   @override
   Widget build(BuildContext context) {
-    final daysInMonth = DateUtils.getDaysInMonth(widget.month.year, widget.month.month);
+    final daysInMonth = DateUtils.getDaysInMonth(
+      widget.month.year,
+      widget.month.month,
+    );
     final dailyTotals = List<double>.filled(daysInMonth, 0);
-    
+
     for (final s in widget.sessions) {
       if (s.effectiveDate == null) continue;
       final date = DateTime.tryParse(s.effectiveDate!);
@@ -678,14 +812,16 @@ class _DailyUltrafiltrationChartState extends State<_DailyUltrafiltrationChart> 
 
     final scheme = Theme.of(context).colorScheme;
     final List<_ChartData> chartData = [];
-    
+
     for (int i = 0; i < daysInMonth; i++) {
       final val = dailyTotals[i];
-      chartData.add(_ChartData(
-        (i + 1).toString(),
-        val,
-        val > 0 ? scheme.error : const Color(0xFF4CAF50),
-      ));
+      chartData.add(
+        _ChartData(
+          (i + 1).toString(),
+          val,
+          val > 0 ? scheme.error : const Color(0xFF4CAF50),
+        ),
+      );
     }
 
     return SizedBox(
@@ -704,7 +840,11 @@ class _DailyUltrafiltrationChartState extends State<_DailyUltrafiltrationChart> 
           tooltipSettings: InteractiveTooltip(
             enable: true,
             color: scheme.surfaceContainerHighest,
-            textStyle: TextStyle(color: scheme.onSurface, fontSize: 12, fontWeight: FontWeight.w600),
+            textStyle: TextStyle(
+              color: scheme.onSurface,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
             format: 'Día point.x\npoint.y ml',
           ),
         ),
@@ -762,7 +902,6 @@ class _DailyUltrafiltrationChartState extends State<_DailyUltrafiltrationChart> 
   }
 }
 
-
 class _MonthYearPickerDialog extends StatefulWidget {
   final DateTime initialDate;
   final DateTime firstDate;
@@ -781,7 +920,20 @@ class _MonthYearPickerDialog extends StatefulWidget {
 class _MonthYearPickerDialogState extends State<_MonthYearPickerDialog> {
   late int selectedYear;
   late int selectedMonth;
-  static const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+  static const monthNames = [
+    'Enero',
+    'Febrero',
+    'Marzo',
+    'Abril',
+    'Mayo',
+    'Junio',
+    'Julio',
+    'Agosto',
+    'Septiembre',
+    'Octubre',
+    'Noviembre',
+    'Diciembre',
+  ];
 
   @override
   void initState() {
@@ -814,13 +966,21 @@ class _MonthYearPickerDialogState extends State<_MonthYearPickerDialog> {
             DropdownButtonFormField<int>(
               initialValue: selectedYear,
               decoration: const InputDecoration(labelText: 'Año'),
-              items: years.map((y) => DropdownMenuItem(value: y, child: Text(y.toString()))).toList(),
+              items: years
+                  .map(
+                    (y) =>
+                        DropdownMenuItem(value: y, child: Text(y.toString())),
+                  )
+                  .toList(),
               onChanged: (value) {
                 if (value == null) return;
                 setState(() {
                   selectedYear = value;
                   if (!_isMonthEnabled(selectedMonth)) {
-                    selectedMonth = List.generate(12, (i) => i + 1).where(_isMonthEnabled).first;
+                    selectedMonth = List.generate(
+                      12,
+                      (i) => i + 1,
+                    ).where(_isMonthEnabled).first;
                   }
                 });
               },
@@ -836,14 +996,16 @@ class _MonthYearPickerDialogState extends State<_MonthYearPickerDialog> {
                   label: Text(
                     monthNames[index],
                     style: TextStyle(
-                      color: isSelected 
-                          ? Theme.of(context).colorScheme.onPrimary 
+                      color: isSelected
+                          ? Theme.of(context).colorScheme.onPrimary
                           : Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   selectedColor: Theme.of(context).colorScheme.primary,
                   selected: isSelected,
-                  onSelected: _isMonthEnabled(month) ? (_) => setState(() => selectedMonth = month) : null,
+                  onSelected: _isMonthEnabled(month)
+                      ? (_) => setState(() => selectedMonth = month)
+                      : null,
                 );
               }),
             ),
@@ -851,8 +1013,15 @@ class _MonthYearPickerDialogState extends State<_MonthYearPickerDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
-        FilledButton(onPressed: () => Navigator.pop(context, DateTime(selectedYear, selectedMonth)), child: const Text('Aceptar')),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: () =>
+              Navigator.pop(context, DateTime(selectedYear, selectedMonth)),
+          child: const Text('Aceptar'),
+        ),
       ],
     );
   }

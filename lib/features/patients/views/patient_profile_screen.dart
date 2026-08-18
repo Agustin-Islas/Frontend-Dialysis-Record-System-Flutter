@@ -9,6 +9,7 @@ import 'package:frontend_dialysis_record/core/widgets/widgets.dart';
 import 'package:frontend_dialysis_record/core/network/app_exception.dart';
 import 'package:frontend_dialysis_record/features/auth/providers/auth_providers.dart';
 import 'package:frontend_dialysis_record/features/auth/models/me_response.dart';
+import 'package:frontend_dialysis_record/features/invitations/providers/invitations_providers.dart';
 
 class PatientProfileScreen extends ConsumerStatefulWidget {
   const PatientProfileScreen({super.key});
@@ -198,6 +199,8 @@ class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
                     ),
                   ],
                 ),
+                const SizedBox(height: AppSpacing.md),
+                const _InvitationsCard(),
                 const SizedBox(height: AppSpacing.md),
                 Card(
                   child: Padding(
@@ -467,6 +470,111 @@ class _DotChip extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+class _InvitationsCard extends ConsumerWidget {
+  const _InvitationsCard();
+
+  Future<void> _handleAccept(BuildContext context, WidgetRef ref, String id) async {
+    try {
+      final ctrl = ref.read(invitationControllerProvider);
+      await ctrl.acceptInvitation(id);
+      AppSnackBar.success(context, 'Médico asociado correctamente.');
+      ref.invalidate(myPatientInvitationsProvider);
+      ref.invalidate(authStateProvider); // Reload profile (doctorName, etc)
+    } catch (e) {
+      AppSnackBar.showException(context, e, 'No se pudo aceptar la invitación.');
+    }
+  }
+
+  Future<void> _handleReject(BuildContext context, WidgetRef ref, String id) async {
+    try {
+      final ctrl = ref.read(invitationControllerProvider);
+      await ctrl.rejectInvitation(id);
+      AppSnackBar.success(context, 'Invitación rechazada.');
+      ref.invalidate(myPatientInvitationsProvider);
+    } catch (e) {
+      AppSnackBar.showException(context, e, 'No se pudo rechazar la invitación.');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final invAsync = ref.watch(myPatientInvitationsProvider);
+
+    return invAsync.when(
+      data: (invitations) {
+        final pending = invitations.where((i) => i.status == 'PENDING').toList();
+        if (pending.isEmpty) return const SizedBox.shrink();
+
+        return Card(
+          color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(PhosphorIconsFill.bellRinging, color: Theme.of(context).colorScheme.primary),
+                    const SizedBox(width: AppSpacing.sm),
+                    Text(
+                      'Invitaciones pendientes',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
+                ...pending.map((inv) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                    child: Container(
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+                        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Solicitud de vinculación de médico:'),
+                                Text(
+                                  inv.doctorName,
+                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () => _handleReject(context, ref, inv.id),
+                            child: const Text('Rechazar'),
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          FilledButton(
+                            onPressed: () => _handleAccept(context, ref, inv.id),
+                            child: const Text('Aceptar'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
     );
   }
 }

@@ -31,7 +31,9 @@ class AuthNotifier extends AsyncNotifier<MeResponse?> {
     } catch (e) {
       // Si getMe falla, el usuario existe en Supabase pero quizás aún no en Spring Boot
       final user = Supabase.instance.client.auth.currentUser;
-      if (user != null && user.userMetadata != null && user.userMetadata!.containsKey('role')) {
+      if (user != null &&
+          user.userMetadata != null &&
+          user.userMetadata!.containsKey('role')) {
         try {
           final role = user.userMetadata!['role'];
           if (role == 'PATIENT') {
@@ -79,6 +81,6 @@ class AuthNotifier extends AsyncNotifier<MeResponse?> {
   }
 }
 
-final authStateProvider =
-    AsyncNotifierProvider<AuthNotifier, MeResponse?>(AuthNotifier.new);
-
+final authStateProvider = AsyncNotifierProvider<AuthNotifier, MeResponse?>(
+  AuthNotifier.new,
+);

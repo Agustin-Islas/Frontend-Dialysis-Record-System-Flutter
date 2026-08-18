@@ -1,4 +1,3 @@
-
 import 'package:frontend_dialysis_record/core/network/dio_client.dart';
 import 'package:frontend_dialysis_record/features/auth/authController/auth_controller.dart';
 import 'package:frontend_dialysis_record/features/doctors/api/doctor_api.dart';
@@ -16,7 +15,9 @@ class AppDI {
   static final AuthController authController = AuthController(dioClient);
 
   static final PatientApi patientApi = PatientApi(dioClient);
-  static final PatientController patientController = PatientController(patientApi);
+  static final PatientController patientController = PatientController(
+    patientApi,
+  );
 
   static final DoctorApi doctorApi = DoctorApi(dioClient);
   static final DoctorController doctorController = DoctorController(doctorApi);

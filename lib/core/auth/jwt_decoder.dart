@@ -9,7 +9,9 @@ class JwtDecoder {
       final payloadBase64 = parts[1];
 
       // Base64URL normalize (pad + replace url-safe chars)
-      String normalized = payloadBase64.replaceAll('-', '+').replaceAll('_', '/');
+      String normalized = payloadBase64
+          .replaceAll('-', '+')
+          .replaceAll('_', '/');
       switch (normalized.length % 4) {
         case 0:
           break;

@@ -16,9 +16,11 @@ class MonthlyUltrafiltrationSummary {
 
   factory MonthlyUltrafiltrationSummary.empty(DateTime month) {
     final monthStart = DateUtils.dateOnly(DateTime(month.year, month.month, 1));
-    final monthEnd = DateUtils.dateOnly(DateTime(month.year, month.month + 1, 0));
+    final monthEnd = DateUtils.dateOnly(
+      DateTime(month.year, month.month + 1, 0),
+    );
     final now = DateUtils.dateOnly(DateTime.now());
-    
+
     int elapsed;
     if (now.isBefore(monthStart)) {
       elapsed = 0;
@@ -43,10 +45,12 @@ class MonthlyUltrafiltrationCalculator {
     required List<SessionDto> sessions,
   }) {
     final monthStart = DateUtils.dateOnly(DateTime(month.year, month.month, 1));
-    final monthEnd = DateUtils.dateOnly(DateTime(month.year, month.month + 1, 0));
-    
+    final monthEnd = DateUtils.dateOnly(
+      DateTime(month.year, month.month + 1, 0),
+    );
+
     final nowDateTime = DateTime.now();
-    final currentClinicalDate = nowDateTime.hour < 5 
+    final currentClinicalDate = nowDateTime.hour < 5
         ? DateUtils.dateOnly(nowDateTime.subtract(const Duration(days: 1)))
         : DateUtils.dateOnly(nowDateTime);
 
@@ -54,12 +58,19 @@ class MonthlyUltrafiltrationCalculator {
     for (int i = 1; i <= monthEnd.day; i++) {
       final currentDay = monthStart.add(Duration(days: i - 1));
       if (!currentDay.isBefore(currentClinicalDate)) break;
-      
-      final weekIndex = i <= 7 ? 0 : i <= 14 ? 1 : i <= 21 ? 2 : 3;
+
+      final weekIndex = i <= 7
+          ? 0
+          : i <= 14
+          ? 1
+          : i <= 21
+          ? 2
+          : 3;
       actualWeekDayCounts[weekIndex]++;
     }
     for (int i = 0; i < 4; i++) {
-      if (actualWeekDayCounts[i] == 0) actualWeekDayCounts[i] = 1; // Prevent division by zero
+      if (actualWeekDayCounts[i] == 0)
+        actualWeekDayCounts[i] = 1; // Prevent division by zero
     }
     final weekTotals = List<int>.filled(4, 0);
     var totalChanges = 0;
@@ -92,12 +103,14 @@ class MonthlyUltrafiltrationCalculator {
       final weekIndex = day.day <= 7
           ? 0
           : day.day <= 14
-              ? 1
-              : day.day <= 21
-                  ? 2
-                  : 3;
+          ? 1
+          : day.day <= 21
+          ? 2
+          : 3;
       if (weekIndex < 0 || weekIndex > 3) continue;
-      weekTotals[weekIndex] += session.partial ?? ((session.infusion ?? 0) - (session.drainage ?? 0));
+      weekTotals[weekIndex] +=
+          session.partial ??
+          ((session.infusion ?? 0) - (session.drainage ?? 0));
     }
 
     int elapsedDays;

@@ -12,10 +12,7 @@ import 'package:frontend_dialysis_record/features/patients/views/patient_today_s
 class PatientHomeScreen extends ConsumerWidget {
   final StatefulNavigationShell navigationShell;
 
-  const PatientHomeScreen({
-    super.key,
-    required this.navigationShell,
-  });
+  const PatientHomeScreen({super.key, required this.navigationShell});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -25,7 +22,8 @@ class PatientHomeScreen extends ConsumerWidget {
     return Scaffold(
       body: navigationShell,
 
-      floatingActionButton: navigationShell.currentIndex == 0 && patientId != null
+      floatingActionButton:
+          navigationShell.currentIndex == 0 && patientId != null
           ? FloatingActionButton(
               onPressed: () {
                 // The PatientTodayScreen handles the create session via a key
@@ -66,5 +64,3 @@ class PatientHomeScreen extends ConsumerWidget {
     );
   }
 }
-
-

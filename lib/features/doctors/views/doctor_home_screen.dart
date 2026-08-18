@@ -13,10 +13,7 @@ import 'package:frontend_dialysis_record/features/auth/providers/auth_providers.
 class DoctorHomeScreen extends ConsumerWidget {
   final StatefulNavigationShell navigationShell;
 
-  const DoctorHomeScreen({
-    super.key,
-    required this.navigationShell,
-  });
+  const DoctorHomeScreen({super.key, required this.navigationShell});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -97,17 +94,18 @@ class _DoctorProfileContent extends ConsumerWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  '${me.name ?? "-"} ${me.surname ?? ""}'.trim(),
-                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                  ),
+                                  '${me.name ?? "-"} ${me.surname ?? ""}'
+                                      .trim(),
+                                  style: Theme.of(context).textTheme.titleMedium
+                                      ?.copyWith(fontWeight: FontWeight.w700),
                                 ),
                                 if (me.email != null)
                                   Text(
                                     me.email!,
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: scheme.onSurfaceVariant,
-                                    ),
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(
+                                          color: scheme.onSurfaceVariant,
+                                        ),
                                   ),
                               ],
                             ),
@@ -119,7 +117,11 @@ class _DoctorProfileContent extends ConsumerWidget {
                       const SizedBox(height: AppSpacing.sm),
                       Row(
                         children: [
-                          Icon(PhosphorIconsRegular.usersThree, size: 20, color: scheme.onSurfaceVariant),
+                          Icon(
+                            PhosphorIconsRegular.usersThree,
+                            size: 20,
+                            color: scheme.onSurfaceVariant,
+                          ),
                           const SizedBox(width: AppSpacing.sm),
                           Text(
                             'Pacientes asociados: ${me.patientCount ?? me.patientIds.length}',

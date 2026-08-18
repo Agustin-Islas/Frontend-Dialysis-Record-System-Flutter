@@ -12,7 +12,8 @@ import 'package:frontend_dialysis_record/features/sessions/models/session_dto.da
 import 'package:frontend_dialysis_record/features/sessions/models/session_summary.dart';
 import 'package:frontend_dialysis_record/features/sessions/views/session_create_bottom_sheet.dart';
 
-final GlobalKey<PatientTodayScreenState> patientTodayKey = GlobalKey<PatientTodayScreenState>();
+final GlobalKey<PatientTodayScreenState> patientTodayKey =
+    GlobalKey<PatientTodayScreenState>();
 
 class PatientTodayScreen extends ConsumerStatefulWidget {
   PatientTodayScreen() : super(key: patientTodayKey);
@@ -38,9 +39,11 @@ class PatientTodayScreenState extends ConsumerState<PatientTodayScreen> {
   Future<void> _preloadDays() async {
     final me = ref.read(authStateProvider).valueOrNull;
     if (me?.id == null) return;
-    
+
     for (int i = 0; i < 5; i++) {
-      final day = DateUtils.dateOnly(DateTime.now()).subtract(Duration(days: i));
+      final day = DateUtils.dateOnly(
+        DateTime.now(),
+      ).subtract(Duration(days: i));
       _loadDay(day, index: i).then((data) {
         if (mounted) setState(() => _dayDataCache[i] = data);
       });
@@ -52,11 +55,10 @@ class PatientTodayScreenState extends ConsumerState<PatientTodayScreen> {
     return today.subtract(Duration(days: _daysAgo));
   }
 
-  Future<void> openCreateSession() =>
-      _openSessionForm(
-        initialDate: _selectedDate,
-        existingSessions: _dayDataCache.values.expand((d) => d.sessions).toList(),
-      );
+  Future<void> openCreateSession() => _openSessionForm(
+    initialDate: _selectedDate,
+    existingSessions: _dayDataCache.values.expand((d) => d.sessions).toList(),
+  );
 
   Future<_DayData> _loadDay(DateTime day, {int? index}) async {
     final me = ref.read(authStateProvider).valueOrNull;
@@ -73,11 +75,11 @@ class PatientTodayScreenState extends ConsumerState<PatientTodayScreen> {
       sessions: results[0] as List<SessionDto>,
       summary: results[1] as SessionSummary,
     );
-    
+
     if (index != null && mounted) {
       _dayDataCache[index] = data;
     }
-    
+
     return data;
   }
 
@@ -147,7 +149,12 @@ class PatientTodayScreenState extends ConsumerState<PatientTodayScreen> {
             }
             _refresh();
           } catch (e) {
-            if (mounted) AppSnackBar.showException(context, e, 'No se pudo guardar el cambio.');
+            if (mounted)
+              AppSnackBar.showException(
+                context,
+                e,
+                'No se pudo guardar el cambio.',
+              );
             rethrow;
           }
         },
@@ -171,7 +178,8 @@ class PatientTodayScreenState extends ConsumerState<PatientTodayScreen> {
       if (mounted) AppSnackBar.success(context, 'Cambio eliminado');
       _refresh();
     } catch (e) {
-      if (mounted) AppSnackBar.showException(context, e, 'No se pudo eliminar el cambio.');
+      if (mounted)
+        AppSnackBar.showException(context, e, 'No se pudo eliminar el cambio.');
     }
   }
 
@@ -209,7 +217,8 @@ class PatientTodayScreenState extends ConsumerState<PatientTodayScreen> {
             initialData: _dayDataCache[index],
             future: _loadDay(day, index: index),
             builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+              if (snapshot.connectionState == ConnectionState.waiting &&
+                  !snapshot.hasData) {
                 return const AppSkeletonScreen(title: 'Hoy', itemCount: 3);
               }
 
@@ -248,7 +257,9 @@ class PatientTodayScreenState extends ConsumerState<PatientTodayScreen> {
                         onSelected: _goToDay,
                       ),
                       const SizedBox(height: AppSpacing.md),
-                      _DaySummaryCard(summary: data.summary).withEntryAnimation(),
+                      _DaySummaryCard(
+                        summary: data.summary,
+                      ).withEntryAnimation(),
                       const SizedBox(height: AppSpacing.xl),
                       Row(
                         children: [
@@ -264,9 +275,8 @@ class PatientTodayScreenState extends ConsumerState<PatientTodayScreen> {
                           Expanded(
                             child: Text(
                               'Registros del día',
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.w700),
                             ),
                           ),
                         ],
@@ -274,26 +284,30 @@ class PatientTodayScreenState extends ConsumerState<PatientTodayScreen> {
                       const SizedBox(height: AppSpacing.md),
                       if (sessions.isEmpty)
                         AppEmptyState(
-                          message: 'No hay cambios registrados para ${_titleFor(day).toLowerCase()}.',
+                          message:
+                              'No hay cambios registrados para ${_titleFor(day).toLowerCase()}.',
                           icon: PhosphorIconsRegular.noteBlank,
                         )
                       else
                         ...sessions.asMap().entries.map(
-                          (entry) => SessionExpansionCard(
-                            session: entry.value,
-                            onEdit: entry.value.id == null
-                                ? null
-                                : () => _openSessionForm(
-                                    initialDate: day,
-                                    session: entry.value,
-                                    existingSessions: _dayDataCache.values.expand((d) => d.sessions).toList(),
-                                  ),
-                            onDelete: entry.value.id == null
-                                ? null
-                                : () => _deleteSession(entry.value),
-                          ).withEntryAnimation(
-                            delay: Duration(milliseconds: 50 * entry.key),
-                          ),
+                          (entry) =>
+                              SessionExpansionCard(
+                                session: entry.value,
+                                onEdit: entry.value.id == null
+                                    ? null
+                                    : () => _openSessionForm(
+                                        initialDate: day,
+                                        session: entry.value,
+                                        existingSessions: _dayDataCache.values
+                                            .expand((d) => d.sessions)
+                                            .toList(),
+                                      ),
+                                onDelete: entry.value.id == null
+                                    ? null
+                                    : () => _deleteSession(entry.value),
+                              ).withEntryAnimation(
+                                delay: Duration(milliseconds: 50 * entry.key),
+                              ),
                         ),
                       const SizedBox(height: 100),
                     ],
@@ -318,16 +332,20 @@ class _GreetingHeader extends StatelessWidget {
     final displayName = (name ?? '').trim();
     final scheme = Theme.of(context).colorScheme;
     final hour = DateTime.now().hour;
-    final greeting = hour < 12 ? 'Buenos días' : hour < 19 ? 'Buenas tardes' : 'Buenas noches';
+    final greeting = hour < 12
+        ? 'Buenos días'
+        : hour < 19
+        ? 'Buenas tardes'
+        : 'Buenas noches';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           '$greeting,',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: scheme.onSurfaceVariant,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(color: scheme.onSurfaceVariant),
         ),
         Text(
           '${displayName.isEmpty ? 'Usuario' : displayName} 👋',
@@ -360,7 +378,10 @@ class _DayHero extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xl),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.xl,
+      ),
       decoration: BoxDecoration(
         color: scheme.primaryContainer,
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
@@ -377,7 +398,11 @@ class _DayHero extends StatelessWidget {
                   color: scheme.surface,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(PhosphorIconsRegular.calendarBlank, color: scheme.primary, size: 24),
+                child: Icon(
+                  PhosphorIconsRegular.calendarBlank,
+                  color: scheme.primary,
+                  size: 24,
+                ),
               ),
               const SizedBox(height: AppSpacing.sm),
               Text(
@@ -412,7 +437,11 @@ class _DayHero extends StatelessWidget {
                   color: scheme.surface,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(PhosphorIconsRegular.caretLeft, color: scheme.onPrimaryContainer, size: 20),
+                child: Icon(
+                  PhosphorIconsRegular.caretLeft,
+                  color: scheme.onPrimaryContainer,
+                  size: 20,
+                ),
               ),
             ),
           ),
@@ -429,7 +458,9 @@ class _DayHero extends StatelessWidget {
                 ),
                 child: Icon(
                   PhosphorIconsRegular.caretRight,
-                  color: canGoForward ? scheme.onPrimaryContainer : scheme.onPrimaryContainer.withValues(alpha: 0.3),
+                  color: canGoForward
+                      ? scheme.onPrimaryContainer
+                      : scheme.onPrimaryContainer.withValues(alpha: 0.3),
                   size: 20,
                 ),
               ),
@@ -458,7 +489,7 @@ class _DayStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     final today = DateUtils.dateOnly(DateTime.now());
     final scheme = Theme.of(context).colorScheme;
-    
+
     return SizedBox(
       height: 86,
       child: ListView.separated(
@@ -469,7 +500,7 @@ class _DayStrip extends StatelessWidget {
         itemBuilder: (context, index) {
           final day = today.subtract(Duration(days: index));
           final isSelected = index == selectedDaysAgo;
-          
+
           return InkWell(
             onTap: () => onSelected(index),
             borderRadius: BorderRadius.circular(16),
@@ -480,9 +511,19 @@ class _DayStrip extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isSelected ? scheme.primary : scheme.surface,
                 borderRadius: BorderRadius.circular(16),
-                border: isSelected ? null : Border.all(color: scheme.outlineVariant.withValues(alpha: 0.5)),
+                border: isSelected
+                    ? null
+                    : Border.all(
+                        color: scheme.outlineVariant.withValues(alpha: 0.5),
+                      ),
                 boxShadow: isSelected
-                    ? [BoxShadow(color: scheme.primary.withValues(alpha: 0.3), blurRadius: 12, offset: const Offset(0, 4))]
+                    ? [
+                        BoxShadow(
+                          color: scheme.primary.withValues(alpha: 0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ]
                     : null,
               ),
               child: Column(
@@ -490,7 +531,9 @@ class _DayStrip extends StatelessWidget {
                 children: [
                   Icon(
                     PhosphorIconsRegular.calendarBlank,
-                    color: isSelected ? scheme.onPrimary : scheme.onSurfaceVariant,
+                    color: isSelected
+                        ? scheme.onPrimary
+                        : scheme.onSurfaceVariant,
                     size: 18,
                   ),
                   const SizedBox(height: AppSpacing.xs),
@@ -499,9 +542,13 @@ class _DayStrip extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                      fontWeight: isSelected
+                          ? FontWeight.w700
+                          : FontWeight.w600,
                       fontSize: 13,
-                      color: isSelected ? scheme.onPrimary : scheme.onSurfaceVariant,
+                      color: isSelected
+                          ? scheme.onPrimary
+                          : scheme.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -509,7 +556,9 @@ class _DayStrip extends StatelessWidget {
                     shortDateFormat.format(day),
                     style: TextStyle(
                       fontSize: 12,
-                      color: isSelected ? scheme.onPrimary.withValues(alpha: 0.9) : scheme.onSurfaceVariant.withValues(alpha: 0.7),
+                      color: isSelected
+                          ? scheme.onPrimary.withValues(alpha: 0.9)
+                          : scheme.onSurfaceVariant.withValues(alpha: 0.7),
                     ),
                   ),
                 ],
@@ -612,9 +661,9 @@ class _MetricTile extends StatelessWidget {
           const SizedBox(height: AppSpacing.xs),
           Text(
             subtitle,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: scheme.onSurfaceVariant,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
           ),
         ],
       ),

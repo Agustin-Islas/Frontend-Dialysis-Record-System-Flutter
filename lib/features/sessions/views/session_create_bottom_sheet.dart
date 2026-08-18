@@ -41,10 +41,12 @@ class SessionCreateBottomSheet extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<SessionCreateBottomSheet> createState() => _SessionCreateBottomSheetState();
+  ConsumerState<SessionCreateBottomSheet> createState() =>
+      _SessionCreateBottomSheetState();
 }
 
-class _SessionCreateBottomSheetState extends ConsumerState<SessionCreateBottomSheet> {
+class _SessionCreateBottomSheetState
+    extends ConsumerState<SessionCreateBottomSheet> {
   final _formKey = GlobalKey<FormState>();
 
   late DateTime _date;
@@ -67,16 +69,21 @@ class _SessionCreateBottomSheetState extends ConsumerState<SessionCreateBottomSh
 
   bool _isSameDay(String? dateStr, DateTime target) {
     if (dateStr == null || dateStr.isEmpty) return false;
-    final isoStr = DateUtils.dateOnly(target).toIso8601String().substring(0, 10);
+    final isoStr = DateUtils.dateOnly(
+      target,
+    ).toIso8601String().substring(0, 10);
     if (dateStr.startsWith(isoStr)) return true;
     final parsed = DateTime.tryParse(dateStr);
     if (parsed != null) {
-      return parsed.year == target.year && parsed.month == target.month && parsed.day == target.day;
+      return parsed.year == target.year &&
+          parsed.month == target.month &&
+          parsed.day == target.day;
     }
     final dayStr = target.day.toString().padLeft(2, '0');
     final monthStr = target.month.toString().padLeft(2, '0');
     final yearStr = target.year.toString();
-    if (dateStr.startsWith('$dayStr/$monthStr/$yearStr') || dateStr.startsWith('$dayStr-$monthStr-$yearStr')) {
+    if (dateStr.startsWith('$dayStr/$monthStr/$yearStr') ||
+        dateStr.startsWith('$dayStr-$monthStr-$yearStr')) {
       return true;
     }
     return false;
@@ -111,8 +118,13 @@ class _SessionCreateBottomSheetState extends ConsumerState<SessionCreateBottomSh
       if (patientId == null) return;
       final targetClinical = _computeClinicalDate(_date, _time);
       final patientCtrl = ref.read(patientControllerProvider);
-      final sessions = await patientCtrl.getSessionsByDay(patientId: patientId, day: targetClinical);
-      if (mounted && _computeClinicalDate(_date, _time) == targetClinical && !_isEditing) {
+      final sessions = await patientCtrl.getSessionsByDay(
+        patientId: patientId,
+        day: targetClinical,
+      );
+      if (mounted &&
+          _computeClinicalDate(_date, _time) == targetClinical &&
+          !_isEditing) {
         setState(() {
           _bagCtrl.text = (sessions.length + 1).toString();
         });
@@ -277,7 +289,8 @@ class _SessionCreateBottomSheetState extends ConsumerState<SessionCreateBottomSh
       }
     }
     final selected = _selectedConcentration;
-    if (selected != null && !options.any((option) => _same(option.value, selected))) {
+    if (selected != null &&
+        !options.any((option) => _same(option.value, selected))) {
       options.add(_ConcentrationOption(label: 'Actual', value: selected));
     }
     return options;
@@ -293,10 +306,18 @@ class _SessionCreateBottomSheetState extends ConsumerState<SessionCreateBottomSh
   Widget build(BuildContext context) {
     final bottom = MediaQuery.of(context).viewInsets.bottom;
     final me = ref.read(authStateProvider).valueOrNull;
-    final isPatientRole = me == null || me.role.toUpperCase() == 'PATIENT' || me.role.toUpperCase() == 'ROLE_PATIENT';
+    final isPatientRole =
+        me == null ||
+        me.role.toUpperCase() == 'PATIENT' ||
+        me.role.toUpperCase() == 'ROLE_PATIENT';
 
     return Padding(
-      padding: EdgeInsets.only(left: 16, right: 16, top: 16, bottom: bottom + 16),
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 16,
+        bottom: bottom + 16,
+      ),
       child: SafeArea(
         top: false,
         child: Form(
@@ -308,7 +329,10 @@ class _SessionCreateBottomSheetState extends ConsumerState<SessionCreateBottomSh
               children: [
                 Text(
                   _isEditing ? 'Editar cambio' : 'Nuevo cambio',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 InkWell(
@@ -330,7 +354,11 @@ class _SessionCreateBottomSheetState extends ConsumerState<SessionCreateBottomSh
                     decoration: const InputDecoration(labelText: 'Hora'),
                     child: Row(
                       children: [
-                        Expanded(child: Text('${_time.hour.toString().padLeft(2, '0')}:${_time.minute.toString().padLeft(2, '0')}')),
+                        Expanded(
+                          child: Text(
+                            '${_time.hour.toString().padLeft(2, '0')}:${_time.minute.toString().padLeft(2, '0')}',
+                          ),
+                        ),
                         const Icon(Icons.schedule),
                       ],
                     ),
@@ -349,8 +377,13 @@ class _SessionCreateBottomSheetState extends ConsumerState<SessionCreateBottomSh
                           labelText: 'Bolsa N°',
                           suffixIcon: isPatientRole
                               ? const Tooltip(
-                                  message: 'Asignado automáticamente en orden clínico',
-                                  child: Icon(Icons.lock_outline, size: 18, color: Colors.grey),
+                                  message:
+                                      'Asignado automáticamente en orden clínico',
+                                  child: Icon(
+                                    Icons.lock_outline,
+                                    size: 18,
+                                    color: Colors.grey,
+                                  ),
                                 )
                               : null,
                         ),
@@ -361,17 +394,26 @@ class _SessionCreateBottomSheetState extends ConsumerState<SessionCreateBottomSh
                     Expanded(
                       child: DropdownButtonFormField<double>(
                         initialValue: _selectedConcentration,
-                        decoration: const InputDecoration(labelText: 'Concentracion'),
+                        decoration: const InputDecoration(
+                          labelText: 'Concentracion',
+                        ),
                         items: _concentrationOptions()
                             .map(
                               (option) => DropdownMenuItem(
                                 value: option.value,
-                                child: Text('${option.label} (${_formatConcentration(option.value)}%)'),
+                                child: Text(
+                                  '${option.label} (${_formatConcentration(option.value)}%)',
+                                ),
                               ),
                             )
                             .toList(),
-                        onChanged: _loading ? null : (value) => setState(() => _selectedConcentration = value),
-                        validator: (value) => value == null ? 'Selecciona una opcion' : null,
+                        onChanged: _loading
+                            ? null
+                            : (value) => setState(
+                                () => _selectedConcentration = value,
+                              ),
+                        validator: (value) =>
+                            value == null ? 'Selecciona una opcion' : null,
                       ),
                     ),
                   ],
@@ -384,7 +426,9 @@ class _SessionCreateBottomSheetState extends ConsumerState<SessionCreateBottomSh
                         controller: _infusionCtrl,
                         enabled: !_loading,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(labelText: 'Infusion (ml)'),
+                        decoration: const InputDecoration(
+                          labelText: 'Infusion (ml)',
+                        ),
                         validator: (v) => _requiredInt(v, 'Infusion'),
                       ),
                     ),
@@ -394,7 +438,9 @@ class _SessionCreateBottomSheetState extends ConsumerState<SessionCreateBottomSh
                         controller: _drainageCtrl,
                         enabled: !_loading,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(labelText: 'Drenaje (ml)'),
+                        decoration: const InputDecoration(
+                          labelText: 'Drenaje (ml)',
+                        ),
                         validator: (v) => _requiredInt(v, 'Drenaje'),
                       ),
                     ),
@@ -406,7 +452,8 @@ class _SessionCreateBottomSheetState extends ConsumerState<SessionCreateBottomSh
                   enabled: !_loading,
                   maxLines: 3,
                   decoration: const InputDecoration(labelText: 'Observaciones'),
-                  validator: (v) => (v ?? '').length > 500 ? 'Maximo 500 caracteres' : null,
+                  validator: (v) =>
+                      (v ?? '').length > 500 ? 'Maximo 500 caracteres' : null,
                 ),
                 if (_time.hour < 5) ...[
                   const SizedBox(height: 14),
@@ -415,16 +462,28 @@ class _SessionCreateBottomSheetState extends ConsumerState<SessionCreateBottomSh
                     decoration: BoxDecoration(
                       color: Colors.amber.withValues(alpha: 0.14),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.amber.shade700, width: 0.8),
+                      border: Border.all(
+                        color: Colors.amber.shade700,
+                        width: 0.8,
+                      ),
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.nightlight_round, color: Colors.amber.shade800, size: 22),
+                        Icon(
+                          Icons.nightlight_round,
+                          color: Colors.amber.shade800,
+                          size: 22,
+                        ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
                             'Turno trasnoche: Al ser antes de las 05:00 AM, este recambio se asociará al historial médico del día anterior (${_formatDate(_computeClinicalDate(_date, _time))}).',
-                            style: TextStyle(fontSize: 12.5, color: Colors.amber.shade900, height: 1.35, fontWeight: FontWeight.w500),
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              color: Colors.amber.shade900,
+                              height: 1.35,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
                       ],
@@ -443,7 +502,11 @@ class _SessionCreateBottomSheetState extends ConsumerState<SessionCreateBottomSh
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.save),
-                    label: Text(_loading ? 'Guardando...' : (_isEditing ? 'Guardar cambios' : 'Crear cambio')),
+                    label: Text(
+                      _loading
+                          ? 'Guardando...'
+                          : (_isEditing ? 'Guardar cambios' : 'Crear cambio'),
+                    ),
                   ),
                 ),
               ],

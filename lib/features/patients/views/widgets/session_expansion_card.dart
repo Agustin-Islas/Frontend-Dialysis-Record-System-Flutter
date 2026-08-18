@@ -25,8 +25,16 @@ class SessionExpansionCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: ExpansionTile(
-        tilePadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
-        childrenPadding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.lg),
+        tilePadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.sm,
+        ),
+        childrenPadding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          0,
+          AppSpacing.lg,
+          AppSpacing.lg,
+        ),
         title: Row(
           children: [
             Container(
@@ -35,7 +43,11 @@ class SessionExpansionCard extends StatelessWidget {
                 color: scheme.primaryContainer,
                 shape: BoxShape.circle,
               ),
-              child: Icon(PhosphorIconsRegular.clock, color: scheme.primary, size: 20),
+              child: Icon(
+                PhosphorIconsRegular.clock,
+                color: scheme.primary,
+                size: 20,
+              ),
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
@@ -44,29 +56,55 @@ class SessionExpansionCard extends StatelessWidget {
                 spacing: 6,
                 runSpacing: 4,
                 children: [
-                  Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                  Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                   if (session.isNightShift)
                     Tooltip(
                       message: 'Registrado el ${session.date} a las $title',
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.amber.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.amber.shade700, width: 1),
+                          border: Border.all(
+                            color: Colors.amber.shade700,
+                            width: 1,
+                          ),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(PhosphorIconsRegular.moon, size: 12, color: Colors.amber.shade800),
+                            Icon(
+                              PhosphorIconsRegular.moon,
+                              size: 12,
+                              color: Colors.amber.shade800,
+                            ),
                             const SizedBox(width: 3),
-                            Text('Noche', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.amber.shade900)),
+                            Text(
+                              'Noche',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.amber.shade900,
+                              ),
+                            ),
                           ],
                         ),
                       ),
                     ),
                   if (hasObservation)
-                    Icon(PhosphorIconsRegular.note, size: 16, color: scheme.primary),
+                    Icon(
+                      PhosphorIconsRegular.note,
+                      size: 16,
+                      color: scheme.primary,
+                    ),
                 ],
               ),
             ),
@@ -84,12 +122,19 @@ class SessionExpansionCard extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Icon(PhosphorIconsRegular.moon, size: 16, color: Colors.amber.shade800),
+                  Icon(
+                    PhosphorIconsRegular.moon,
+                    size: 16,
+                    color: Colors.amber.shade800,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'Cambio nocturno registrado el ${session.date} después de medianoche, asignado a esta jornada clínica.',
-                      style: TextStyle(fontSize: 12, color: Colors.amber.shade900),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.amber.shade900,
+                      ),
                     ),
                   ),
                 ],
@@ -98,16 +143,25 @@ class SessionExpansionCard extends StatelessWidget {
           ],
           const SizedBox(height: 8),
           _DetailRow(label: 'Bolsa', value: _bag(session.bag)),
-          _DetailRow(label: 'Concentracion', value: _conc(session.concentration)),
+          _DetailRow(
+            label: 'Concentracion',
+            value: _conc(session.concentration),
+          ),
           const Divider(height: 20),
           _DetailRow(label: 'Drenaje', value: _ml(session.drainage)),
           _DetailRow(label: 'Infusion', value: _ml(session.infusion)),
           _DetailRow(label: 'Parcial', value: _ml(session.partial)),
           if ((session.observations ?? '').trim().isNotEmpty) ...[
             const SizedBox(height: 12),
-            const Text('Observaciones', style: TextStyle(fontWeight: FontWeight.w700)),
+            const Text(
+              'Observaciones',
+              style: TextStyle(fontWeight: FontWeight.w700),
+            ),
             const SizedBox(height: 6),
-            Align(alignment: Alignment.centerLeft, child: Text(session.observations!)),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(session.observations!),
+            ),
           ],
           if (onEdit != null || onDelete != null) ...[
             const Divider(height: 24),
@@ -146,7 +200,9 @@ class SessionExpansionCard extends StatelessWidget {
   String _conc(double? c) {
     if (c == null) return '-';
     final isInt = c % 1 == 0;
-    return isInt ? '${c.toInt()}%' : '${c.toStringAsFixed(1).replaceAll('.', ',')}%';
+    return isInt
+        ? '${c.toInt()}%'
+        : '${c.toStringAsFixed(1).replaceAll('.', ',')}%';
   }
 }
 
@@ -166,7 +222,14 @@ class _BalancePill extends StatelessWidget {
         color: scheme.primaryContainer,
         borderRadius: BorderRadius.circular(999),
       ),
-      child: Text('Parcial: $text ml', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: scheme.primary)),
+      child: Text(
+        'Parcial: $text ml',
+        style: TextStyle(
+          fontWeight: FontWeight.w700,
+          fontSize: 13,
+          color: scheme.primary,
+        ),
+      ),
     );
   }
 }
@@ -184,7 +247,10 @@ class _DetailRow extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(label, style: TextStyle(color: Theme.of(context).hintColor)),
+            child: Text(
+              label,
+              style: TextStyle(color: Theme.of(context).hintColor),
+            ),
           ),
           Text(value, style: const TextStyle(fontWeight: FontWeight.w700)),
         ],

@@ -50,9 +50,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
       if (!mounted) return;
       setState(() => _isLoading = false);
-      
-      // No hacemos push manual porque el router detecta el cambio de sesión automáticamente y va al /home
 
+      // No hacemos push manual porque el router detecta el cambio de sesión automáticamente y va al /home
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
@@ -112,7 +111,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         },
                       ),
                       const SizedBox(height: AppSpacing.md),
-                      
+
                       // ── Password field ──
                       TextFormField(
                         controller: _passwordCtrl,
@@ -123,24 +122,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           prefixIcon: Icon(PhosphorIconsRegular.lockKey),
                         ),
                         validator: (value) {
-                          if (value == null || value.isEmpty) return 'Requerido';
+                          if (value == null || value.isEmpty)
+                            return 'Requerido';
                           return null;
                         },
                         onFieldSubmitted: (_) => _isLoading ? null : _login(),
                       ),
-                      
+
                       // ── Forgot Password ──
                       Align(
                         alignment: Alignment.centerRight,
                         child: TextButton(
-                          onPressed: () {
-                            if (_emailCtrl.text.trim().isEmpty) {
-                              AppSnackBar.error(context, 'Ingresa tu correo para recuperar la contraseña');
-                              return;
-                            }
-                            Supabase.instance.client.auth.resetPasswordForEmail(_emailCtrl.text.trim());
-                            AppSnackBar.success(context, 'Se ha enviado un enlace de recuperación a tu correo');
-                          },
+                          onPressed: () => context.push('/forgot-password'),
                           child: Text(
                             '¿Olvidaste tu contraseña?',
                             style: TextStyle(color: scheme.primary),
@@ -165,7 +158,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 )
                               : const Icon(PhosphorIconsRegular.signIn),
                           label: Text(
-                            _isLoading ? 'Iniciando sesión...' : 'Ingresar a la app',
+                            _isLoading
+                                ? 'Iniciando sesión...'
+                                : 'Ingresar a la app',
                           ),
                         ),
                       ),
@@ -185,7 +180,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           Expanded(
                             child: Card(
                               elevation: 0,
-                              color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                              color: scheme.surfaceContainerHighest.withValues(
+                                alpha: 0.5,
+                              ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
                               ),
@@ -235,7 +232,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           Expanded(
                             child: Card(
                               elevation: 0,
-                              color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                              color: scheme.surfaceContainerHighest.withValues(
+                                alpha: 0.5,
+                              ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
                               ),

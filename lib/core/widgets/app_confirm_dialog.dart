@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
-
 /// Reusable confirmation dialog for destructive actions.
 ///
 /// Implements design principle #12: prevent errors by confirming
@@ -66,10 +65,7 @@ class AppConfirmDialog extends StatelessWidget {
         size: 32,
       ),
       title: Text(title),
-      content: Text(
-        message,
-        style: Theme.of(context).textTheme.bodyLarge,
-      ),
+      content: Text(message, style: Theme.of(context).textTheme.bodyLarge),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, false),

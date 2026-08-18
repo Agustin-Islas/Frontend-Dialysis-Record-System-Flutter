@@ -12,7 +12,8 @@ class DoctorRegisterScreen extends ConsumerStatefulWidget {
   const DoctorRegisterScreen({super.key});
 
   @override
-  ConsumerState<DoctorRegisterScreen> createState() => _DoctorRegisterScreenState();
+  ConsumerState<DoctorRegisterScreen> createState() =>
+      _DoctorRegisterScreenState();
 }
 
 class _DoctorRegisterScreenState extends ConsumerState<DoctorRegisterScreen> {
@@ -50,18 +51,26 @@ class _DoctorRegisterScreenState extends ConsumerState<DoctorRegisterScreen> {
           'role': 'DOCTOR',
         },
       );
-      
+
       if (!mounted) return;
-      
+
       if (res.session == null) {
-        AppSnackBar.success(context, 'Registro exitoso. Revisa tu correo (o la carpeta Spam) e ingresa el código.');
-        context.go('${AppRoutes.login}/otp', extra: _emailCtrl.text.trim());
+        AppSnackBar.success(
+          context,
+          'Registro exitoso. Revisa tu correo (o la carpeta Spam) e ingresa el código.',
+        );
+        context.go('/verify-otp', extra: {'email': _emailCtrl.text.trim()});
       } else {
         AppSnackBar.success(context, 'Registro exitoso. Iniciando sesión...');
         context.go(AppRoutes.login);
       }
     } catch (e) {
-      if (mounted) AppSnackBar.showException(context, e, 'No se pudo completar el registro.');
+      if (mounted)
+        AppSnackBar.showException(
+          context,
+          e,
+          'No se pudo completar el registro.',
+        );
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -104,7 +113,9 @@ class _DoctorRegisterScreenState extends ConsumerState<DoctorRegisterScreen> {
                           Expanded(
                             child: TextFormField(
                               controller: _nameCtrl,
-                              decoration: const InputDecoration(labelText: 'Nombre'),
+                              decoration: const InputDecoration(
+                                labelText: 'Nombre',
+                              ),
                               validator: (v) => _required(v, 'Nombre'),
                             ),
                           ),
@@ -112,7 +123,9 @@ class _DoctorRegisterScreenState extends ConsumerState<DoctorRegisterScreen> {
                           Expanded(
                             child: TextFormField(
                               controller: _surnameCtrl,
-                              decoration: const InputDecoration(labelText: 'Apellido'),
+                              decoration: const InputDecoration(
+                                labelText: 'Apellido',
+                              ),
                               validator: (v) => _required(v, 'Apellido'),
                             ),
                           ),
@@ -146,7 +159,9 @@ class _DoctorRegisterScreenState extends ConsumerState<DoctorRegisterScreen> {
                                   ? PhosphorIconsRegular.eye
                                   : PhosphorIconsRegular.eyeSlash,
                             ),
-                            onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                            onPressed: () => setState(
+                              () => _obscurePassword = !_obscurePassword,
+                            ),
                           ),
                         ),
                         validator: (v) {
@@ -162,7 +177,9 @@ class _DoctorRegisterScreenState extends ConsumerState<DoctorRegisterScreen> {
                             ? const SizedBox(
                                 width: 18,
                                 height: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
                             : const Icon(PhosphorIconsRegular.stethoscope),
                         label: Text(_loading ? 'Registrando...' : 'Registrar'),

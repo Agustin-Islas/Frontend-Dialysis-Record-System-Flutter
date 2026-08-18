@@ -8,7 +8,9 @@ class DoctorController {
 
   Future<List<MeResponse>> getMyPatients() => doctorApi.getMyPatients();
 
-  Future<MeResponse> addPatient(String patientId) => doctorApi.addPatient(patientId);
+  Future<MeResponse> addPatient(String patientId) =>
+      doctorApi.addPatient(patientId);
 
-  Future<void> removePatient(String patientId) => doctorApi.removePatient(patientId);
+  Future<void> removePatient(String patientId) =>
+      doctorApi.removePatient(patientId);
 }

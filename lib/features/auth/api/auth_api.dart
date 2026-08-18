@@ -43,7 +43,9 @@ class AuthApi {
       data['role'] = 'PATIENT';
       return MeResponse.fromJson(data);
     } on DioException catch (e) {
-      if (e.response?.statusCode == 403 || e.response?.statusCode == 404 || e.response?.statusCode == 401) {
+      if (e.response?.statusCode == 403 ||
+          e.response?.statusCode == 404 ||
+          e.response?.statusCode == 401) {
         // Intentar doctor
         try {
           final doctorRes = await dioClient.dio.get(ApiPaths.doctorMe);
@@ -51,11 +53,14 @@ class AuthApi {
           doctorData['role'] = 'DOCTOR';
           return MeResponse.fromJson(doctorData);
         } on DioException catch (e2) {
-           throw e2.error is AppException ? e2.error as AppException : AppException.fromDio(e2);
+          throw e2.error is AppException
+              ? e2.error as AppException
+              : AppException.fromDio(e2);
         }
       }
-      throw e.error is AppException ? e.error as AppException : AppException.fromDio(e);
+      throw e.error is AppException
+          ? e.error as AppException
+          : AppException.fromDio(e);
     }
   }
 }
-

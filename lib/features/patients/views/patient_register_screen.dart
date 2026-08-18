@@ -12,7 +12,8 @@ class PatientRegisterScreen extends ConsumerStatefulWidget {
   const PatientRegisterScreen({super.key});
 
   @override
-  ConsumerState<PatientRegisterScreen> createState() => _PatientRegisterScreenState();
+  ConsumerState<PatientRegisterScreen> createState() =>
+      _PatientRegisterScreenState();
 }
 
 class _PatientRegisterScreenState extends ConsumerState<PatientRegisterScreen> {
@@ -46,11 +47,14 @@ class _PatientRegisterScreenState extends ConsumerState<PatientRegisterScreen> {
     final picked = await showDatePicker(
       context: context,
       locale: const Locale('es', 'ES'),
-      initialDate: _dateOfBirth.isAfter(now) ? DateTime(now.year - 18) : _dateOfBirth,
+      initialDate: _dateOfBirth.isAfter(now)
+          ? DateTime(now.year - 18)
+          : _dateOfBirth,
       firstDate: DateTime(1900),
       lastDate: now,
     );
-    if (picked != null) setState(() => _dateOfBirth = DateUtils.dateOnly(picked));
+    if (picked != null)
+      setState(() => _dateOfBirth = DateUtils.dateOnly(picked));
   }
 
   Future<void> _register() async {
@@ -73,18 +77,26 @@ class _PatientRegisterScreenState extends ConsumerState<PatientRegisterScreen> {
           'role': 'PATIENT',
         },
       );
-      
+
       if (!mounted) return;
-      
+
       if (res.session == null) {
-        AppSnackBar.success(context, 'Registro exitoso. Revisa tu correo (o la carpeta Spam) e ingresa el código.');
-        context.go('${AppRoutes.login}/otp', extra: _emailCtrl.text.trim());
+        AppSnackBar.success(
+          context,
+          'Registro exitoso. Revisa tu correo (o la carpeta Spam) e ingresa el código.',
+        );
+        context.go('/verify-otp', extra: {'email': _emailCtrl.text.trim()});
       } else {
         AppSnackBar.success(context, 'Registro exitoso. Iniciando sesión...');
         context.go(AppRoutes.login);
       }
     } catch (e) {
-      if (mounted) AppSnackBar.showException(context, e, 'No se pudo completar el registro.');
+      if (mounted)
+        AppSnackBar.showException(
+          context,
+          e,
+          'No se pudo completar el registro.',
+        );
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -140,7 +152,9 @@ class _PatientRegisterScreenState extends ConsumerState<PatientRegisterScreen> {
                           Expanded(
                             child: TextFormField(
                               controller: _nameCtrl,
-                              decoration: const InputDecoration(labelText: 'Nombre'),
+                              decoration: const InputDecoration(
+                                labelText: 'Nombre',
+                              ),
                               validator: (v) => _required(v, 'Nombre'),
                             ),
                           ),
@@ -148,7 +162,9 @@ class _PatientRegisterScreenState extends ConsumerState<PatientRegisterScreen> {
                           Expanded(
                             child: TextFormField(
                               controller: _surnameCtrl,
-                              decoration: const InputDecoration(labelText: 'Apellido'),
+                              decoration: const InputDecoration(
+                                labelText: 'Apellido',
+                              ),
                               validator: (v) => _required(v, 'Apellido'),
                             ),
                           ),
@@ -182,7 +198,9 @@ class _PatientRegisterScreenState extends ConsumerState<PatientRegisterScreen> {
                                   ? PhosphorIconsRegular.eye
                                   : PhosphorIconsRegular.eyeSlash,
                             ),
-                            onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                            onPressed: () => setState(
+                              () => _obscurePassword = !_obscurePassword,
+                            ),
                           ),
                         ),
                         validator: (v) {
@@ -202,7 +220,9 @@ class _PatientRegisterScreenState extends ConsumerState<PatientRegisterScreen> {
                       InkWell(
                         onTap: _loading ? null : _pickDate,
                         child: InputDecorator(
-                          decoration: const InputDecoration(labelText: 'Fecha de nacimiento'),
+                          decoration: const InputDecoration(
+                            labelText: 'Fecha de nacimiento',
+                          ),
                           child: Row(
                             children: [
                               Expanded(child: Text(_formatDate(_dateOfBirth))),
@@ -214,7 +234,9 @@ class _PatientRegisterScreenState extends ConsumerState<PatientRegisterScreen> {
                       const SizedBox(height: AppSpacing.md),
                       TextFormField(
                         controller: _addressCtrl,
-                        decoration: const InputDecoration(labelText: 'Domicilio'),
+                        decoration: const InputDecoration(
+                          labelText: 'Domicilio',
+                        ),
                         validator: (v) => _required(v, 'Domicilio'),
                       ),
                       const SizedBox(height: AppSpacing.md),
@@ -231,7 +253,9 @@ class _PatientRegisterScreenState extends ConsumerState<PatientRegisterScreen> {
                             ? const SizedBox(
                                 width: 18,
                                 height: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
                             : const Icon(PhosphorIconsRegular.userPlus),
                         label: Text(_loading ? 'Registrando...' : 'Registrar'),

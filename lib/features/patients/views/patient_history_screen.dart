@@ -21,7 +21,8 @@ class PatientHistoryScreen extends ConsumerStatefulWidget {
   const PatientHistoryScreen({super.key});
 
   @override
-  ConsumerState<PatientHistoryScreen> createState() => _PatientHistoryScreenState();
+  ConsumerState<PatientHistoryScreen> createState() =>
+      _PatientHistoryScreenState();
 }
 
 class _PatientHistoryScreenState extends ConsumerState<PatientHistoryScreen> {
@@ -31,7 +32,8 @@ class _PatientHistoryScreenState extends ConsumerState<PatientHistoryScreen> {
   final DateFormat _monthFormat = DateFormat('MMMM yyyy', 'es');
   final DateFormat _dayLabelFormat = DateFormat('EEEE dd/MM', 'es');
   final MonthlyDialysisPdfService _pdfService = MonthlyDialysisPdfService();
-  final FourWeeksDialysisPdfService _fourWeeksPdfService = FourWeeksDialysisPdfService();
+  final FourWeeksDialysisPdfService _fourWeeksPdfService =
+      FourWeeksDialysisPdfService();
   bool _generatingPdf = false;
 
   @override
@@ -63,7 +65,10 @@ class _PatientHistoryScreenState extends ConsumerState<PatientHistoryScreen> {
 
   void _changeMonth(int increment) {
     setState(() {
-      _selectedMonth = DateTime(_selectedMonth.year, _selectedMonth.month + increment);
+      _selectedMonth = DateTime(
+        _selectedMonth.year,
+        _selectedMonth.month + increment,
+      );
       _reloadFutures();
     });
   }
@@ -101,11 +106,13 @@ class _PatientHistoryScreenState extends ConsumerState<PatientHistoryScreen> {
         sessions: sessions,
         summary: summary,
       );
-      final fileName = 'reporte_${_selectedMonth.month.toString().padLeft(2, '0')}_${_selectedMonth.year}.pdf';
+      final fileName =
+          'reporte_${_selectedMonth.month.toString().padLeft(2, '0')}_${_selectedMonth.year}.pdf';
       await _pdfService.download(bytes, fileName);
       if (mounted) AppSnackBar.success(context, 'PDF generado');
     } catch (e) {
-      if (mounted) AppSnackBar.showException(context, e, 'No se pudo generar el PDF.');
+      if (mounted)
+        AppSnackBar.showException(context, e, 'No se pudo generar el PDF.');
     } finally {
       if (mounted) setState(() => _generatingPdf = false);
     }
@@ -117,7 +124,7 @@ class _PatientHistoryScreenState extends ConsumerState<PatientHistoryScreen> {
       final me = ref.read(authStateProvider).valueOrNull;
       final patientId = me?.id;
       if (patientId == null) return;
-      
+
       final endDate = DateTime.now();
       final startDate = endDate.subtract(const Duration(days: 27));
 
@@ -142,17 +149,22 @@ class _PatientHistoryScreenState extends ConsumerState<PatientHistoryScreen> {
 
       final DateFormat dayMonth = DateFormat('dd_MM');
       final DateFormat dayMonthYear = DateFormat('dd_MM_yyyy');
-      final fileName = 'reporte_${dayMonth.format(startDate)}_${dayMonthYear.format(endDate)}.pdf';
-      
+      final fileName =
+          'reporte_${dayMonth.format(startDate)}_${dayMonthYear.format(endDate)}.pdf';
+
       await _fourWeeksPdfService.download(bytes, fileName);
       if (mounted) AppSnackBar.success(context, 'PDF de 4 semanas generado');
     } catch (e) {
-      if (mounted) AppSnackBar.showException(context, e, 'No se pudo generar el PDF de 4 semanas.');
+      if (mounted)
+        AppSnackBar.showException(
+          context,
+          e,
+          'No se pudo generar el PDF de 4 semanas.',
+        );
     } finally {
       if (mounted) setState(() => _generatingPdf = false);
     }
   }
-
 
   DateTime? _parseDate(String? dateStr) {
     if (dateStr == null || dateStr.isEmpty) return null;
@@ -204,7 +216,12 @@ class _PatientHistoryScreenState extends ConsumerState<PatientHistoryScreen> {
             AppSnackBar.success(context, 'Cambio actualizado');
             _reload();
           } catch (e) {
-            if (mounted) AppSnackBar.showException(context, e, 'No se pudo actualizar el cambio.');
+            if (mounted)
+              AppSnackBar.showException(
+                context,
+                e,
+                'No se pudo actualizar el cambio.',
+              );
             rethrow;
           }
         },
@@ -229,7 +246,8 @@ class _PatientHistoryScreenState extends ConsumerState<PatientHistoryScreen> {
       AppSnackBar.success(context, 'Cambio eliminado');
       _reload();
     } catch (e) {
-      if (mounted) AppSnackBar.showException(context, e, 'No se pudo eliminar el cambio.');
+      if (mounted)
+        AppSnackBar.showException(context, e, 'No se pudo eliminar el cambio.');
     }
   }
 
@@ -313,23 +331,29 @@ class _PatientHistoryScreenState extends ConsumerState<PatientHistoryScreen> {
                         children: [
                           Text(
                             'Historial',
-                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                              fontWeight: FontWeight.w800,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
+                            style: Theme.of(context).textTheme.headlineMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
                           ),
                           Text(
                             'Tus registros de diálisis',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
                           ),
                         ],
                       ),
                     ).withEntryAnimation();
                   }
                   if (index == 1) {
-                    return _UltrafiltrationSummaryCard(summary: summary).withEntryAnimation();
+                    return _UltrafiltrationSummaryCard(
+                      summary: summary,
+                    ).withEntryAnimation();
                   }
                   if (index == 2) {
                     return Padding(
@@ -345,54 +369,77 @@ class _PatientHistoryScreenState extends ConsumerState<PatientHistoryScreen> {
                   }
                   if (index == 4) {
                     return Padding(
-                      padding: const EdgeInsets.fromLTRB(AppSpacing.xs, AppSpacing.md, AppSpacing.xs, AppSpacing.md),
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.xs,
+                        AppSpacing.md,
+                        AppSpacing.xs,
+                        AppSpacing.md,
+                      ),
                       child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                'Historial de cambios',
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w700,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Historial de cambios',
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                          IconButton(
+                            tooltip: 'Mes anterior',
+                            icon: const Icon(Icons.chevron_left),
+                            onPressed: () => _changeMonth(-1),
+                          ),
+                          IconButton(
+                            tooltip: 'Mes siguiente',
+                            icon: const Icon(Icons.chevron_right),
+                            onPressed:
+                                !DateTime(
+                                  _selectedMonth.year,
+                                  _selectedMonth.month + 1,
+                                ).isAfter(
+                                  DateTime(
+                                    DateTime.now().year,
+                                    DateTime.now().month,
+                                  ),
+                                )
+                                ? () => _changeMonth(1)
+                                : null,
+                          ),
+                          if (_generatingPdf)
+                            const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 16),
+                              child: SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
                                 ),
                               ),
-                            ),
-                            IconButton(
-                              tooltip: 'Mes anterior',
-                              icon: const Icon(Icons.chevron_left),
-                              onPressed: () => _changeMonth(-1),
-                            ),
-                            IconButton(
-                              tooltip: 'Mes siguiente',
-                              icon: const Icon(Icons.chevron_right),
-                              onPressed: !DateTime(_selectedMonth.year, _selectedMonth.month + 1).isAfter(DateTime(DateTime.now().year, DateTime.now().month)) ? () => _changeMonth(1) : null,
-                            ),
-                            if (_generatingPdf)
-                              const Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 16),
-                                child: SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          else
+                            PopupMenuButton<int>(
+                              icon: const Icon(PhosphorIconsRegular.filePdf),
+                              tooltip: 'Generar reporte PDF',
+                              onSelected: (value) {
+                                if (value == 0) {
+                                  _generatePdf();
+                                } else if (value == 1) {
+                                  _generate4WeeksPdf();
+                                }
+                              },
+                              itemBuilder: (context) => const [
+                                PopupMenuItem(
+                                  value: 0,
+                                  child: Text('Reporte Mensual'),
                                 ),
-                              )
-                            else
-                              PopupMenuButton<int>(
-                                icon: const Icon(PhosphorIconsRegular.filePdf),
-                                tooltip: 'Generar reporte PDF',
-                                onSelected: (value) {
-                                  if (value == 0) {
-                                    _generatePdf();
-                                  } else if (value == 1) {
-                                    _generate4WeeksPdf();
-                                  }
-                                },
-                                itemBuilder: (context) => const [
-                                  PopupMenuItem(value: 0, child: Text('Reporte Mensual')),
-                                  PopupMenuItem(value: 1, child: Text('Reporte Últimas 4 Semanas')),
-                                ],
-                              ),
-                          ],
-                        ),
+                                PopupMenuItem(
+                                  value: 1,
+                                  child: Text('Reporte Últimas 4 Semanas'),
+                                ),
+                              ],
+                            ),
+                        ],
+                      ),
                     );
                   }
 
@@ -401,7 +448,9 @@ class _PatientHistoryScreenState extends ConsumerState<PatientHistoryScreen> {
                       elevation: 0,
                       margin: EdgeInsets.zero,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.vertical(bottom: Radius.circular(AppSpacing.cardRadius)),
+                        borderRadius: BorderRadius.vertical(
+                          bottom: Radius.circular(AppSpacing.cardRadius),
+                        ),
                       ),
                       child: Padding(
                         padding: EdgeInsets.all(AppSpacing.lg),
@@ -417,49 +466,76 @@ class _PatientHistoryScreenState extends ConsumerState<PatientHistoryScreen> {
                   final entry = grouped.entries.elementAt(index - 5);
                   final daySessions = entry.value;
                   final total = _dayTotal(daySessions);
-                  final hasObservations = daySessions.any((s) => (s.observations ?? '').trim().isNotEmpty);
+                  final hasObservations = daySessions.any(
+                    (s) => (s.observations ?? '').trim().isNotEmpty,
+                  );
 
                   return Card(
                     elevation: 0,
                     margin: EdgeInsets.zero,
                     shape: RoundedRectangleBorder(
-                      borderRadius: isLast 
-                        ? const BorderRadius.vertical(bottom: Radius.circular(AppSpacing.cardRadius))
-                        : BorderRadius.zero,
+                      borderRadius: isLast
+                          ? const BorderRadius.vertical(
+                              bottom: Radius.circular(AppSpacing.cardRadius),
+                            )
+                          : BorderRadius.zero,
                     ),
                     child: Padding(
-                      padding: EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, isLast ? AppSpacing.lg : AppSpacing.sm),
-                      child: Card(
-                        elevation: 0,
-                        margin: EdgeInsets.zero,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-                          side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
-                        ),
-                        child: ExpansionTile(
-                          initiallyExpanded: false,
-                          tilePadding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.lg,
-                            vertical: AppSpacing.xs,
+                      padding: EdgeInsets.fromLTRB(
+                        AppSpacing.lg,
+                        0,
+                        AppSpacing.lg,
+                        isLast ? AppSpacing.lg : AppSpacing.sm,
+                      ),
+                      child:
+                          Card(
+                            elevation: 0,
+                            margin: EdgeInsets.zero,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                AppSpacing.cardRadius,
+                              ),
+                              side: BorderSide(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.outlineVariant,
+                              ),
+                            ),
+                            child: ExpansionTile(
+                              initiallyExpanded: false,
+                              tilePadding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.lg,
+                                vertical: AppSpacing.xs,
+                              ),
+                              title: DaySessionGroupTitle(
+                                dayTitle: _formatDayTitle(entry.key),
+                                changesCount: daySessions.length,
+                                totalMl: total,
+                                hasObservations: hasObservations,
+                              ),
+                              childrenPadding: const EdgeInsets.fromLTRB(
+                                AppSpacing.md,
+                                0,
+                                AppSpacing.md,
+                                AppSpacing.md,
+                              ),
+                              children: daySessions
+                                  .map(
+                                    (s) => SessionExpansionCard(
+                                      session: s,
+                                      onEdit: s.id == null
+                                          ? null
+                                          : () => _editSession(s),
+                                      onDelete: s.id == null
+                                          ? null
+                                          : () => _deleteSession(s),
+                                    ),
+                                  )
+                                  .toList(),
+                            ),
+                          ).withEntryAnimation(
+                            delay: Duration(milliseconds: 50 * (index - 5)),
                           ),
-                          title: DaySessionGroupTitle(
-                            dayTitle: _formatDayTitle(entry.key),
-                            changesCount: daySessions.length,
-                            totalMl: total,
-                            hasObservations: hasObservations,
-                          ),
-                          childrenPadding: const EdgeInsets.fromLTRB(AppSpacing.md, 0, AppSpacing.md, AppSpacing.md),
-                          children: daySessions
-                              .map(
-                                (s) => SessionExpansionCard(
-                                  session: s,
-                                  onEdit: s.id == null ? null : () => _editSession(s),
-                                  onDelete: s.id == null ? null : () => _deleteSession(s),
-                                ),
-                              )
-                              .toList(),
-                        ),
-                      ).withEntryAnimation(delay: Duration(milliseconds: 50 * (index - 5))),
                     ),
                   );
                 },
@@ -476,10 +552,7 @@ class _MonthFilterCard extends StatelessWidget {
   final String monthLabel;
   final VoidCallback onPickMonth;
 
-  const _MonthFilterCard({
-    required this.monthLabel,
-    required this.onPickMonth,
-  });
+  const _MonthFilterCard({required this.monthLabel, required this.onPickMonth});
 
   @override
   Widget build(BuildContext context) {
@@ -492,20 +565,25 @@ class _MonthFilterCard extends StatelessWidget {
           children: [
             Text(
               'Filtrar por fecha',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: AppSpacing.md),
             InkWell(
               onTap: onPickMonth,
               borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.md),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.md,
+                ),
                 decoration: BoxDecoration(
                   color: scheme.surfaceContainerLowest,
                   borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
-                  border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.5)),
+                  border: Border.all(
+                    color: scheme.outlineVariant.withValues(alpha: 0.5),
+                  ),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -517,7 +595,11 @@ class _MonthFilterCard extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    Icon(PhosphorIconsRegular.caretDown, color: scheme.onSurfaceVariant, size: 20),
+                    Icon(
+                      PhosphorIconsRegular.caretDown,
+                      color: scheme.onSurfaceVariant,
+                      size: 20,
+                    ),
                   ],
                 ),
               ),
@@ -553,7 +635,10 @@ class _UltrafiltrationSummaryCard extends StatelessWidget {
                     color: scheme.primaryContainer,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(PhosphorIconsRegular.heartbeat, color: scheme.primary),
+                  child: Icon(
+                    PhosphorIconsRegular.heartbeat,
+                    color: scheme.primary,
+                  ),
                 ),
                 const SizedBox(width: AppSpacing.md),
                 Column(
@@ -609,7 +694,10 @@ class _UltrafiltrationSummaryCard extends StatelessWidget {
     if (days <= 0) return '0';
     final avg = total / days;
     if (avg == avg.truncateToDouble()) return avg.toInt().toString();
-    return avg.toStringAsFixed(2).replaceFirst(RegExp(r'0*$'), '').replaceFirst(RegExp(r'\.$'), '');
+    return avg
+        .toStringAsFixed(2)
+        .replaceFirst(RegExp(r'0*$'), '')
+        .replaceFirst(RegExp(r'\.$'), '');
   }
 }
 
@@ -671,9 +759,9 @@ class MonthSummaryCard extends StatelessWidget {
           children: [
             Text(
               'Resumen del mes',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: AppSpacing.sm),
             Wrap(
@@ -713,8 +801,18 @@ class _MonthYearPickerDialogState extends State<_MonthYearPickerDialog> {
   late int selectedMonth;
 
   static const monthNames = [
-    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+    'Enero',
+    'Febrero',
+    'Marzo',
+    'Abril',
+    'Mayo',
+    'Junio',
+    'Julio',
+    'Agosto',
+    'Septiembre',
+    'Octubre',
+    'Noviembre',
+    'Diciembre',
   ];
 
   @override
@@ -749,19 +847,22 @@ class _MonthYearPickerDialogState extends State<_MonthYearPickerDialog> {
               initialValue: selectedYear,
               decoration: const InputDecoration(labelText: 'Año'),
               items: years
-                  .map((year) => DropdownMenuItem(
-                        value: year,
-                        child: Text(year.toString()),
-                      ))
+                  .map(
+                    (year) => DropdownMenuItem(
+                      value: year,
+                      child: Text(year.toString()),
+                    ),
+                  )
                   .toList(),
               onChanged: (value) {
                 if (value == null) return;
                 setState(() {
                   selectedYear = value;
                   if (!_isMonthEnabled(selectedMonth)) {
-                    selectedMonth = List.generate(12, (i) => i + 1)
-                        .where(_isMonthEnabled)
-                        .first;
+                    selectedMonth = List.generate(
+                      12,
+                      (i) => i + 1,
+                    ).where(_isMonthEnabled).first;
                   }
                 });
               },
@@ -777,8 +878,8 @@ class _MonthYearPickerDialogState extends State<_MonthYearPickerDialog> {
                   label: Text(
                     monthNames[index],
                     style: TextStyle(
-                      color: isSelected 
-                          ? Theme.of(context).colorScheme.onPrimary 
+                      color: isSelected
+                          ? Theme.of(context).colorScheme.onPrimary
                           : Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
