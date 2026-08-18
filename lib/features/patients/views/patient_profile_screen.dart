@@ -481,10 +481,12 @@ class _InvitationsCard extends ConsumerWidget {
     try {
       final ctrl = ref.read(invitationControllerProvider);
       await ctrl.acceptInvitation(id);
+      if (!context.mounted) return;
       AppSnackBar.success(context, 'Médico asociado correctamente.');
       ref.invalidate(myPatientInvitationsProvider);
       ref.invalidate(authStateProvider); // Reload profile (doctorName, etc)
     } catch (e) {
+      if (!context.mounted) return;
       AppSnackBar.showException(context, e, 'No se pudo aceptar la invitación.');
     }
   }
@@ -493,9 +495,11 @@ class _InvitationsCard extends ConsumerWidget {
     try {
       final ctrl = ref.read(invitationControllerProvider);
       await ctrl.rejectInvitation(id);
+      if (!context.mounted) return;
       AppSnackBar.success(context, 'Invitación rechazada.');
       ref.invalidate(myPatientInvitationsProvider);
     } catch (e) {
+      if (!context.mounted) return;
       AppSnackBar.showException(context, e, 'No se pudo rechazar la invitación.');
     }
   }

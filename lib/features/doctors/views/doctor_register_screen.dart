@@ -65,12 +65,13 @@ class _DoctorRegisterScreenState extends ConsumerState<DoctorRegisterScreen> {
         context.go(AppRoutes.login);
       }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         AppSnackBar.showException(
           context,
           e,
           'No se pudo completar el registro.',
         );
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }

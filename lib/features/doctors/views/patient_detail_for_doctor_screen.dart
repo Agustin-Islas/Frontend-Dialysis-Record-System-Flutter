@@ -91,8 +91,9 @@ class _PatientDetailForDoctorScreenState
       await _pdfService.download(bytes, fileName);
       if (mounted) AppSnackBar.success(context, 'PDF generado');
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         AppSnackBar.showException(context, e, 'No se pudo generar el PDF.');
+      }
     } finally {
       if (mounted) setState(() => _generatingPdf = false);
     }
@@ -131,12 +132,13 @@ class _PatientDetailForDoctorScreenState
       await _fourWeeksPdfService.download(bytes, fileName);
       if (mounted) AppSnackBar.success(context, 'PDF de 4 semanas generado');
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         AppSnackBar.showException(
           context,
           e,
           'No se pudo generar el PDF de 4 semanas.',
         );
+      }
     } finally {
       if (mounted) setState(() => _generatingPdf = false);
     }

@@ -122,8 +122,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           prefixIcon: Icon(PhosphorIconsRegular.lockKey),
                         ),
                         validator: (value) {
-                          if (value == null || value.isEmpty)
+                          if (value == null || value.isEmpty) {
                             return 'Requerido';
+                          }
                           return null;
                         },
                         onFieldSubmitted: (_) => _isLoading ? null : _login(),

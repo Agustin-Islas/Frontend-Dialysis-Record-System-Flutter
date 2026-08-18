@@ -69,8 +69,9 @@ class MonthlyUltrafiltrationCalculator {
       actualWeekDayCounts[weekIndex]++;
     }
     for (int i = 0; i < 4; i++) {
-      if (actualWeekDayCounts[i] == 0)
+      if (actualWeekDayCounts[i] == 0) {
         actualWeekDayCounts[i] = 1; // Prevent division by zero
+      }
     }
     final weekTotals = List<int>.filled(4, 0);
     var totalChanges = 0;

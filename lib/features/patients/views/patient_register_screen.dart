@@ -53,8 +53,9 @@ class _PatientRegisterScreenState extends ConsumerState<PatientRegisterScreen> {
       firstDate: DateTime(1900),
       lastDate: now,
     );
-    if (picked != null)
+    if (picked != null) {
       setState(() => _dateOfBirth = DateUtils.dateOnly(picked));
+    }
   }
 
   Future<void> _register() async {
@@ -91,12 +92,13 @@ class _PatientRegisterScreenState extends ConsumerState<PatientRegisterScreen> {
         context.go(AppRoutes.login);
       }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         AppSnackBar.showException(
           context,
           e,
           'No se pudo completar el registro.',
         );
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }

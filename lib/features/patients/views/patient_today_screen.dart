@@ -149,12 +149,13 @@ class PatientTodayScreenState extends ConsumerState<PatientTodayScreen> {
             }
             _refresh();
           } catch (e) {
-            if (mounted)
+            if (mounted) {
               AppSnackBar.showException(
                 context,
                 e,
                 'No se pudo guardar el cambio.',
               );
+            }
             rethrow;
           }
         },
@@ -178,8 +179,9 @@ class PatientTodayScreenState extends ConsumerState<PatientTodayScreen> {
       if (mounted) AppSnackBar.success(context, 'Cambio eliminado');
       _refresh();
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         AppSnackBar.showException(context, e, 'No se pudo eliminar el cambio.');
+      }
     }
   }
 

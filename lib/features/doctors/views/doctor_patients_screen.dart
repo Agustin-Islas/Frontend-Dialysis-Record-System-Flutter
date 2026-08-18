@@ -8,9 +8,6 @@ import 'package:frontend_dialysis_record/core/router/app_router.dart';
 import 'package:frontend_dialysis_record/core/widgets/widgets.dart';
 import 'package:frontend_dialysis_record/features/auth/models/me_response.dart';
 import 'package:frontend_dialysis_record/features/doctors/providers/doctor_providers.dart';
-import 'package:frontend_dialysis_record/features/patients/providers/patient_providers.dart';
-import 'package:frontend_dialysis_record/features/invitations/providers/invitations_providers.dart';
-import 'package:frontend_dialysis_record/features/invitations/models/create_invitation_dto.dart';
 
 class DoctorPatientsScreen extends ConsumerStatefulWidget {
   const DoctorPatientsScreen({super.key});
@@ -52,12 +49,13 @@ class _DoctorPatientsScreenState extends ConsumerState<DoctorPatientsScreen> {
       AppSnackBar.success(context, 'Paciente desasociado');
       ref.invalidate(doctorPatientsProvider);
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         AppSnackBar.showException(
           context,
           e,
           'No se pudo desasociar el paciente.',
         );
+      }
     }
   }
 
@@ -224,12 +222,13 @@ class _PatientInviteDialogState extends ConsumerState<_PatientInviteDialog> {
       if (!mounted) return;
       Navigator.pop(context, true);
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         AppSnackBar.showException(
           context,
           e,
           'No se pudo enviar la invitación.',
         );
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
