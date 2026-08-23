@@ -55,10 +55,22 @@ class PatientTodayScreenState extends ConsumerState<PatientTodayScreen> {
     return today.subtract(Duration(days: _daysAgo));
   }
 
-  Future<void> openCreateSession() => _openSessionForm(
-    initialDate: _selectedDate,
-    existingSessions: _dayDataCache.values.expand((d) => d.sessions).toList(),
-  );
+  bool _isBottomSheetOpen = false;
+
+  Future<void> openCreateSession() async {
+    if (_isBottomSheetOpen) return;
+    _isBottomSheetOpen = true;
+    try {
+      await _openSessionForm(
+        initialDate: _selectedDate,
+        existingSessions: _dayDataCache.values.expand((d) => d.sessions).toList(),
+      );
+    } finally {
+      if (mounted) {
+        _isBottomSheetOpen = false;
+      }
+    }
+  }
 
   Future<_DayData> _loadDay(DateTime day, {int? index}) async {
     final me = ref.read(authStateProvider).valueOrNull;
@@ -521,8 +533,8 @@ class _DayStrip extends StatelessWidget {
                 boxShadow: isSelected
                     ? [
                         BoxShadow(
-                          color: scheme.primary.withValues(alpha: 0.3),
-                          blurRadius: 12,
+                          color: scheme.primary.withValues(alpha: 0.08),
+                          blurRadius: 20,
                           offset: const Offset(0, 4),
                         ),
                       ]

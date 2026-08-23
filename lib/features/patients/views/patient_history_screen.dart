@@ -637,7 +637,7 @@ class _UltrafiltrationSummaryCard extends StatelessWidget {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: scheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
                   ),
                   child: Icon(
                     PhosphorIconsRegular.heartbeat,

@@ -158,7 +158,7 @@ abstract final class AppTheme {
         backgroundColor: AppColors.surface,
         surfaceTintColor: AppColors.surface,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
         ),
         showDragHandle: true,
       ),
@@ -168,7 +168,7 @@ abstract final class AppTheme {
         backgroundColor: AppColors.surface,
         surfaceTintColor: AppColors.surface,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.xxl),
+          borderRadius: BorderRadius.circular(16),
         ),
       ),
 

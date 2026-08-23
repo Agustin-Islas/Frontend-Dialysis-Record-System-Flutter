@@ -30,10 +30,10 @@ abstract final class AppSpacing {
   static const double minTapTarget = 48;
 
   /// Default card border radius
-  static const double cardRadius = 12;
+  static const double cardRadius = 8;
 
   /// Default input border radius
-  static const double inputRadius = 12;
+  static const double inputRadius = 8;
 
   /// Default pill border radius
   static const double pillRadius = 999;

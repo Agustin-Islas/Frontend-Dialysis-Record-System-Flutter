@@ -64,7 +64,7 @@ class SessionExpansionCard extends StatelessWidget {
                   ),
                   if (session.isNightShift)
                     Tooltip(
-                      message: 'Registrado el ${session.date} a las $title',
+                      message: 'Registrado el ${_formatDate(session.date)} a las $title',
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 6,
@@ -130,7 +130,7 @@ class SessionExpansionCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Cambio nocturno registrado el ${session.date} después de medianoche, asignado a esta jornada clínica.',
+                      'Cambio nocturno registrado el ${_formatDate(session.date)} después de medianoche, asignado a esta jornada clínica.',
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.amber.shade900,
@@ -204,6 +204,15 @@ class SessionExpansionCard extends StatelessWidget {
         ? '${c.toInt()}%'
         : '${c.toStringAsFixed(1).replaceAll('.', ',')}%';
   }
+
+  String _formatDate(String? dateStr) {
+    if (dateStr == null) return '';
+    final parts = dateStr.split(RegExp(r'[-/]'));
+    if (parts.length == 3 && parts[0].length == 4) {
+      return '${parts[2]}/${parts[1]}/${parts[0]}';
+    }
+    return dateStr;
+  }
 }
 
 class _BalancePill extends StatelessWidget {
@@ -217,9 +226,9 @@ class _BalancePill extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: scheme.primaryContainer,
+        color: scheme.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
@@ -227,7 +236,7 @@ class _BalancePill extends StatelessWidget {
         style: TextStyle(
           fontWeight: FontWeight.w700,
           fontSize: 13,
-          color: scheme.primary,
+          color: scheme.onSurfaceVariant,
         ),
       ),
     );
