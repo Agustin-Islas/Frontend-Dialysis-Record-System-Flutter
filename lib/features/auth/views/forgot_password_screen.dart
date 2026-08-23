@@ -5,6 +5,7 @@ import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:frontend_dialysis_record/core/design/design.dart';
 import 'package:frontend_dialysis_record/core/widgets/widgets.dart';
+import 'package:frontend_dialysis_record/features/auth/utils/auth_exception_mapper.dart';
 
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -50,11 +51,11 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
       );
     } catch (e) {
       if (mounted) {
-        AppSnackBar.showException(
-          context,
+        final errorMsg = AuthExceptionMapper.mapException(
           e,
-          'No se pudo enviar el código de recuperación.',
+          fallbackMessage: 'No se pudo enviar el código de recuperación.',
         );
+        AppSnackBar.error(context, errorMsg);
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);

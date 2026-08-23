@@ -5,6 +5,7 @@ import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:frontend_dialysis_record/core/design/design.dart';
 import 'package:frontend_dialysis_record/core/widgets/widgets.dart';
+import 'package:frontend_dialysis_record/features/auth/utils/auth_exception_mapper.dart';
 
 class UpdatePasswordScreen extends ConsumerStatefulWidget {
   const UpdatePasswordScreen({super.key});
@@ -52,11 +53,11 @@ class _UpdatePasswordScreenState extends ConsumerState<UpdatePasswordScreen> {
       context.go('/login');
     } catch (e) {
       if (mounted) {
-        AppSnackBar.showException(
-          context,
+        final errorMsg = AuthExceptionMapper.mapException(
           e,
-          'No se pudo actualizar la contraseña.',
+          fallbackMessage: 'No se pudo actualizar la contraseña.',
         );
+        AppSnackBar.error(context, errorMsg);
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);

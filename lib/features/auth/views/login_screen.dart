@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:frontend_dialysis_record/core/design/design.dart';
 import 'package:frontend_dialysis_record/core/router/app_router.dart';
 import 'package:frontend_dialysis_record/core/widgets/widgets.dart';
+import 'package:frontend_dialysis_record/features/auth/utils/auth_exception_mapper.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -56,7 +57,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (!mounted) return;
       setState(() => _isLoading = false);
       if (kDebugMode) debugPrint('SUPABASE ERROR: $e');
-      AppSnackBar.showException(context, e, e.toString()); // Mostrar error real
+      final errorMsg = AuthExceptionMapper.mapException(
+        e,
+        fallbackMessage: 'Error al iniciar sesión. Inténtalo nuevamente.',
+      );
+      AppSnackBar.error(context, errorMsg);
     }
   }
 
