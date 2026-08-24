@@ -57,10 +57,10 @@ class AuthNotifier extends AsyncNotifier<MeResponse?> {
           return await controller.getMe();
         } catch (syncError) {
           if (kDebugMode) debugPrint('Error syncing with backend: $syncError');
-          throw syncError;
+          rethrow;
         }
       }
-      throw e;
+      rethrow;
     }
   }
 

@@ -34,8 +34,6 @@ class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
   bool _loaded = false;
   bool _isEditing = false;
 
-  static const _fixedConcentrations = [1.5, 2.3, 3.8];
-
   @override
   void dispose() {
     _nameCtrl.dispose();
@@ -118,10 +116,6 @@ class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
     } finally {
       if (mounted) setState(() => _saving = false);
     }
-  }
-
-  bool _contains(List<double> values, double target) {
-    return values.any((v) => (v - target).abs() < 0.0001);
   }
 
   String _formatDate(DateTime value) {
@@ -455,9 +449,8 @@ class _ReadOnlyRow extends StatelessWidget {
 class _DotChip extends StatelessWidget {
   final String label;
   final Color color;
-  final VoidCallback? onDeleted;
 
-  const _DotChip({required this.label, required this.color, this.onDeleted});
+  const _DotChip({required this.label, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -482,17 +475,6 @@ class _DotChip extends StatelessWidget {
           ),
           const SizedBox(width: AppSpacing.sm),
           Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-          if (onDeleted != null) ...[
-            const SizedBox(width: AppSpacing.sm),
-            InkWell(
-              onTap: onDeleted,
-              borderRadius: BorderRadius.circular(12),
-              child: Padding(
-                padding: const EdgeInsets.all(2.0),
-                child: Icon(PhosphorIconsRegular.x, size: 14, color: scheme.onSurfaceVariant),
-              ),
-            ),
-          ],
         ],
       ),
     );
