@@ -57,16 +57,17 @@ class AuthNotifier extends AsyncNotifier<MeResponse?> {
           return await controller.getMe();
         } catch (syncError) {
           if (kDebugMode) debugPrint('Error syncing with backend: $syncError');
-          return null;
+          throw syncError;
         }
       }
-      return null;
+      throw e;
     }
   }
 
   /// Clear session and redirect to login.
-  Future<void> logout() async {
-    await Supabase.instance.client.auth.signOut();
+  Future<void> logout({bool global = false}) async {
+    final scope = global ? SignOutScope.global : SignOutScope.local;
+    await Supabase.instance.client.auth.signOut(scope: scope);
     state = const AsyncData(null);
   }
 

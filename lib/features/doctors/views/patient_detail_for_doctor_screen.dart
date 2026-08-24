@@ -5,6 +5,7 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:frontend_dialysis_record/core/providers/providers.dart';
 import 'package:intl/intl.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:frontend_dialysis_record/features/auth/models/me_response.dart';
 import 'package:frontend_dialysis_record/features/doctors/providers/doctor_providers.dart';
@@ -195,14 +196,20 @@ class _PatientDetailForDoctorScreenState
           onRetry: () => ref.invalidate(doctorPatientsProvider),
         ),
         data: (patients) {
-          final patient = patients.firstWhere(
-            (p) => p.id == widget.patientId,
-            orElse: () => MeResponse(
-              id: widget.patientId,
-              name: 'Desconocido',
-              role: 'PATIENT',
-            ),
-          );
+          final patient = patients.where((p) => p.id == widget.patientId).firstOrNull;
+
+          if (patient == null) {
+            return SafeArea(
+              child: Center(
+                child: AppEmptyState(
+                  icon: PhosphorIconsRegular.userMinus,
+                  message: 'El paciente solicitado no existe o no tienes acceso a él.',
+                  actionLabel: 'Volver a mis pacientes',
+                  onAction: () => context.go('/doctor/patients'),
+                ),
+              ),
+            );
+          }
 
           final sessionsAsync = ref.watch(
             monthSessionsProvider((
@@ -217,11 +224,14 @@ class _PatientDetailForDoctorScreenState
                 constraints: const BoxConstraints(maxWidth: 1120),
                 child: sessionsAsync.when(
                   loading: () => const AppSkeletonScreen(itemCount: 4),
-                  error: (e, _) => AppErrorCard(
-                    message: 'Error al cargar cambios',
-                    details: e.toString(),
-                    onRetry: () => ref.invalidate(monthSessionsProvider),
-                  ),
+                  error: (e, _) {
+                    final isAppEx = e.runtimeType.toString() == 'AppException';
+                    return AppErrorCard(
+                      message: 'Error al cargar los registros',
+                      details: isAppEx ? (e as dynamic).message : 'No se pudieron cargar los registros de diálisis. $e',
+                      onRetry: () => ref.invalidate(monthSessionsProvider),
+                    );
+                  },
                   data: (sessions) {
                     final summary = MonthlyUltrafiltrationCalculator.calculate(
                       month: _selectedMonth,

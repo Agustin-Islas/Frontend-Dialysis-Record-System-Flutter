@@ -134,17 +134,35 @@ class _DoctorProfileContent extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: AppSpacing.lg),
-              Align(
-                alignment: Alignment.centerRight,
-                child: FilledButton.icon(
-                  onPressed: () async {
-                    await ref.read(authStateProvider.notifier).logout();
-                    if (!context.mounted) return;
-                    context.go(AppRoutes.login);
-                  },
-                  icon: const Icon(PhosphorIconsRegular.signOut),
-                  label: const Text('Cerrar sesión'),
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () async {
+                      await ref.read(authStateProvider.notifier).logout(global: true);
+                      if (!context.mounted) return;
+                      context.go(AppRoutes.login);
+                    },
+                    child: Text(
+                      'Cerrar sesión global',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.error,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  FilledButton.icon(
+                    onPressed: () async {
+                      await ref.read(authStateProvider.notifier).logout(global: false);
+                      if (!context.mounted) return;
+                      context.go(AppRoutes.login);
+                    },
+                    icon: const Icon(PhosphorIconsRegular.signOut),
+                    label: const Text('Cerrar sesión'),
+                  ),
+                ],
               ),
             ],
           ),

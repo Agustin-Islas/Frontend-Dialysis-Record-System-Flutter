@@ -9,6 +9,7 @@ import 'package:frontend_dialysis_record/core/design/design.dart';
 import 'package:frontend_dialysis_record/core/router/app_router.dart';
 import 'package:frontend_dialysis_record/core/widgets/widgets.dart';
 import 'package:frontend_dialysis_record/features/auth/utils/auth_exception_mapper.dart';
+import 'package:frontend_dialysis_record/features/auth/providers/auth_providers.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -49,10 +50,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         password: _passwordCtrl.text,
       );
 
+      // Try to sync with the backend explicitly to catch connection errors
+      try {
+        await ref.read(authStateProvider.notifier).refresh();
+        final authState = ref.read(authStateProvider);
+        if (authState.hasError) {
+          throw authState.error!;
+        }
+      } catch (e) {
+        // Sign out from Supabase if backend is unreachable or user not found
+        await Supabase.instance.client.auth.signOut();
+        throw Exception('Servidor no disponible. No se pudo cargar el perfil.');
+      }
+
       if (!mounted) return;
       setState(() => _isLoading = false);
-
-      // No hacemos push manual porque el router detecta el cambio de sesión automáticamente y va al /home
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);

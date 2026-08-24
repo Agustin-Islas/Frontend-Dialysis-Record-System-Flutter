@@ -17,6 +17,7 @@ import 'package:frontend_dialysis_record/features/patients/views/patient_history
 import 'package:frontend_dialysis_record/features/patients/views/patient_profile_screen.dart';
 import 'package:frontend_dialysis_record/features/patients/views/patient_register_screen.dart';
 import 'package:frontend_dialysis_record/features/doctors/views/doctor_register_screen.dart';
+import 'package:frontend_dialysis_record/core/router/not_found_screen.dart';
 
 /// Named route paths used across the app.
 abstract final class AppRoutes {
@@ -80,6 +81,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: AppRoutes.splash,
     debugLogDiagnostics: false,
     refreshListenable: refreshNotifier,
+    errorBuilder: (context, state) => const NotFoundScreen(),
     redirect: (context, state) {
       final authState = ref.read(authStateProvider);
       final isLoading = authState.isLoading;

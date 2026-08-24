@@ -74,10 +74,20 @@ abstract final class AppSnackBar {
     IconData icon,
   ) {
     if (!context.mounted) return;
+    
+    final width = MediaQuery.sizeOf(context).width;
+    final isLarge = width > 440;
+
     ScaffoldMessenger.of(context)
       ..clearSnackBars()
       ..showSnackBar(
         SnackBar(
+          behavior: SnackBarBehavior.floating,
+          width: isLarge ? 400 : null,
+          margin: isLarge ? null : const EdgeInsets.all(AppSpacing.md),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
           backgroundColor: backgroundColor,
           content: Row(
             children: [

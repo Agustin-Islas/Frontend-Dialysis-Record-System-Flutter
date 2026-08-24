@@ -10,6 +10,7 @@ import 'package:frontend_dialysis_record/core/network/app_exception.dart';
 import 'package:frontend_dialysis_record/features/auth/providers/auth_providers.dart';
 import 'package:frontend_dialysis_record/features/auth/models/me_response.dart';
 import 'package:frontend_dialysis_record/features/invitations/providers/invitations_providers.dart';
+import 'package:frontend_dialysis_record/features/patients/views/widgets/custom_concentrations_editor.dart';
 
 class PatientProfileScreen extends ConsumerStatefulWidget {
   const PatientProfileScreen({super.key});
@@ -31,6 +32,7 @@ class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
   late List<double> _customConcentrations;
   bool _saving = false;
   bool _loaded = false;
+  bool _isEditing = false;
 
   static const _fixedConcentrations = [1.5, 2.3, 3.8];
 
@@ -72,31 +74,16 @@ class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
     }
   }
 
-  void _addCustomConcentration() {
-    final raw = _customConcentrationCtrl.text.trim().replaceAll(',', '.');
-    final value = double.tryParse(raw);
-    if (value == null) {
-      AppSnackBar.warning(context, 'Ingresá una concentración válida.');
-      return;
+  Future<void> _manageConcentrations() async {
+    final result = await CustomConcentrationsEditor.show(
+        context, _customConcentrations);
+    if (result != null) {
+      setState(() => _customConcentrations = result);
+      if (!_isEditing) {
+        // Si no estamos editando el perfil entero, guardamos automáticamente
+        await _save();
+      }
     }
-    final rounded = double.parse(value.toStringAsFixed(1));
-    if (rounded < 0.1 || rounded > 10.0 ||
-        ((value * 10) - (value * 10).round()).abs() > 0.0001) {
-      AppSnackBar.warning(
-        context,
-        'La concentración debe tener un decimal y estar entre 0.1 y 10.0.',
-      );
-      return;
-    }
-    if (_contains(_fixedConcentrations, rounded) ||
-        _contains(_customConcentrations, rounded)) {
-      AppSnackBar.info(context, 'Esa concentración ya existe.');
-      return;
-    }
-    setState(() {
-      _customConcentrations = [..._customConcentrations, rounded]..sort();
-      _customConcentrationCtrl.clear();
-    });
   }
 
   Future<void> _save() async {
@@ -119,7 +106,10 @@ class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
         customConcentrations: _customConcentrations,
       );
       await ref.read(authStateProvider.notifier).refresh();
-      if (mounted) AppSnackBar.success(context, 'Perfil actualizado');
+      if (mounted) {
+        AppSnackBar.success(context, 'Perfil actualizado');
+        setState(() => _isEditing = false); // Exit edit mode
+      }
     } catch (e) {
       final message = e is AppException
           ? e.message
@@ -215,71 +205,88 @@ class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
                           ),
                         ),
                         const SizedBox(height: AppSpacing.md),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextFormField(
-                                controller: _nameCtrl,
-                                decoration: const InputDecoration(
-                                  labelText: 'Nombre',
-                                  prefixIcon: Icon(PhosphorIconsRegular.user),
+                        if (!_isEditing) ...[
+                          _ReadOnlyRow(
+                              label: 'Nombre', value: me.name ?? '-'),
+                          _ReadOnlyRow(
+                              label: 'Apellido', value: me.surname ?? '-'),
+                          _ReadOnlyRow(label: 'DNI', value: me.dni ?? '-'),
+                          _ReadOnlyRow(
+                              label: 'Nacimiento',
+                              value: _formatDate(_dateOfBirth)),
+                          _ReadOnlyRow(
+                              label: 'Domicilio', value: me.address ?? '-'),
+                          _ReadOnlyRow(
+                              label: 'Celular', value: me.number ?? '-'),
+                        ] else ...[
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextFormField(
+                                  controller: _nameCtrl,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Nombre',
+                                    prefixIcon: Icon(PhosphorIconsRegular.user),
+                                  ),
+                                  validator: (v) => _required(v, 'Nombre'),
                                 ),
-                                validator: (v) => _required(v, 'Nombre'),
                               ),
-                            ),
-                            const SizedBox(width: AppSpacing.md),
-                            Expanded(
-                              child: TextFormField(
-                                controller: _surnameCtrl,
-                                decoration: const InputDecoration(
-                                  labelText: 'Apellido',
-                                  prefixIcon: Icon(PhosphorIconsRegular.user),
+                              const SizedBox(width: AppSpacing.md),
+                              Expanded(
+                                child: TextFormField(
+                                  controller: _surnameCtrl,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Apellido',
+                                    prefixIcon: Icon(PhosphorIconsRegular.user),
+                                  ),
+                                  validator: (v) => _required(v, 'Apellido'),
                                 ),
-                                validator: (v) => _required(v, 'Apellido'),
                               ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                        TextFormField(
-                          controller: _dniCtrl,
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
-                            labelText: 'DNI',
-                            prefixIcon: Icon(PhosphorIconsRegular.identificationCard),
+                            ],
                           ),
-                          validator: (v) => _requiredInt(v, 'DNI'),
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                        InkWell(
-                          onTap: _saving ? null : _pickDate,
-                          child: InputDecorator(
+                          const SizedBox(height: AppSpacing.md),
+                          TextFormField(
+                            controller: _dniCtrl,
+                            keyboardType: TextInputType.number,
                             decoration: const InputDecoration(
-                              labelText: 'Nacimiento',
-                              prefixIcon: Icon(PhosphorIconsRegular.calendarBlank),
+                              labelText: 'DNI',
+                              prefixIcon:
+                                  Icon(PhosphorIconsRegular.identificationCard),
                             ),
-                            child: Text(_formatDate(_dateOfBirth)),
+                            validator: (v) => _requiredInt(v, 'DNI'),
                           ),
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                        TextFormField(
-                          controller: _addressCtrl,
-                          decoration: const InputDecoration(
-                            labelText: 'Domicilio',
-                            prefixIcon: Icon(PhosphorIconsRegular.house),
+                          const SizedBox(height: AppSpacing.md),
+                          InkWell(
+                            onTap: _saving ? null : _pickDate,
+                            child: InputDecorator(
+                              decoration: const InputDecoration(
+                                labelText: 'Nacimiento',
+                                prefixIcon:
+                                    Icon(PhosphorIconsRegular.calendarBlank),
+                              ),
+                              child: Text(_formatDate(_dateOfBirth)),
+                            ),
                           ),
-                          validator: (v) => _required(v, 'Domicilio'),
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                        TextFormField(
-                          controller: _numberCtrl,
-                          keyboardType: TextInputType.phone,
-                          decoration: const InputDecoration(
-                            labelText: 'Celular',
-                            prefixIcon: Icon(PhosphorIconsRegular.phone),
+                          const SizedBox(height: AppSpacing.md),
+                          TextFormField(
+                            controller: _addressCtrl,
+                            decoration: const InputDecoration(
+                              labelText: 'Domicilio',
+                              prefixIcon: Icon(PhosphorIconsRegular.house),
+                            ),
+                            validator: (v) => _required(v, 'Domicilio'),
                           ),
-                          validator: (v) => _requiredInt(v, 'Celular'),
-                        ),
+                          const SizedBox(height: AppSpacing.md),
+                          TextFormField(
+                            controller: _numberCtrl,
+                            keyboardType: TextInputType.phone,
+                            decoration: const InputDecoration(
+                              labelText: 'Celular',
+                              prefixIcon: Icon(PhosphorIconsRegular.phone),
+                            ),
+                            validator: (v) => _requiredInt(v, 'Celular'),
+                          ),
+                        ],
                         const SizedBox(height: AppSpacing.lg),
                         _ReadOnlyRow(
                           label: 'Email',
@@ -320,34 +327,15 @@ class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
                               (value) => _DotChip(
                                 label: '${_formatConcentration(value)}%',
                                 color: Theme.of(context).colorScheme.primary,
-                                onDeleted: () => setState(
-                                  () => _customConcentrations.remove(value),
-                                ),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: AppSpacing.md),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextField(
-                                controller: _customConcentrationCtrl,
-                                keyboardType: const TextInputType.numberWithOptions(
-                                  decimal: true,
-                                ),
-                                decoration: const InputDecoration(
-                                  labelText: 'Nueva concentración',
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: AppSpacing.sm),
-                            FilledButton.icon(
-                              onPressed: _addCustomConcentration,
-                              icon: const Icon(PhosphorIconsRegular.plus),
-                              label: const Text('Agregar'),
-                            ),
-                          ],
+                        const SizedBox(height: AppSpacing.lg),
+                        OutlinedButton.icon(
+                          onPressed: _manageConcentrations,
+                          icon: const Icon(PhosphorIconsRegular.faders),
+                          label: const Text('Gestionar concentraciones'),
                         ),
                       ],
                     ),
@@ -361,26 +349,63 @@ class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
                     runSpacing: AppSpacing.sm,
                     alignment: WrapAlignment.end,
                     children: [
+                      TextButton(
+                        onPressed: () async {
+                          await ref.read(authStateProvider.notifier).logout(global: true);
+                          if (!context.mounted) return;
+                          context.go(AppRoutes.login);
+                        },
+                        child: Text(
+                          'Cerrar sesión global',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Theme.of(context).colorScheme.error,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
                       OutlinedButton.icon(
                         onPressed: () async {
-                          await ref.read(authStateProvider.notifier).logout();
+                          await ref.read(authStateProvider.notifier).logout(global: false);
                           if (!context.mounted) return;
                           context.go(AppRoutes.login);
                         },
                         icon: const Icon(PhosphorIconsRegular.signOut),
                         label: const Text('Cerrar sesión'),
                       ),
-                      FilledButton.icon(
-                        onPressed: _saving ? null : _save,
-                        icon: _saving
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : const Icon(PhosphorIconsRegular.floppyDisk),
-                        label: Text(_saving ? 'Guardando...' : 'Guardar perfil'),
-                      ),
+                      if (!_isEditing)
+                        FilledButton.icon(
+                          onPressed: () => setState(() {
+                            _load(me); // Reset any changes if they were cancelled previously
+                            _isEditing = true;
+                          }),
+                          icon: const Icon(PhosphorIconsRegular.pencilSimple),
+                          label: const Text('Editar perfil'),
+                        )
+                      else ...[
+                        OutlinedButton(
+                          onPressed: _saving
+                              ? null
+                              : () => setState(() {
+                                    _load(me); // Revert changes
+                                    _isEditing = false;
+                                  }),
+                          child: const Text('Cancelar'),
+                        ),
+                        FilledButton.icon(
+                          onPressed: _saving ? null : _save,
+                          icon: _saving
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2),
+                                )
+                              : const Icon(PhosphorIconsRegular.floppyDisk),
+                          label: Text(
+                              _saving ? 'Guardando...' : 'Guardar perfil'),
+                        ),
+                      ],
                     ],
                   ),
                 ),

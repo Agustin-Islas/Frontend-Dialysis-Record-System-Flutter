@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend_dialysis_record/core/providers/providers.dart';
 import 'package:frontend_dialysis_record/features/auth/providers/auth_providers.dart';
@@ -426,6 +427,7 @@ class _SessionCreateBottomSheetState
                         controller: _infusionCtrl,
                         enabled: !_loading,
                         keyboardType: TextInputType.number,
+                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                         decoration: const InputDecoration(
                           labelText: 'Infusion (ml)',
                         ),
@@ -438,6 +440,7 @@ class _SessionCreateBottomSheetState
                         controller: _drainageCtrl,
                         enabled: !_loading,
                         keyboardType: TextInputType.number,
+                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                         decoration: const InputDecoration(
                           labelText: 'Drenaje (ml)',
                         ),
