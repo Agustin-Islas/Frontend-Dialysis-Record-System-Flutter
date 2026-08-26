@@ -34,6 +34,7 @@ class _PatientDetailForDoctorScreenState
     extends ConsumerState<PatientDetailForDoctorScreen> {
   DateTime _selectedMonth = DateTime(DateTime.now().year, DateTime.now().month);
   bool _generatingPdf = false;
+  int _selectedChartIndex = 0; // 0 for UF, 1 for Glucosa
   final ItemScrollController _itemScrollController = ItemScrollController();
   final Map<int, ExpansibleController> _tileControllers = {};
   final DateFormat _monthFormat = DateFormat('MMMM yyyy', 'es');
@@ -277,7 +278,7 @@ class _PatientDetailForDoctorScreenState
                         final mean = daysWithData > 0 ? sumData / daysWithData : 0.0;
 
                         Widget buildChartCard(int startIndex) {
-                           Widget chartWidget = _DailyUltrafiltrationChart(
+                           Widget ufChartWidget = _DailyUltrafiltrationChart(
                              month: _selectedMonth,
                              sessions: sessions,
                              mean: mean,
@@ -306,6 +307,13 @@ class _PatientDetailForDoctorScreenState
                              },
                            );
                            
+                           Widget pieChartWidget = _ConcentrationPieChart(
+                             month: _selectedMonth,
+                             sessions: sessions,
+                           );
+                           
+                           Widget chartWidget = _selectedChartIndex == 0 ? ufChartWidget : pieChartWidget;
+                           
                            if (isWide) {
                              chartWidget = Expanded(child: chartWidget);
                            }
@@ -324,50 +332,74 @@ class _PatientDetailForDoctorScreenState
                                    Row(
                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                      children: [
-                                       const Text(
-                                         'Evolución de Balance Diario',
-                                         style: TextStyle(
-                                           fontSize: 16,
-                                           fontWeight: FontWeight.w700,
+                                       Expanded(
+                                         child: Text(
+                                           _selectedChartIndex == 0 ? 'Evolución de Balance Diario' : 'Carga de Glucosa',
+                                           style: const TextStyle(
+                                             fontSize: 16,
+                                             fontWeight: FontWeight.w700,
+                                           ),
+                                           maxLines: 2,
+                                           overflow: TextOverflow.ellipsis,
                                          ),
                                        ),
-                                       Row(
-                                         mainAxisSize: MainAxisSize.min,
-                                         children: [
-                                           Text(
-                                             '- - -',
-                                             style: TextStyle(
-                                               color: Theme.of(context).colorScheme.primary,
-                                               fontWeight: FontWeight.w900,
-                                             ),
-                                           ),
-                                           const SizedBox(width: 4),
-                                           Text(
-                                             'Media: ${mean.toStringAsFixed(0)} ml',
-                                             style: TextStyle(
-                                               color: Theme.of(context).colorScheme.primary,
-                                               fontSize: 12,
-                                               fontWeight: FontWeight.w700,
-                                             ),
-                                           ),
-                                           const SizedBox(width: 16),
-                                           Icon(
-                                             Icons.touch_app_outlined,
-                                             size: 18,
-                                             color: Theme.of(context).colorScheme.primary,
-                                           ),
+                                       const SizedBox(width: 8),
+                                       SegmentedButton<int>(
+                                         segments: const [
+                                           ButtonSegment(value: 0, icon: Icon(PhosphorIconsRegular.chartLineUp), label: Text('UF')),
+                                           ButtonSegment(value: 1, icon: Icon(PhosphorIconsRegular.chartPieSlice), label: Text('Glucosa')),
                                          ],
+                                         selected: {_selectedChartIndex},
+                                         onSelectionChanged: (newSelection) {
+                                           setState(() {
+                                             _selectedChartIndex = newSelection.first;
+                                           });
+                                         },
+                                         showSelectedIcon: false,
+                                         style: ButtonStyle(
+                                            visualDensity: VisualDensity.compact,
+                                         ),
                                        ),
                                      ],
                                    ),
-                                   const SizedBox(height: 4),
-                                   Text(
-                                     'Desliza para ver la tendencia o toca para ir al detalle del día',
-                                     style: TextStyle(
-                                       fontSize: 12,
-                                       color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                   if (_selectedChartIndex == 0) ...[
+                                     const SizedBox(height: 8),
+                                     Row(
+                                       mainAxisSize: MainAxisSize.min,
+                                       children: [
+                                         Text(
+                                           '- - -',
+                                           style: TextStyle(
+                                             color: Theme.of(context).colorScheme.primary,
+                                             fontWeight: FontWeight.w900,
+                                           ),
+                                         ),
+                                         const SizedBox(width: 4),
+                                         Text(
+                                           'Media: ${mean.toStringAsFixed(0)} ml',
+                                           style: TextStyle(
+                                             color: Theme.of(context).colorScheme.primary,
+                                             fontSize: 12,
+                                             fontWeight: FontWeight.w700,
+                                           ),
+                                         ),
+                                         const SizedBox(width: 16),
+                                         Icon(
+                                           Icons.touch_app_outlined,
+                                           size: 18,
+                                           color: Theme.of(context).colorScheme.primary,
+                                         ),
+                                         const SizedBox(width: 4),
+                                         Text(
+                                           'Toca para ir al detalle',
+                                           style: TextStyle(
+                                             fontSize: 12,
+                                             color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                           ),
+                                         ),
+                                       ],
                                      ),
-                                   ),
+                                   ],
                                    const SizedBox(height: AppSpacing.lg),
                                    chartWidget,
                                  ],
@@ -1100,3 +1132,148 @@ class _MonthYearPickerDialogState extends State<_MonthYearPickerDialog> {
     );
   }
 }
+
+class _PieChartData {
+  final String label;
+  final int count;
+  final Color color;
+  final String textLabel;
+
+  _PieChartData(this.label, this.count, this.color, this.textLabel);
+}
+
+class _ConcentrationPieChart extends StatelessWidget {
+  final DateTime month;
+  final List<SessionDto> sessions;
+
+  const _ConcentrationPieChart({
+    required this.month,
+    required this.sessions,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final Map<double, int> counts = {};
+    for (final s in sessions) {
+      if (s.effectiveDate == null || s.concentration == null) continue;
+      final date = DateTime.tryParse(s.effectiveDate!);
+      if (date == null) continue;
+      if (date.year == month.year && date.month == month.month) {
+        counts[s.concentration!] = (counts[s.concentration!] ?? 0) + 1;
+      }
+    }
+
+    final scheme = Theme.of(context).colorScheme;
+    final chartData = counts.entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+      
+    final int totalBags = counts.values.fold(0, (sum, count) => sum + count);
+      
+    final List<_PieChartData> dataSource = [];
+    for (final entry in chartData) {
+      final isInt = entry.key % 1 == 0;
+      final label = isInt
+          ? '${entry.key.toInt()}%'
+          : '${entry.key.toStringAsFixed(1).replaceAll('.', ',')}%';
+          
+      Color color;
+      if (entry.key == 1.5) {
+        color = const Color(0xFFFFC107); // Amarillo
+      } else if (entry.key == 2.3 || entry.key == 2.5) {
+        color = const Color(0xFF4CAF50); // Verde
+      } else if (entry.key == 4.25) {
+        color = scheme.error; // Rojo
+      } else if (entry.key == 7.5) {
+        color = const Color(0xFF9C27B0); // Morado (Icodextrina)
+      } else {
+        color = const Color(0xFF2196F3); // Azul para otros
+      }
+      
+      final percentage = (entry.value / totalBags * 100).toStringAsFixed(1).replaceAll('.', ',');
+      final textLabel = '$label\n($percentage%)';
+      
+      dataSource.add(
+        _PieChartData(label, entry.value, color, textLabel),
+      );
+    }
+
+    if (dataSource.isEmpty) {
+      return SizedBox(
+        height: 250,
+        child: Center(
+          child: Text(
+            'No hay datos de concentración en este mes',
+            style: TextStyle(color: scheme.onSurfaceVariant),
+          ),
+        ),
+      );
+    }
+
+    return SizedBox(
+      height: 250,
+      width: double.infinity,
+      child: SfCircularChart(
+        margin: const EdgeInsets.only(top: 10, bottom: 5),
+        legend: const Legend(isVisible: false),
+        annotations: <CircularChartAnnotation>[
+          CircularChartAnnotation(
+            widget: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '$totalBags',
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: scheme.onSurface,
+                  ),
+                ),
+                Text(
+                  'Bolsas',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        tooltipBehavior: TooltipBehavior(
+          enable: true,
+          color: scheme.surfaceContainerHighest,
+          textStyle: TextStyle(
+            color: scheme.onSurface,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+          format: 'point.y bolsas',
+        ),
+        series: <CircularSeries>[
+          DoughnutSeries<_PieChartData, String>(
+            dataSource: dataSource,
+            xValueMapper: (_PieChartData data, _) => data.label,
+            yValueMapper: (_PieChartData data, _) => data.count,
+            pointColorMapper: (_PieChartData data, _) => data.color,
+            dataLabelMapper: (_PieChartData data, _) => data.textLabel,
+            dataLabelSettings: DataLabelSettings(
+              isVisible: true,
+              textStyle: TextStyle(
+                color: scheme.onSurface,
+                fontWeight: FontWeight.w700,
+              ),
+              labelPosition: ChartDataLabelPosition.outside,
+            ),
+            innerRadius: '60%',
+            animationDuration: 800,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
+
+
+
