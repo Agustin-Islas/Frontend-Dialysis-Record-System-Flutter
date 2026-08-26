@@ -219,324 +219,346 @@ class _PatientDetailForDoctorScreenState
           );
 
           return SafeArea(
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1120),
-                child: sessionsAsync.when(
-                  loading: () => const AppSkeletonScreen(itemCount: 4),
-                  error: (e, _) {
-                    final isAppEx = e.runtimeType.toString() == 'AppException';
-                    return AppErrorCard(
-                      message: 'Error al cargar los registros',
-                      details: isAppEx ? (e as dynamic).message : 'No se pudieron cargar los registros de diálisis. $e',
-                      onRetry: () => ref.invalidate(monthSessionsProvider),
-                    );
-                  },
-                  data: (sessions) {
-                    final summary = MonthlyUltrafiltrationCalculator.calculate(
-                      month: _selectedMonth,
-                      sessions: sessions,
-                    );
-                    final grouped = _groupByDay(sessions);
-                    final currentMonth = DateTime(
-                      DateTime.now().year,
-                      DateTime.now().month,
-                    );
-                    final canGoForward = !DateTime(
-                      _selectedMonth.year,
-                      _selectedMonth.month + 1,
-                    ).isAfter(currentMonth);
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isWide = constraints.maxWidth > 900;
+                
+                return Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1400),
+                    child: sessionsAsync.when(
+                      loading: () => const AppSkeletonScreen(itemCount: 4),
+                      error: (e, _) {
+                        final isAppEx = e.runtimeType.toString() == 'AppException';
+                        return AppErrorCard(
+                          message: 'Error al cargar los registros',
+                          details: isAppEx ? (e as dynamic).message : 'No se pudieron cargar los registros de diálisis. $e',
+                          onRetry: () => ref.invalidate(monthSessionsProvider),
+                        );
+                      },
+                      data: (sessions) {
+                        final summary = MonthlyUltrafiltrationCalculator.calculate(
+                          month: _selectedMonth,
+                          sessions: sessions,
+                        );
+                        final grouped = _groupByDay(sessions);
+                        final currentMonth = DateTime(
+                          DateTime.now().year,
+                          DateTime.now().month,
+                        );
+                        final canGoForward = !DateTime(
+                          _selectedMonth.year,
+                          _selectedMonth.month + 1,
+                        ).isAfter(currentMonth);
 
-                    final dayEntries = grouped.entries.toList();
+                        final dayEntries = grouped.entries.toList();
+                        
+                        int daysInMonth = DateUtils.getDaysInMonth(_selectedMonth.year, _selectedMonth.month);
+                        final dailyTotals = List<double>.filled(daysInMonth, 0);
 
-                    return ScrollablePositionedList.builder(
-                      itemScrollController: _itemScrollController,
-                      padding: const EdgeInsets.all(AppSpacing.lg),
-                      itemCount: 6 + (sessions.isEmpty ? 1 : dayEntries.length),
-                      itemBuilder: (context, index) {
-                        if (index == 0) {
-                          return _PatientMonthPanel(
-                            patient: patient,
-                            patientName:
-                                '${patient.name ?? "-"} ${patient.surname ?? ""}'
-                                    .trim(),
-                            summary: summary,
+                        for (final s in sessions) {
+                          if (s.effectiveDate == null) continue;
+                          final date = DateTime.tryParse(s.effectiveDate!);
+                          if (date == null) continue;
+                          if (date.year == _selectedMonth.year && date.month == _selectedMonth.month) {
+                            final total = s.partial ?? ((s.infusion ?? 0) - (s.drainage ?? 0));
+                            dailyTotals[date.day - 1] += total;
+                          }
+                        }
+
+                        int daysWithData = 0;
+                        double sumData = 0;
+                        for (final val in dailyTotals) {
+                          if (val != 0) {
+                            daysWithData++;
+                            sumData += val;
+                          }
+                        }
+                        final mean = daysWithData > 0 ? sumData / daysWithData : 0.0;
+
+                        Widget buildChartCard(int startIndex) {
+                           Widget chartWidget = _DailyUltrafiltrationChart(
+                             month: _selectedMonth,
+                             sessions: sessions,
+                             mean: mean,
+                             onDayTapped: (day) {
+                               final entryIndex = dayEntries.indexWhere((e) {
+                                 final dt = DateTime.tryParse(e.key);
+                                 return dt != null && dt.day == day;
+                               });
+                               if (entryIndex != -1) {
+                                 final listIndex = startIndex + entryIndex;
+                                 _itemScrollController.scrollTo(
+                                   index: listIndex,
+                                   duration: const Duration(milliseconds: 600),
+                                   curve: Curves.easeInOutCubic,
+                                 );
+                                 Future.delayed(
+                                   const Duration(milliseconds: 700),
+                                   () {
+                                     if (_tileControllers[entryIndex] != null &&
+                                         !_tileControllers[entryIndex]!.isExpanded) {
+                                       _tileControllers[entryIndex]!.expand();
+                                     }
+                                   },
+                                 );
+                               }
+                             },
+                           );
+                           
+                           if (isWide) {
+                             chartWidget = Expanded(child: chartWidget);
+                           }
+
+                           return Card(
+                             elevation: 0,
+                             shape: RoundedRectangleBorder(
+                               borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+                               side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5)),
+                             ),
+                             child: Padding(
+                               padding: const EdgeInsets.all(AppSpacing.lg),
+                               child: Column(
+                                 crossAxisAlignment: CrossAxisAlignment.start,
+                                 children: [
+                                   Row(
+                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                     children: [
+                                       const Text(
+                                         'Evolución de Balance Diario',
+                                         style: TextStyle(
+                                           fontSize: 16,
+                                           fontWeight: FontWeight.w700,
+                                         ),
+                                       ),
+                                       Row(
+                                         mainAxisSize: MainAxisSize.min,
+                                         children: [
+                                           Text(
+                                             '- - -',
+                                             style: TextStyle(
+                                               color: Theme.of(context).colorScheme.primary,
+                                               fontWeight: FontWeight.w900,
+                                             ),
+                                           ),
+                                           const SizedBox(width: 4),
+                                           Text(
+                                             'Media: ${mean.toStringAsFixed(0)} ml',
+                                             style: TextStyle(
+                                               color: Theme.of(context).colorScheme.primary,
+                                               fontSize: 12,
+                                               fontWeight: FontWeight.w700,
+                                             ),
+                                           ),
+                                           const SizedBox(width: 16),
+                                           Icon(
+                                             Icons.touch_app_outlined,
+                                             size: 18,
+                                             color: Theme.of(context).colorScheme.primary,
+                                           ),
+                                         ],
+                                       ),
+                                     ],
+                                   ),
+                                   const SizedBox(height: 4),
+                                   Text(
+                                     'Desliza para ver la tendencia o toca para ir al detalle del día',
+                                     style: TextStyle(
+                                       fontSize: 12,
+                                       color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                     ),
+                                   ),
+                                   const SizedBox(height: AppSpacing.lg),
+                                   chartWidget,
+                                 ],
+                               ),
+                             ),
+                           );
+                        }
+
+                        // Determine indices
+                        int sessionStartIndex = 0;
+                        final items = <Widget>[];
+
+                        items.add(_PatientMonthPanel(
+                          patient: patient,
+                          patientName: '${patient.name ?? "-"} ${patient.surname ?? ""}'.trim(),
+                          summary: summary,
+                          monthLabel: _monthLabel(),
+                        ));
+
+                        items.add(Padding(
+                          padding: const EdgeInsets.only(top: AppSpacing.md, bottom: AppSpacing.md),
+                          child: _MonthFilterRow(
                             monthLabel: _monthLabel(),
-                          );
-                        }
-                        if (index == 1) {
-                          return Padding(
-                            padding: const EdgeInsets.only(top: AppSpacing.md),
-                            child: _MonthFilterCard(
-                              monthLabel: _monthLabel(),
-                              onPickMonth: _pickMonth,
-                            ),
-                          );
-                        }
-                        if (index == 2) {
-                          return Padding(
-                            padding: const EdgeInsets.only(top: AppSpacing.md),
-                            child: Card(
-                              elevation: 0,
-                              child: Padding(
-                                padding: const EdgeInsets.all(AppSpacing.lg),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        const Text(
-                                          'Evolución de Balance Diario',
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                        Icon(
-                                          Icons.touch_app_outlined,
-                                          size: 18,
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.primary,
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Desliza para ver la tendencia o toca para ir al detalle del día',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.onSurfaceVariant,
-                                      ),
-                                    ),
-                                    const SizedBox(height: AppSpacing.lg),
-                                    _DailyUltrafiltrationChart(
-                                      month: _selectedMonth,
-                                      sessions: sessions,
-                                      onDayTapped: (day) {
-                                        final entryIndex = dayEntries
-                                            .indexWhere((e) {
-                                              final dt = DateTime.tryParse(
-                                                e.key,
-                                              );
-                                              return dt != null &&
-                                                  dt.day == day;
-                                            });
-                                        if (entryIndex != -1) {
-                                          final listIndex = 6 + entryIndex;
-                                          _itemScrollController.scrollTo(
-                                            index: listIndex,
-                                            duration: const Duration(
-                                              milliseconds: 600,
-                                            ),
-                                            curve: Curves.easeInOutCubic,
-                                          );
-                                          Future.delayed(
-                                            const Duration(milliseconds: 700),
-                                            () {
-                                              if (_tileControllers[entryIndex] !=
-                                                      null &&
-                                                  !_tileControllers[entryIndex]!
-                                                      .isExpanded) {
-                                                _tileControllers[entryIndex]!
-                                                    .expand();
-                                              }
-                                            },
-                                          );
-                                        }
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          );
-                        }
-                        if (index == 3) {
-                          return const SizedBox(height: AppSpacing.md);
-                        }
-                        if (index == 4) {
-                          return Card(
-                            elevation: 0,
-                            margin: EdgeInsets.zero,
-                            shape: const RoundedRectangleBorder(
-                              borderRadius: BorderRadius.vertical(
-                                top: Radius.circular(AppSpacing.cardRadius),
-                              ),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.fromLTRB(
-                                AppSpacing.lg,
-                                AppSpacing.md,
-                                AppSpacing.lg,
-                                AppSpacing.md,
-                              ),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      'Historial de cambios',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleMedium
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                    ),
-                                  ),
-                                  IconButton(
-                                    tooltip: 'Mes anterior',
-                                    onPressed: () => _changeMonth(-1),
-                                    icon: const Icon(Icons.chevron_left),
-                                  ),
-                                  IconButton(
-                                    tooltip: 'Mes siguiente',
-                                    onPressed: canGoForward
-                                        ? () => _changeMonth(1)
-                                        : null,
-                                    icon: const Icon(Icons.chevron_right),
-                                  ),
-                                  if (_generatingPdf)
-                                    const Padding(
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                      ),
-                                      child: SizedBox(
-                                        width: 24,
-                                        height: 24,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      ),
-                                    )
-                                  else
-                                    PopupMenuButton<int>(
-                                      icon: const Icon(
-                                        Icons.picture_as_pdf_outlined,
-                                      ),
-                                      tooltip: 'Generar reporte PDF',
-                                      onSelected: (value) {
-                                        if (value == 0) {
-                                          _generatePdf(patient, sessions);
-                                        } else if (value == 1) {
-                                          _generate4WeeksPdf(patient);
-                                        }
-                                      },
-                                      itemBuilder: (context) => const [
-                                        PopupMenuItem(
-                                          value: 0,
-                                          child: Text('Reporte Mensual'),
-                                        ),
-                                        PopupMenuItem(
-                                          value: 1,
-                                          child: Text(
-                                            'Reporte Últimas 4 Semanas',
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                ],
-                              ),
-                            ),
-                          );
-                        }
-                        if (index == 5) {
-                          return Container(
-                            color: Theme.of(context).colorScheme.surface,
-                            height: 1,
-                          );
+                            onPickMonth: _pickMonth,
+                          ),
+                        ));
+
+                        if (!isWide) {
+                          // Dummy calculation of startIndex for the chart to pass down
+                          // Left items: panel (0), filter (1), chart (2), header (3), divider (4) -> index 5
+                          items.add(buildChartCard(5)); 
+                          items.add(const SizedBox(height: AppSpacing.md));
                         }
 
-                        // items
-                        if (sessions.isEmpty) {
-                          return const Card(
-                            elevation: 0,
-                            margin: EdgeInsets.zero,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.vertical(
-                                bottom: Radius.circular(AppSpacing.cardRadius),
-                              ),
-                            ),
-                            child: Padding(
-                              padding: EdgeInsets.all(AppSpacing.lg),
-                              child: AppEmptyState(
-                                message: 'No hay cambios para este mes.',
-                                icon: Icons.calendar_today,
-                              ),
-                            ),
-                          );
-                        }
-
-                        final isLast = index - 6 == dayEntries.length - 1;
-                        final entry = dayEntries[index - 6];
-                        final daySessions = entry.value;
-
-                        return Card(
+                        items.add(Card(
                           elevation: 0,
                           margin: EdgeInsets.zero,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: isLast
-                                ? const BorderRadius.vertical(
-                                    bottom: Radius.circular(
-                                      AppSpacing.cardRadius,
-                                    ),
-                                  )
-                                : BorderRadius.zero,
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.vertical(
+                              top: Radius.circular(AppSpacing.cardRadius),
+                            ),
                           ),
                           child: Padding(
-                            padding: EdgeInsets.fromLTRB(
-                              AppSpacing.lg,
-                              0,
-                              AppSpacing.lg,
-                              isLast ? AppSpacing.lg : AppSpacing.sm,
+                            padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.md),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    'Historial de cambios',
+                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                                  ),
+                                ),
+                                IconButton(
+                                  tooltip: 'Mes anterior',
+                                  onPressed: () => _changeMonth(-1),
+                                  icon: const Icon(Icons.chevron_left),
+                                ),
+                                IconButton(
+                                  tooltip: 'Mes siguiente',
+                                  onPressed: canGoForward ? () => _changeMonth(1) : null,
+                                  icon: const Icon(Icons.chevron_right),
+                                ),
+                                if (_generatingPdf)
+                                  const Padding(
+                                    padding: EdgeInsets.symmetric(horizontal: 16),
+                                    child: SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    ),
+                                  )
+                                else
+                                  PopupMenuButton<int>(
+                                    icon: const Icon(Icons.picture_as_pdf_outlined),
+                                    tooltip: 'Generar reporte PDF',
+                                    onSelected: (value) {
+                                      if (value == 0) {
+                                        _generatePdf(patient, sessions);
+                                      } else if (value == 1) {
+                                        _generate4WeeksPdf(patient);
+                                      }
+                                    },
+                                    itemBuilder: (context) => const [
+                                      PopupMenuItem(value: 0, child: Text('Reporte Mensual')),
+                                      PopupMenuItem(value: 1, child: Text('Reporte Últimas 4 Semanas')),
+                                    ],
+                                  ),
+                              ],
                             ),
-                            child: Card(
+                          ),
+                        ));
+                        
+                        items.add(Container(
+                          color: Theme.of(context).colorScheme.surface,
+                          height: 1,
+                        ));
+
+                        sessionStartIndex = items.length;
+
+                        if (sessions.isEmpty) {
+                          items.add(
+                            const Card(
                               elevation: 0,
                               margin: EdgeInsets.zero,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(
-                                  AppSpacing.cardRadius,
-                                ),
-                                side: BorderSide(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.outlineVariant,
+                                borderRadius: BorderRadius.vertical(bottom: Radius.circular(AppSpacing.cardRadius)),
+                              ),
+                              child: Padding(
+                                padding: EdgeInsets.all(AppSpacing.lg),
+                                child: AppEmptyState(
+                                  message: 'No hay cambios para este mes.',
+                                  icon: Icons.calendar_today,
                                 ),
                               ),
-                              child: ExpansionTile(
-                                controller: _tileControllers.putIfAbsent(
-                                  index - 6,
-                                  () => ExpansibleController(),
+                            )
+                          );
+                        } else {
+                          for (int i = 0; i < dayEntries.length; i++) {
+                            final isLast = i == dayEntries.length - 1;
+                            final entry = dayEntries[i];
+                            final daySessions = entry.value;
+
+                            items.add(
+                              Card(
+                                elevation: 0,
+                                margin: EdgeInsets.zero,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: isLast
+                                      ? const BorderRadius.vertical(bottom: Radius.circular(AppSpacing.cardRadius))
+                                      : BorderRadius.zero,
                                 ),
-                                initiallyExpanded: false,
-                                title: DaySessionGroupTitle(
-                                  dayTitle: _formatDayTitle(entry.key),
-                                  changesCount: daySessions.length,
-                                  totalMl: _dayTotal(daySessions),
-                                  hasObservations: daySessions.any(
-                                    (s) => (s.observations ?? '')
-                                        .trim()
-                                        .isNotEmpty,
+                                child: Padding(
+                                  padding: EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, isLast ? AppSpacing.lg : AppSpacing.sm),
+                                  child: Card(
+                                    elevation: 0,
+                                    margin: EdgeInsets.zero,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+                                      side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+                                    ),
+                                    child: ExpansionTile(
+                                      controller: _tileControllers.putIfAbsent(i, () => ExpansibleController()),
+                                      initiallyExpanded: false,
+                                      title: DaySessionGroupTitle(
+                                        dayTitle: _formatDayTitle(entry.key),
+                                        changesCount: daySessions.length,
+                                        totalMl: _dayTotal(daySessions),
+                                        hasObservations: daySessions.any((s) => (s.observations ?? '').trim().isNotEmpty),
+                                      ),
+                                      children: daySessions.map((s) => SessionExpansionCard(session: s)).toList(),
+                                    ),
                                   ),
                                 ),
-                                children: daySessions
-                                    .map(
-                                      (s) => SessionExpansionCard(session: s),
-                                    )
-                                    .toList(),
-                              ),
-                            ),
-                          ),
+                              )
+                            );
+                          }
+                        }
+
+                        final listWidget = ScrollablePositionedList.builder(
+                          itemScrollController: _itemScrollController,
+                          padding: EdgeInsets.all(isWide ? 0 : AppSpacing.lg),
+                          itemCount: items.length,
+                          itemBuilder: (context, index) => items[index],
                         );
+
+                        if (isWide) {
+                          return Padding(
+                            padding: const EdgeInsets.all(AppSpacing.lg),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  flex: 4,
+                                  child: listWidget,
+                                ),
+                                const SizedBox(width: AppSpacing.lg),
+                                Expanded(
+                                  flex: 6,
+                                  child: buildChartCard(sessionStartIndex),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+
+                        return listWidget;
                       },
-                    );
-                  },
-                ),
-              ),
+                    ),
+                  ),
+                );
+              },
             ),
           );
         },
@@ -564,6 +586,11 @@ class _PatientMonthPanel extends StatelessWidget {
     final weeklyValues = summary.weeklyUltrafiltration;
 
     return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+        side: BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.5)),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
@@ -608,17 +635,19 @@ class _PatientMonthPanel extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: AppSpacing.md),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Promedio de cambios diarios',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: scheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w600,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Promedio de cambios diarios',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 const SizedBox(width: AppSpacing.md),
                 Text(
@@ -716,65 +745,60 @@ class _DoctorWeeklyUfTile extends StatelessWidget {
   }
 }
 
-class _MonthFilterCard extends StatelessWidget {
+class _MonthFilterRow extends StatelessWidget {
   final String monthLabel;
   final VoidCallback onPickMonth;
 
-  const _MonthFilterCard({required this.monthLabel, required this.onPickMonth});
+  const _MonthFilterRow({required this.monthLabel, required this.onPickMonth});
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Filtrar por fecha',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          'Filtrar mes',
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+        ),
+        InkWell(
+          onTap: onPickMonth,
+          borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.sm,
             ),
-            const SizedBox(height: AppSpacing.md),
-            InkWell(
-              onTap: onPickMonth,
+            decoration: BoxDecoration(
+              color: scheme.surface,
               borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md,
-                  vertical: AppSpacing.md,
-                ),
-                decoration: BoxDecoration(
-                  color: scheme.surfaceContainerLowest,
-                  borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
-                  border: Border.all(
-                    color: scheme.outlineVariant.withValues(alpha: 0.5),
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      monthLabel,
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: scheme.onSurface,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    Icon(
-                      PhosphorIconsRegular.caretDown,
-                      color: scheme.onSurfaceVariant,
-                      size: 20,
-                    ),
-                  ],
-                ),
+              border: Border.all(
+                color: scheme.outlineVariant.withValues(alpha: 0.5),
               ),
             ),
-          ],
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  monthLabel,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: scheme.onSurface,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Icon(
+                  PhosphorIconsRegular.calendarBlank,
+                  color: scheme.primary,
+                  size: 18,
+                ),
+              ],
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
 }
@@ -789,11 +813,13 @@ class _ChartData {
 class _DailyUltrafiltrationChart extends StatefulWidget {
   final DateTime month;
   final List<SessionDto> sessions;
+  final double mean;
   final void Function(int day)? onDayTapped;
 
   const _DailyUltrafiltrationChart({
     required this.month,
     required this.sessions,
+    required this.mean,
     this.onDayTapped,
   });
 
@@ -824,8 +850,19 @@ class _DailyUltrafiltrationChartState
 
     final scheme = Theme.of(context).colorScheme;
     final List<_ChartData> chartData = [];
+    
+    double minVal = -1200;
+    double maxVal = 400;
+    int daysWithData = 0;
+    double sumData = 0;
+    
+    int daysToShow = daysInMonth;
+    final now = DateTime.now();
+    if (widget.month.year == now.year && widget.month.month == now.month) {
+      daysToShow = now.day;
+    }
 
-    for (int i = 0; i < daysInMonth; i++) {
+    for (int i = 0; i < daysToShow; i++) {
       final val = dailyTotals[i];
       chartData.add(
         _ChartData(
@@ -834,7 +871,16 @@ class _DailyUltrafiltrationChartState
           val > 0 ? scheme.error : const Color(0xFF4CAF50),
         ),
       );
+      
+      if (val != 0) {
+        daysWithData++;
+      }
+      if (val < minVal) minVal = val;
+      if (val > maxVal) maxVal = val;
     }
+    
+    if (minVal < -1200) minVal -= 100;
+    if (maxVal > 400) maxVal += 100;
 
     return SizedBox(
       height: 250,
@@ -861,6 +907,8 @@ class _DailyUltrafiltrationChartState
           ),
         ),
         primaryXAxis: CategoryAxis(
+          crossesAt: maxVal,
+          placeLabelsNearAxisLine: false,
           majorGridLines: const MajorGridLines(width: 0),
           axisLine: const AxisLine(width: 0),
           labelStyle: TextStyle(fontSize: 10, color: scheme.onSurfaceVariant),
@@ -868,6 +916,8 @@ class _DailyUltrafiltrationChartState
           labelIntersectAction: AxisLabelIntersectAction.hide,
         ),
         primaryYAxis: NumericAxis(
+          minimum: minVal,
+          maximum: maxVal,
           axisLine: const AxisLine(width: 0),
           majorTickLines: const MajorTickLines(size: 0),
           majorGridLines: MajorGridLines(
@@ -876,6 +926,18 @@ class _DailyUltrafiltrationChartState
             dashArray: const <double>[5, 5],
           ),
           labelStyle: TextStyle(fontSize: 10, color: scheme.onSurfaceVariant),
+          plotBands: <PlotBand>[
+            if (daysWithData > 0)
+              PlotBand(
+                isVisible: true,
+                start: widget.mean,
+                end: widget.mean,
+                borderColor: scheme.primary,
+                borderWidth: 2,
+                dashArray: const <double>[4, 4],
+                text: '',
+              ),
+          ],
         ),
         series: <CartesianSeries<_ChartData, String>>[
           SplineAreaSeries<_ChartData, String>(
