@@ -9,26 +9,33 @@ import 'package:frontend_dialysis_record/features/patients/views/patient_today_s
 /// Patient home screen acting as a shell for GoRouter's StatefulShellRoute.
 ///
 /// Contains the bottom NavigationBar and renders the current branch.
-class PatientHomeScreen extends ConsumerWidget {
+class PatientHomeScreen extends ConsumerStatefulWidget {
   final StatefulNavigationShell navigationShell;
 
   const PatientHomeScreen({super.key, required this.navigationShell});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PatientHomeScreen> createState() => _PatientHomeScreenState();
+}
+
+class _PatientHomeScreenState extends ConsumerState<PatientHomeScreen> {
+  bool _isFabHidden = false;
+
+  @override
+  Widget build(BuildContext context) {
     final me = ref.watch(authStateProvider).valueOrNull;
     final patientId = me?.id;
 
     return Scaffold(
-      body: navigationShell,
+      body: widget.navigationShell,
 
       floatingActionButton:
-          navigationShell.currentIndex == 0 && patientId != null
+          widget.navigationShell.currentIndex == 0 && patientId != null && !_isFabHidden
           ? FloatingActionButton(
-              onPressed: () {
-                // The PatientTodayScreen handles the create session via a key
-                // We trigger it through a callback mechanism
-                patientTodayKey.currentState?.openCreateSession();
+              onPressed: () async {
+                setState(() => _isFabHidden = true);
+                await patientTodayKey.currentState?.openCreateSession();
+                if (mounted) setState(() => _isFabHidden = false);
               },
               tooltip: 'Nuevo cambio',
               child: const Icon(PhosphorIconsBold.plus),
@@ -36,11 +43,11 @@ class PatientHomeScreen extends ConsumerWidget {
           : null,
 
       bottomNavigationBar: NavigationBar(
-        selectedIndex: navigationShell.currentIndex,
+        selectedIndex: widget.navigationShell.currentIndex,
         onDestinationSelected: (index) {
-          navigationShell.goBranch(
+          widget.navigationShell.goBranch(
             index,
-            initialLocation: index == navigationShell.currentIndex,
+            initialLocation: index == widget.navigationShell.currentIndex,
           );
         },
         destinations: const [

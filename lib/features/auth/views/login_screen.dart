@@ -82,225 +82,183 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final scheme = Theme.of(context).colorScheme;
 
     return Scaffold(
+      backgroundColor: scheme.surfaceContainerLowest,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 440),
+              constraints: const BoxConstraints(maxWidth: 460),
               child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.xxl),
-                child: Form(
-                  key: _formKey,
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // ── Logo / Header ──
-                      Image.asset(
-                            'assets/images/logo RenApp.jpg',
-                            height: 150,
-                            fit: BoxFit.contain,
-                          )
-                          .animate()
-                          .fadeIn(duration: AppAnimations.slow)
-                          .scale(
-                            begin: const Offset(0.8, 0.8),
-                            end: const Offset(1, 1),
-                            duration: AppAnimations.slow,
-                            curve: AppAnimations.defaultCurve,
-                          ),
-
-                      // ── Email field ──
-                      TextFormField(
-                        controller: _emailCtrl,
-                        keyboardType: TextInputType.emailAddress,
-                        textInputAction: TextInputAction.next,
-                        decoration: const InputDecoration(
-                          labelText: 'Correo electrónico',
-                          prefixIcon: Icon(PhosphorIconsRegular.envelope),
-                          hintText: 'tu@email.com',
-                        ),
-                        validator: (value) {
-                          final v = (value ?? '').trim();
-                          if (v.isEmpty) return 'Email requerido';
-                          if (!_isValidEmail(v)) return 'Email inválido';
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-
-                      // ── Password field ──
-                      TextFormField(
-                        controller: _passwordCtrl,
-                        obscureText: true,
-                        textInputAction: TextInputAction.done,
-                        decoration: const InputDecoration(
-                          labelText: 'Contraseña',
-                          prefixIcon: Icon(PhosphorIconsRegular.lockKey),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Requerido';
-                          }
-                          return null;
-                        },
-                        onFieldSubmitted: (_) => _isLoading ? null : _login(),
-                      ),
-
-                      // ── Forgot Password ──
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: () => context.push('/forgot-password'),
-                          child: Text(
-                            '¿Olvidaste tu contraseña?',
-                            style: TextStyle(color: scheme.primary),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-
-                      // ── Submit button ──
-                      SizedBox(
-                        width: double.infinity,
-                        height: 54,
-                        child: FilledButton.icon(
-                          onPressed: _isLoading ? null : _login,
-                          icon: _isLoading
-                              ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Icon(PhosphorIconsRegular.signIn),
-                          label: Text(
-                            _isLoading
-                                ? 'Iniciando sesión...'
-                                : 'Ingresar a la app',
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.xl),
-
-                      // ── Register buttons ──
-                      const Divider(height: 32),
-                      Text(
-                        '¿Eres nuevo?',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: scheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      Row(
+                padding: const EdgeInsets.all(AppSpacing.xl),
+                child: Card(
+                  elevation: 0,
+                  color: scheme.surface,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    side: BorderSide(
+                      color: scheme.outlineVariant.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.xxl),
+                    child: Form(
+                      key: _formKey,
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Expanded(
-                            child: Card(
-                              elevation: 0,
-                              color: scheme.surfaceContainerHighest.withValues(
-                                alpha: 0.5,
+                          // ── Logo / Header ──
+                          Image.asset(
+                                'assets/images/logo RenApp.jpg',
+                                height: 120,
+                                fit: BoxFit.contain,
+                              )
+                              .animate()
+                              .fadeIn(duration: AppAnimations.slow)
+                              .scale(
+                                begin: const Offset(0.8, 0.8),
+                                end: const Offset(1, 1),
+                                duration: AppAnimations.slow,
+                                curve: AppAnimations.defaultCurve,
                               ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: InkWell(
-                                onTap: _isLoading
-                                    ? null
-                                    : () => context.push(
-                                        AppRoutes.registerPatient,
-                                      ),
-                                borderRadius: BorderRadius.circular(16),
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: AppSpacing.lg,
-                                    horizontal: AppSpacing.sm,
-                                  ),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          PhosphorIcon(
-                                            PhosphorIconsDuotone.user,
-                                            size: 28,
-                                            color: scheme.primary,
-                                          ),
-                                          const SizedBox(width: AppSpacing.sm),
-                                          Text(
-                                            'Paciente',
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .titleMedium
-                                                ?.copyWith(
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
+                          const SizedBox(height: AppSpacing.lg),
+                          Text(
+                            'Bienvenido',
+                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  color: scheme.onSurface,
                                 ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: AppSpacing.xs),
+                          Text(
+                            'Ingresa a tu cuenta para continuar',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: scheme.onSurfaceVariant,
+                                ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: AppSpacing.xxl),
+
+                          // ── Email field ──
+                          TextFormField(
+                            controller: _emailCtrl,
+                            keyboardType: TextInputType.emailAddress,
+                            textInputAction: TextInputAction.next,
+                            decoration: const InputDecoration(
+                              labelText: 'Correo electrónico',
+                              prefixIcon: Icon(PhosphorIconsRegular.envelope),
+                              hintText: 'tu@email.com',
+                            ),
+                            validator: (value) {
+                              final v = (value ?? '').trim();
+                              if (v.isEmpty) return 'Email requerido';
+                              if (!_isValidEmail(v)) return 'Email inválido';
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+
+                          // ── Password field ──
+                          TextFormField(
+                            controller: _passwordCtrl,
+                            obscureText: true,
+                            textInputAction: TextInputAction.done,
+                            decoration: const InputDecoration(
+                              labelText: 'Contraseña',
+                              prefixIcon: Icon(PhosphorIconsRegular.lockKey),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Requerido';
+                              }
+                              return null;
+                            },
+                            onFieldSubmitted: (_) => _isLoading ? null : _login(),
+                          ),
+
+                          // ── Forgot Password ──
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              onPressed: () => context.push('/forgot-password'),
+                              child: Text(
+                                '¿Olvidaste tu contraseña?',
+                                style: TextStyle(color: scheme.primary),
                               ),
                             ),
                           ),
-                          const SizedBox(width: AppSpacing.md),
-                          Expanded(
-                            child: Card(
-                              elevation: 0,
-                              color: scheme.surfaceContainerHighest.withValues(
-                                alpha: 0.5,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: InkWell(
-                                onTap: _isLoading
-                                    ? null
-                                    : () => context.push(
-                                        AppRoutes.registerDoctor,
+                          const SizedBox(height: AppSpacing.md),
+
+                          // ── Submit button ──
+                          SizedBox(
+                            width: double.infinity,
+                            height: 54,
+                            child: FilledButton.icon(
+                              onPressed: _isLoading ? null : _login,
+                              icon: _isLoading
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
                                       ),
-                                borderRadius: BorderRadius.circular(16),
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: AppSpacing.lg,
-                                    horizontal: AppSpacing.sm,
-                                  ),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          PhosphorIcon(
-                                            PhosphorIconsDuotone.stethoscope,
-                                            size: 28,
-                                            color: scheme.primary,
-                                          ),
-                                          const SizedBox(width: AppSpacing.sm),
-                                          Text(
-                                            'Médico',
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .titleMedium
-                                                ?.copyWith(
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                                    )
+                                  : const Icon(PhosphorIconsRegular.signIn),
+                              label: Text(
+                                _isLoading
+                                    ? 'Iniciando sesión...'
+                                    : 'Ingresar a la app',
                               ),
                             ),
+                          ),
+                          const SizedBox(height: AppSpacing.xl),
+
+                          // ── Register buttons ──
+                          const SizedBox(height: AppSpacing.xl),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                '¿No tienes cuenta?',
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                      color: scheme.onSurfaceVariant,
+                                    ),
+                              ),
+                              const SizedBox(width: AppSpacing.xs),
+                              TextButton(
+                                onPressed: _isLoading
+                                    ? null
+                                    : () => context.push(AppRoutes.registerPatient),
+                                style: TextButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                child: const Text('Paciente'),
+                              ),
+                              Text(
+                                'o',
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                      color: scheme.onSurfaceVariant,
+                                    ),
+                              ),
+                              TextButton(
+                                onPressed: _isLoading
+                                    ? null
+                                    : () => context.push(AppRoutes.registerDoctor),
+                                style: TextButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                child: const Text('Profesional'),
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend_dialysis_record/core/providers/providers.dart';
 import 'package:frontend_dialysis_record/features/auth/providers/auth_providers.dart';
 import 'package:frontend_dialysis_record/features/sessions/models/session_dto.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 class SessionCreateFormData {
   final DateTime date;
@@ -171,7 +172,7 @@ class _SessionCreateBottomSheetState
     _infusionCtrl.text = session?.infusion?.toString() ?? '';
     _drainageCtrl.text = session?.drainage?.toString() ?? '';
     _obsCtrl.text = session?.observations ?? '';
-    _selectedConcentration = session?.concentration ?? 1.5;
+    _selectedConcentration = session?.concentration;
   }
 
   @override
@@ -255,6 +256,12 @@ class _SessionCreateBottomSheetState
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_selectedConcentration == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Selecciona una concentración')),
+      );
+      return;
+    }
 
     final data = SessionCreateFormData(
       date: _date,
@@ -306,11 +313,7 @@ class _SessionCreateBottomSheetState
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.of(context).viewInsets.bottom;
-    final me = ref.read(authStateProvider).valueOrNull;
-    final isPatientRole =
-        me == null ||
-        me.role.toUpperCase() == 'PATIENT' ||
-        me.role.toUpperCase() == 'ROLE_PATIENT';
+    final scheme = Theme.of(context).colorScheme;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -328,98 +331,122 @@ class _SessionCreateBottomSheetState
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  _isEditing ? 'Editar cambio' : 'Nuevo cambio',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                InkWell(
-                  onTap: _loading ? null : _pickDate,
-                  child: InputDecorator(
-                    decoration: const InputDecoration(labelText: 'Fecha'),
-                    child: Row(
-                      children: [
-                        Expanded(child: Text(_formatDate(_date))),
-                        const Icon(Icons.calendar_today),
-                      ],
+                // Handle
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 24),
+                    decoration: BoxDecoration(
+                      color: scheme.outlineVariant.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
-                InkWell(
-                  onTap: _loading ? null : _pickTime,
-                  child: InputDecorator(
-                    decoration: const InputDecoration(labelText: 'Hora'),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            '${_time.hour.toString().padLeft(2, '0')}:${_time.minute.toString().padLeft(2, '0')}',
-                          ),
-                        ),
-                        const Icon(Icons.schedule),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
+                // Header
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _bagCtrl,
-                        enabled: !_loading && !isPatientRole,
-                        readOnly: isPatientRole,
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
-                          labelText: 'Bolsa N°',
-                          suffixIcon: isPatientRole
-                              ? const Tooltip(
-                                  message:
-                                      'Asignado automáticamente en orden clínico',
-                                  child: Icon(
-                                    Icons.lock_outline,
-                                    size: 18,
-                                    color: Colors.grey,
-                                  ),
-                                )
-                              : null,
-                        ),
-                        validator: (v) => _requiredInt(v, 'Bolsa'),
-                      ),
+                    Text(
+                      _isEditing ? 'Editar cambio' : 'Nuevo cambio',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: scheme.onSurface,
+                          ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: DropdownButtonFormField<double>(
-                        initialValue: _selectedConcentration,
-                        decoration: const InputDecoration(
-                          labelText: 'Concentracion',
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: scheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        'Bolsa N° ${_bagCtrl.text.isEmpty ? "-" : _bagCtrl.text}',
+                        style: TextStyle(
+                          color: scheme.onPrimaryContainer,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
                         ),
-                        items: _concentrationOptions()
-                            .map(
-                              (option) => DropdownMenuItem(
-                                value: option.value,
-                                child: Text(
-                                  '${option.label} (${_formatConcentration(option.value)}%)',
-                                ),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: _loading
-                            ? null
-                            : (value) => setState(
-                                () => _selectedConcentration = value,
-                              ),
-                        validator: (value) =>
-                            value == null ? 'Selecciona una opcion' : null,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 24),
+
+                // Date and Time Row
+                Row(
+                  children: [
+                    Expanded(
+                      child: InkWell(
+                        onTap: _loading ? null : _pickDate,
+                        borderRadius: BorderRadius.circular(8),
+                        child: InputDecorator(
+                          decoration: const InputDecoration(
+                            labelText: 'Fecha',
+                            prefixIcon: Icon(PhosphorIconsRegular.calendarBlank, size: 20),
+                          ),
+                          child: Text(_formatDate(_date), style: const TextStyle(fontWeight: FontWeight.w600)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: InkWell(
+                        onTap: _loading ? null : _pickTime,
+                        borderRadius: BorderRadius.circular(8),
+                        child: InputDecorator(
+                          decoration: const InputDecoration(
+                            labelText: 'Hora',
+                            prefixIcon: Icon(PhosphorIconsRegular.clock, size: 20),
+                          ),
+                          child: Text(
+                            '${_time.hour.toString().padLeft(2, '0')}:${_time.minute.toString().padLeft(2, '0')}',
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                // Concentration
+                Text(
+                  'Concentración',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _concentrationOptions().map((option) {
+                    final isSelected = _same(_selectedConcentration ?? -1.0, option.value);
+                    return ChoiceChip(
+                      label: Text('${option.label} (${_formatConcentration(option.value)}%)'),
+                      selected: isSelected,
+                      onSelected: _loading ? null : (selected) {
+                        if (selected) {
+                          setState(() => _selectedConcentration = option.value);
+                        }
+                      },
+                    );
+                  }).toList(),
+                ),
+                if (_selectedConcentration == null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4, left: 4),
+                    child: Text(
+                      'Requerido',
+                      style: TextStyle(color: scheme.error, fontSize: 12),
+                    ),
+                  ),
+                const SizedBox(height: 20),
+
+                // Fluids
                 Row(
                   children: [
                     Expanded(
@@ -429,9 +456,10 @@ class _SessionCreateBottomSheetState
                         keyboardType: TextInputType.number,
                         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                         decoration: const InputDecoration(
-                          labelText: 'Infusion (ml)',
+                          labelText: 'Infusión (ml)',
+                          prefixIcon: Icon(PhosphorIconsRegular.drop, size: 20),
                         ),
-                        validator: (v) => _requiredInt(v, 'Infusion'),
+                        validator: (v) => _requiredInt(v, 'Infusión'),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -443,20 +471,22 @@ class _SessionCreateBottomSheetState
                         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                         decoration: const InputDecoration(
                           labelText: 'Drenaje (ml)',
+                          prefixIcon: Icon(PhosphorIconsRegular.dropHalfBottom, size: 20),
                         ),
                         validator: (v) => _requiredInt(v, 'Drenaje'),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 20),
+
+                // Observations
                 TextFormField(
                   controller: _obsCtrl,
                   enabled: !_loading,
                   maxLines: 3,
                   decoration: const InputDecoration(labelText: 'Observaciones'),
-                  validator: (v) =>
-                      (v ?? '').length > 500 ? 'Maximo 500 caracteres' : null,
+                  validator: (v) => (v ?? '').length > 500 ? 'Máximo 500 caracteres' : null,
                 ),
                 if (_time.hour < 5) ...[
                   const SizedBox(height: 14),
