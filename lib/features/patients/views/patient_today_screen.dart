@@ -250,12 +250,10 @@ class PatientTodayScreenState extends ConsumerState<PatientTodayScreen> {
 
               return Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1040),
+                  constraints: const BoxConstraints(maxWidth: 600),
                   child: ListView(
                     padding: const EdgeInsets.all(AppSpacing.lg),
                     children: [
-                      _GreetingHeader(name: me?.name),
-                      const SizedBox(height: AppSpacing.md),
                       _DayHero(
                         title: _capitalize(_heroDateFormat.format(day)),
                         canGoForward: index > 0,
@@ -336,42 +334,7 @@ class PatientTodayScreenState extends ConsumerState<PatientTodayScreen> {
   }
 }
 
-class _GreetingHeader extends StatelessWidget {
-  final String? name;
 
-  const _GreetingHeader({required this.name});
-
-  @override
-  Widget build(BuildContext context) {
-    final displayName = (name ?? '').trim();
-    final scheme = Theme.of(context).colorScheme;
-    final hour = DateTime.now().hour;
-    final greeting = hour < 12
-        ? 'Buenos días'
-        : hour < 19
-        ? 'Buenas tardes'
-        : 'Buenas noches';
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '$greeting,',
-          style: Theme.of(
-            context,
-          ).textTheme.titleMedium?.copyWith(color: scheme.onSurfaceVariant),
-        ),
-        Text(
-          '${displayName.isEmpty ? 'Usuario' : displayName} 👋',
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-            fontWeight: FontWeight.w800,
-            color: scheme.primary,
-          ),
-        ),
-      ],
-    );
-  }
-}
 
 class _DayHero extends StatelessWidget {
   final String title;
@@ -394,7 +357,7 @@ class _DayHero extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.lg,
-        vertical: AppSpacing.xl,
+        vertical: AppSpacing.lg,
       ),
       decoration: BoxDecoration(
         color: scheme.primaryContainer,
@@ -406,34 +369,33 @@ class _DayHero extends StatelessWidget {
           Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                padding: const EdgeInsets.all(AppSpacing.sm),
-                decoration: BoxDecoration(
-                  color: scheme.surface,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  PhosphorIconsRegular.calendarBlank,
-                  color: scheme.primary,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                title,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: scheme.onPrimaryContainer,
-                  fontWeight: FontWeight.w800,
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    PhosphorIconsRegular.calendarBlank,
+                    color: scheme.primary,
+                    size: 20,
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: scheme.onPrimaryContainer,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
               ),
               if (onToday != null) ...[
-                const SizedBox(height: AppSpacing.xs),
+                const SizedBox(height: 6),
                 InkWell(
                   onTap: onToday,
                   child: Text(
                     'Volver a hoy',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: scheme.onPrimaryContainer.withValues(alpha: 0.8),
+                      decoration: TextDecoration.underline,
                     ),
                   ),
                 ),
@@ -506,80 +468,78 @@ class _DayStrip extends StatelessWidget {
 
     return SizedBox(
       height: 86,
-      child: ListView.separated(
-        reverse: true, // This puts index 0 on the far right
-        scrollDirection: Axis.horizontal,
-        itemCount: 5,
-        separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.sm),
-        itemBuilder: (context, index) {
-          final day = today.subtract(Duration(days: index));
-          final isSelected = index == selectedDaysAgo;
+      child: Center(
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(5, (i) => 4 - i).map((index) {
+              final day = today.subtract(Duration(days: index));
+              final isSelected = index == selectedDaysAgo;
+              final isLast = index == 0;
 
-          return InkWell(
-            onTap: () => onSelected(index),
-            borderRadius: BorderRadius.circular(16),
-            child: AnimatedContainer(
-              duration: AppAnimations.fast,
-              width: 90,
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-              decoration: BoxDecoration(
-                color: isSelected ? scheme.primary : scheme.surface,
-                borderRadius: BorderRadius.circular(16),
-                border: isSelected
-                    ? null
-                    : Border.all(
-                        color: scheme.outlineVariant.withValues(alpha: 0.5),
-                      ),
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: scheme.primary.withValues(alpha: 0.08),
-                          blurRadius: 20,
-                          offset: const Offset(0, 4),
+              return Padding(
+                padding: EdgeInsets.only(right: isLast ? 0 : AppSpacing.sm),
+                child: InkWell(
+                  onTap: () => onSelected(index),
+                  borderRadius: BorderRadius.circular(16),
+                  child: AnimatedContainer(
+                    duration: AppAnimations.fast,
+                    width: 90,
+                    height: 86,
+                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                    decoration: BoxDecoration(
+                      color: isSelected ? scheme.primary : scheme.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: isSelected
+                          ? null
+                          : Border.all(
+                              color: scheme.outlineVariant.withValues(alpha: 0.5),
+                            ),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          PhosphorIconsRegular.calendarBlank,
+                          color: isSelected
+                              ? scheme.onPrimary
+                              : scheme.onSurfaceVariant,
+                          size: 18,
                         ),
-                      ]
-                    : null,
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    PhosphorIconsRegular.calendarBlank,
-                    color: isSelected
-                        ? scheme.onPrimary
-                        : scheme.onSurfaceVariant,
-                    size: 18,
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    titleFor(day),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontWeight: isSelected
-                          ? FontWeight.w700
-                          : FontWeight.w600,
-                      fontSize: 13,
-                      color: isSelected
-                          ? scheme.onPrimary
-                          : scheme.onSurfaceVariant,
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(
+                          titleFor(day),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontWeight: isSelected
+                                ? FontWeight.w700
+                                : FontWeight.w600,
+                            fontSize: 13,
+                            color: isSelected
+                                ? scheme.onPrimary
+                                : scheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          shortDateFormat.format(day),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isSelected
+                                ? scheme.onPrimary.withValues(alpha: 0.9)
+                                : scheme.onSurfaceVariant.withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    shortDateFormat.format(day),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isSelected
-                          ? scheme.onPrimary.withValues(alpha: 0.9)
-                          : scheme.onSurfaceVariant.withValues(alpha: 0.7),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
+                ),
+              );
+            }).toList(),
+          ),
+        ),
       ),
     );
   }

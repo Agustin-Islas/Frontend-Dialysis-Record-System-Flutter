@@ -21,64 +21,34 @@ class DaySessionGroupTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final meta = Wrap(
-      spacing: AppSpacing.sm,
-      runSpacing: AppSpacing.sm,
-      crossAxisAlignment: WrapCrossAlignment.center,
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (hasObservations)
-          Icon(PhosphorIconsRegular.note, size: 18, color: scheme.primary),
-        _MetaPill(
-          label: 'Cambios: $changesCount',
-          icon: PhosphorIconsRegular.arrowsClockwise,
+        Text(
+          dayTitle,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
         ),
-        _MetaPill(
-          label: 'Total: ${_signed(totalMl)} ml',
-          icon: PhosphorIconsRegular.drop,
-          strong: true,
-        ),
-      ],
-    );
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth < 460) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                dayTitle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              meta,
-            ],
-          );
-        }
-
-        return Row(
+        const SizedBox(height: 6),
+        Wrap(
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.sm,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            Expanded(
-              child: Text(
-                dayTitle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-              ),
+            if (hasObservations)
+              Icon(PhosphorIconsRegular.note, size: 18, color: scheme.primary),
+            _MetaPill(
+              label: 'Cambios: $changesCount',
+              icon: PhosphorIconsRegular.arrowsClockwise,
             ),
-            const SizedBox(width: AppSpacing.md),
-            Flexible(
-              child: Align(alignment: Alignment.centerRight, child: meta),
+            _MetaPill(
+              label: 'Total: ${_signed(totalMl)} ml',
+              icon: PhosphorIconsRegular.drop,
+              strong: true,
             ),
           ],
-        );
-      },
+        ),
+      ],
     );
   }
 }
