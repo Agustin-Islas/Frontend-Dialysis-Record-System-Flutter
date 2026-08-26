@@ -145,6 +145,7 @@ class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authStateProvider);
     final me = authState.valueOrNull;
+    final scheme = Theme.of(context).colorScheme;
 
     if (me != null && !_loaded) {
       _load(me);
@@ -154,74 +155,103 @@ class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
       return const AppSkeletonScreen(title: 'Perfil', itemCount: 3);
     }
 
-
-
     return SafeArea(
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 920),
+          constraints: const BoxConstraints(maxWidth: 600),
           child: Form(
             key: _formKey,
             child: ListView(
               padding: const EdgeInsets.all(AppSpacing.lg),
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Mi perfil',
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        color: Theme.of(context).colorScheme.primary,
+                // 1. Header Ficha
+                Center(
+                  child: Column(
+                    children: [
+                      CircleAvatar(
+                        radius: 40,
+                        backgroundColor: scheme.primaryContainer,
+                        foregroundColor: scheme.primary,
+                        child: const Icon(PhosphorIconsRegular.user, size: 40),
                       ),
-                    ),
-                    Text(
-                      'Tus datos personales y de contacto',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      const SizedBox(height: AppSpacing.md),
+                      Text(
+                        '${me.name} ${me.surname}',
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              color: scheme.onSurface,
+                            ),
                       ),
-                    ),
-                  ],
+                      if (me.dni != null)
+                        Text(
+                          'DNI: ${me.dni}',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: scheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: AppSpacing.md),
+                const SizedBox(height: AppSpacing.xl),
                 const _InvitationsCard(),
                 const SizedBox(height: AppSpacing.md),
+
+                // 2. Datos Personales
                 Card(
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+                    side: BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.5)),
+                  ),
                   child: Padding(
                     padding: const EdgeInsets.all(AppSpacing.lg),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Datos personales',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Datos Personales',
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: scheme.primary,
+                                  ),
+                            ),
+                            if (!_isEditing)
+                              TextButton.icon(
+                                onPressed: () => setState(() {
+                                  _load(me);
+                                  _isEditing = true;
+                                }),
+                                icon: const Icon(PhosphorIconsRegular.pencilSimple, size: 18),
+                                label: const Text('Editar'),
+                              ),
+                          ],
                         ),
                         const SizedBox(height: AppSpacing.md),
                         if (!_isEditing) ...[
-                          _ReadOnlyRow(
-                              label: 'Nombre', value: me.name ?? '-'),
-                          _ReadOnlyRow(
-                              label: 'Apellido', value: me.surname ?? '-'),
+                          _ReadOnlyRow(label: 'Nombre', value: me.name ?? '-'),
+                          const Divider(height: 1),
+                          _ReadOnlyRow(label: 'Apellido', value: me.surname ?? '-'),
+                          const Divider(height: 1),
                           _ReadOnlyRow(label: 'DNI', value: me.dni ?? '-'),
-                          _ReadOnlyRow(
-                              label: 'Nacimiento',
-                              value: _formatDate(_dateOfBirth)),
-                          _ReadOnlyRow(
-                              label: 'Domicilio', value: me.address ?? '-'),
-                          _ReadOnlyRow(
-                              label: 'Celular', value: me.number ?? '-'),
+                          const Divider(height: 1),
+                          _ReadOnlyRow(label: 'Nacimiento', value: _formatDate(_dateOfBirth)),
+                          const Divider(height: 1),
+                          _ReadOnlyRow(label: 'Domicilio', value: me.address ?? '-'),
+                          const Divider(height: 1),
+                          _ReadOnlyRow(label: 'Celular', value: me.number ?? '-'),
                         ] else ...[
+                          // Formulario
                           Row(
                             children: [
                               Expanded(
                                 child: TextFormField(
                                   controller: _nameCtrl,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Nombre',
-                                    prefixIcon: Icon(PhosphorIconsRegular.user),
-                                  ),
+                                  decoration: const InputDecoration(labelText: 'Nombre', prefixIcon: Icon(PhosphorIconsRegular.user)),
                                   validator: (v) => _required(v, 'Nombre'),
                                 ),
                               ),
@@ -229,10 +259,7 @@ class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
                               Expanded(
                                 child: TextFormField(
                                   controller: _surnameCtrl,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Apellido',
-                                    prefixIcon: Icon(PhosphorIconsRegular.user),
-                                  ),
+                                  decoration: const InputDecoration(labelText: 'Apellido', prefixIcon: Icon(PhosphorIconsRegular.user)),
                                   validator: (v) => _required(v, 'Apellido'),
                                 ),
                               ),
@@ -242,76 +269,107 @@ class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
                           TextFormField(
                             controller: _dniCtrl,
                             keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(
-                              labelText: 'DNI',
-                              prefixIcon:
-                                  Icon(PhosphorIconsRegular.identificationCard),
-                            ),
+                            decoration: const InputDecoration(labelText: 'DNI', prefixIcon: Icon(PhosphorIconsRegular.identificationCard)),
                             validator: (v) => _requiredInt(v, 'DNI'),
                           ),
                           const SizedBox(height: AppSpacing.md),
                           InkWell(
                             onTap: _saving ? null : _pickDate,
                             child: InputDecorator(
-                              decoration: const InputDecoration(
-                                labelText: 'Nacimiento',
-                                prefixIcon:
-                                    Icon(PhosphorIconsRegular.calendarBlank),
-                              ),
+                              decoration: const InputDecoration(labelText: 'Nacimiento', prefixIcon: Icon(PhosphorIconsRegular.calendarBlank)),
                               child: Text(_formatDate(_dateOfBirth)),
                             ),
                           ),
                           const SizedBox(height: AppSpacing.md),
                           TextFormField(
                             controller: _addressCtrl,
-                            decoration: const InputDecoration(
-                              labelText: 'Domicilio',
-                              prefixIcon: Icon(PhosphorIconsRegular.house),
-                            ),
+                            decoration: const InputDecoration(labelText: 'Domicilio', prefixIcon: Icon(PhosphorIconsRegular.house)),
                             validator: (v) => _required(v, 'Domicilio'),
                           ),
                           const SizedBox(height: AppSpacing.md),
                           TextFormField(
                             controller: _numberCtrl,
                             keyboardType: TextInputType.phone,
-                            decoration: const InputDecoration(
-                              labelText: 'Celular',
-                              prefixIcon: Icon(PhosphorIconsRegular.phone),
-                            ),
+                            decoration: const InputDecoration(labelText: 'Celular', prefixIcon: Icon(PhosphorIconsRegular.phone)),
                             validator: (v) => _requiredInt(v, 'Celular'),
                           ),
+                          const SizedBox(height: AppSpacing.lg),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              OutlinedButton(
+                                onPressed: _saving
+                                    ? null
+                                    : () => setState(() {
+                                          _load(me);
+                                          _isEditing = false;
+                                        }),
+                                child: const Text('Cancelar'),
+                              ),
+                              const SizedBox(width: AppSpacing.sm),
+                              FilledButton.icon(
+                                onPressed: _saving ? null : _save,
+                                icon: _saving
+                                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                                    : const Icon(PhosphorIconsRegular.floppyDisk),
+                                label: Text(_saving ? 'Guardando...' : 'Guardar perfil'),
+                              ),
+                            ],
+                          ),
                         ],
-                        const SizedBox(height: AppSpacing.lg),
-                        _ReadOnlyRow(
-                          label: 'Email',
-                          value: me.email ?? '-',
-                          icon: PhosphorIconsRegular.envelope,
-                        ),
-                        _ReadOnlyRow(
-                          label: 'Médico',
-                          value: me.doctorName ?? 'Sin médico asociado',
-                          icon: PhosphorIconsRegular.stethoscope,
-                        ),
+                        if (!_isEditing) ...[
+                          const SizedBox(height: AppSpacing.lg),
+                          _ReadOnlyRow(
+                            label: 'Email',
+                            value: me.email ?? '-',
+                            icon: PhosphorIconsRegular.envelope,
+                          ),
+                          const Divider(height: 1),
+                          _ReadOnlyRow(
+                            label: 'Médico',
+                            value: me.doctorName ?? 'Sin médico asociado',
+                            icon: PhosphorIconsRegular.stethoscope,
+                          ),
+                        ]
                       ],
                     ),
                   ),
                 ),
+                
                 const SizedBox(height: AppSpacing.md),
+
+                // 3. Concentraciones
                 Card(
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+                    side: BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.5)),
+                  ),
                   child: Padding(
                     padding: const EdgeInsets.all(AppSpacing.lg),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Concentraciones',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Concentraciones',
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: scheme.primary,
+                                  ),
+                            ),
+                            IconButton(
+                              onPressed: _manageConcentrations,
+                              icon: const Icon(PhosphorIconsRegular.pencilSimple),
+                              tooltip: 'Gestionar concentraciones',
+                            )
+                          ],
                         ),
-                        const SizedBox(height: AppSpacing.sm),
+                        const SizedBox(height: AppSpacing.md),
                         Wrap(
-                          spacing: AppSpacing.md,
+                          spacing: AppSpacing.sm,
                           runSpacing: AppSpacing.sm,
                           children: [
                             _DotChip(label: 'Amarillo 1,5%', color: Colors.yellow.shade700),
@@ -320,128 +378,95 @@ class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
                             ..._customConcentrations.map(
                               (value) => _DotChip(
                                 label: '${_formatConcentration(value)}%',
-                                color: Theme.of(context).colorScheme.primary,
+                                color: scheme.primary,
                               ),
                             ),
                           ],
-                        ),
-                        const SizedBox(height: AppSpacing.lg),
-                        OutlinedButton.icon(
-                          onPressed: _manageConcentrations,
-                          icon: const Icon(PhosphorIconsRegular.faders),
-                          label: const Text('Gestionar concentraciones'),
                         ),
                       ],
                     ),
                   ),
                 ),
-                const SizedBox(height: AppSpacing.md),
-                Align(
-                  alignment: Alignment.centerRight,
+
+                const SizedBox(height: AppSpacing.xl),
+
+                // 4. Zona de Cuenta y Sesión
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  decoration: BoxDecoration(
+                    color: scheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+                  ),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Wrap(
-                        spacing: AppSpacing.sm,
-                        runSpacing: AppSpacing.sm,
-                        alignment: WrapAlignment.end,
-                        children: [
-                          if (!_isEditing)
-                            FilledButton.icon(
-                              onPressed: () => setState(() {
-                                _load(me); // Reset any changes if they were cancelled previously
-                                _isEditing = true;
-                              }),
-                              icon: const Icon(PhosphorIconsRegular.pencilSimple),
-                              label: const Text('Editar perfil'),
-                            )
-                          else ...[
-                            OutlinedButton(
-                              onPressed: _saving
-                                  ? null
-                                  : () => setState(() {
-                                        _load(me); // Revert changes
-                                        _isEditing = false;
-                                      }),
-                              child: const Text('Cancelar'),
-                            ),
-                            FilledButton.icon(
-                              onPressed: _saving ? null : _save,
-                              icon: _saving
-                                  ? const SizedBox(
-                                      width: 18,
-                                      height: 18,
-                                      child: CircularProgressIndicator(
-                                          strokeWidth: 2),
-                                    )
-                                  : const Icon(PhosphorIconsRegular.floppyDisk),
-                              label: Text(
-                                  _saving ? 'Guardando...' : 'Guardar perfil'),
-                            ),
-                          ],
-                        ],
+                      Text(
+                        'Opciones de Cuenta',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: scheme.onSurfaceVariant,
+                        ),
                       ),
-                      const SizedBox(height: AppSpacing.xl),
-                      Wrap(
-                        spacing: AppSpacing.sm,
-                        runSpacing: AppSpacing.sm,
-                        alignment: WrapAlignment.end,
-                        crossAxisAlignment: WrapCrossAlignment.center,
+                      const SizedBox(height: AppSpacing.md),
+                      Row(
                         children: [
-                          TextButton(
-                            onPressed: () async {
-                              final confirm = await showDialog<bool>(
-                                context: context,
-                                builder: (ctx) => AlertDialog(
-                                  title: const Text('¿Cerrar sesión global?'),
-                                  content: const Text(
-                                      'Esto cerrará tu sesión en todos los dispositivos donde hayas iniciado sesión. Deberás volver a ingresar tu contraseña en cada uno de ellos.\n\n¿Deseas continuar?'),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Navigator.of(ctx).pop(false),
-                                      child: const Text('Cancelar'),
-                                    ),
-                                    FilledButton(
-                                      style: FilledButton.styleFrom(
-                                        backgroundColor: Theme.of(ctx).colorScheme.error,
-                                        foregroundColor: Theme.of(ctx).colorScheme.onError,
-                                      ),
-                                      onPressed: () => Navigator.of(ctx).pop(true),
-                                      child: const Text('Cerrar en todos lados'),
-                                    ),
-                                  ],
-                                ),
-                              );
-                              if (confirm == true) {
-                                await ref.read(authStateProvider.notifier).logout(global: true);
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () async {
+                                await ref.read(authStateProvider.notifier).logout(global: false);
                                 if (!context.mounted) return;
                                 context.go(AppRoutes.login);
-                              }
-                            },
-                            child: Text(
-                              'Cerrar sesión global',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Theme.of(context).colorScheme.error,
-                                decoration: TextDecoration.underline,
-                              ),
+                              },
+                              icon: const Icon(PhosphorIconsRegular.signOut),
+                              label: const Text('Cerrar sesión'),
                             ),
                           ),
-                          const SizedBox(width: AppSpacing.sm),
-                          OutlinedButton.icon(
-                            onPressed: () async {
-                              await ref.read(authStateProvider.notifier).logout(global: false);
-                              if (!context.mounted) return;
-                              context.go(AppRoutes.login);
-                            },
-                            icon: const Icon(PhosphorIconsRegular.signOut),
-                            label: const Text('Cerrar sesión'),
+                          const SizedBox(width: AppSpacing.md),
+                          Expanded(
+                            child: TextButton.icon(
+                              onPressed: () async {
+                                final confirm = await showDialog<bool>(
+                                  context: context,
+                                  builder: (ctx) => AlertDialog(
+                                    title: const Text('¿Cerrar sesión global?'),
+                                    content: const Text(
+                                        'Esto cerrará tu sesión en todos los dispositivos donde hayas iniciado sesión. Deberás volver a ingresar tu contraseña en cada uno de ellos.\n\n¿Deseas continuar?'),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.of(ctx).pop(false),
+                                        child: const Text('Cancelar'),
+                                      ),
+                                      FilledButton(
+                                        style: FilledButton.styleFrom(
+                                          backgroundColor: Theme.of(ctx).colorScheme.error,
+                                          foregroundColor: Theme.of(ctx).colorScheme.onError,
+                                        ),
+                                        onPressed: () => Navigator.of(ctx).pop(true),
+                                        child: const Text('Cerrar en todos lados'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                                if (confirm == true) {
+                                  await ref.read(authStateProvider.notifier).logout(global: true);
+                                  if (!context.mounted) return;
+                                  context.go(AppRoutes.login);
+                                }
+                              },
+                              style: TextButton.styleFrom(
+                                foregroundColor: scheme.error,
+                              ),
+                              icon: const Icon(PhosphorIconsRegular.power),
+                              label: const Text('Cerrar global'),
+                            ),
                           ),
                         ],
                       ),
                     ],
                   ),
                 ),
+                const SizedBox(height: AppSpacing.xl),
               ],
             ),
           ),
@@ -462,23 +487,35 @@ class _ReadOnlyRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+      padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (icon != null) ...[
-            Icon(icon, color: scheme.onSurfaceVariant, size: 20),
-            const SizedBox(width: AppSpacing.sm),
+            Icon(icon, color: scheme.primary, size: 20),
+            const SizedBox(width: AppSpacing.md),
           ],
           SizedBox(
-            width: 90,
+            width: 100,
             child: Text(
               label,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              style: TextStyle(
+                fontSize: 14,
                 color: scheme.onSurfaceVariant,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),
-          Expanded(child: Text(value, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600))),
+          Expanded(
+            child: Text(
+              value, 
+              style: TextStyle(
+                fontSize: 14,
+                color: scheme.onSurface,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -495,24 +532,24 @@ class _DotChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: scheme.surface,
-        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+        borderRadius: BorderRadius.circular(999),
         border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.5)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 8,
-            height: 8,
+            width: 10,
+            height: 10,
             decoration: BoxDecoration(
               color: color,
               shape: BoxShape.circle,
             ),
           ),
-          const SizedBox(width: AppSpacing.sm),
+          const SizedBox(width: 8),
           Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
         ],
       ),
