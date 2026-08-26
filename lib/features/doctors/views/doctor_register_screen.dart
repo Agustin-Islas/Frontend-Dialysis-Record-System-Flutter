@@ -88,8 +88,13 @@ class _DoctorRegisterScreenState extends ConsumerState<DoctorRegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Scaffold(
+      backgroundColor: scheme.surfaceContainerLowest,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         title: const Text('Registrar médico'),
         leading: IconButton(
           icon: const Icon(PhosphorIconsRegular.arrowLeft),
@@ -102,90 +107,106 @@ class _DoctorRegisterScreenState extends ConsumerState<DoctorRegisterScreen> {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 520),
               child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.xxl),
-                child: Form(
-                  key: _formKey,
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Row(
+                padding: const EdgeInsets.all(AppSpacing.xl),
+                child: Card(
+                  elevation: 0,
+                  color: scheme.surface,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    side: BorderSide(
+                      color: scheme.outlineVariant.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.xxl),
+                    child: Form(
+                      key: _formKey,
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: _nameCtrl,
-                              decoration: const InputDecoration(
-                                labelText: 'Nombre',
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextFormField(
+                                  controller: _nameCtrl,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Nombre',
+                                  ),
+                                  validator: (v) => _required(v, 'Nombre'),
+                                ),
                               ),
-                              validator: (v) => _required(v, 'Nombre'),
-                            ),
+                              const SizedBox(width: AppSpacing.md),
+                              Expanded(
+                                child: TextFormField(
+                                  controller: _surnameCtrl,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Apellido',
+                                  ),
+                                  validator: (v) => _required(v, 'Apellido'),
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: AppSpacing.md),
-                          Expanded(
-                            child: TextFormField(
-                              controller: _surnameCtrl,
-                              decoration: const InputDecoration(
-                                labelText: 'Apellido',
+                          const SizedBox(height: AppSpacing.md),
+                          TextFormField(
+                            controller: _emailCtrl,
+                            keyboardType: TextInputType.emailAddress,
+                            decoration: const InputDecoration(
+                              labelText: 'Email',
+                              prefixIcon: Icon(PhosphorIconsRegular.envelope),
+                            ),
+                            validator: (v) {
+                              final t = (v ?? '').trim();
+                              if (t.isEmpty) return 'Email requerido';
+                              if (!_isValidEmail(t)) return 'Email inválido';
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          TextFormField(
+                            controller: _passwordCtrl,
+                            obscureText: _obscurePassword,
+                            decoration: InputDecoration(
+                              labelText: 'Contraseña',
+                              prefixIcon: const Icon(PhosphorIconsRegular.lock),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscurePassword
+                                      ? PhosphorIconsRegular.eye
+                                      : PhosphorIconsRegular.eyeSlash,
+                                ),
+                                onPressed: () => setState(
+                                  () => _obscurePassword = !_obscurePassword,
+                                ),
                               ),
-                              validator: (v) => _required(v, 'Apellido'),
+                            ),
+                            validator: (v) {
+                              if ((v ?? '').isEmpty) return 'Contraseña requerida';
+                              if (v!.length < 8) return 'Mínimo 8 caracteres';
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: AppSpacing.xl),
+                          SizedBox(
+                            height: 54,
+                            child: FilledButton.icon(
+                              onPressed: _loading ? null : _register,
+                              icon: _loading
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Icon(PhosphorIconsRegular.stethoscope),
+                              label: Text(_loading ? 'Registrando...' : 'Registrar'),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: AppSpacing.md),
-                      TextFormField(
-                        controller: _emailCtrl,
-                        keyboardType: TextInputType.emailAddress,
-                        decoration: InputDecoration(
-                          labelText: 'Email',
-                          prefixIcon: const Icon(PhosphorIconsRegular.envelope),
-                        ),
-                        validator: (v) {
-                          final t = (v ?? '').trim();
-                          if (t.isEmpty) return 'Email requerido';
-                          if (!_isValidEmail(t)) return 'Email inválido';
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      TextFormField(
-                        controller: _passwordCtrl,
-                        obscureText: _obscurePassword,
-                        decoration: InputDecoration(
-                          labelText: 'Contraseña',
-                          prefixIcon: const Icon(PhosphorIconsRegular.lock),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscurePassword
-                                  ? PhosphorIconsRegular.eye
-                                  : PhosphorIconsRegular.eyeSlash,
-                            ),
-                            onPressed: () => setState(
-                              () => _obscurePassword = !_obscurePassword,
-                            ),
-                          ),
-                        ),
-                        validator: (v) {
-                          if ((v ?? '').isEmpty) return 'Contraseña requerida';
-                          if (v!.length < 8) return 'Mínimo 8 caracteres';
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: AppSpacing.xl),
-                      FilledButton.icon(
-                        onPressed: _loading ? null : _register,
-                        icon: _loading
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(PhosphorIconsRegular.stethoscope),
-                        label: Text(_loading ? 'Registrando...' : 'Registrar'),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),
