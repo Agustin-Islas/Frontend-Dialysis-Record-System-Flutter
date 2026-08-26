@@ -427,6 +427,16 @@ class _SessionCreateBottomSheetState
                     final isSelected = _same(_selectedConcentration ?? -1.0, option.value);
                     return ChoiceChip(
                       label: Text('${option.label} (${_formatConcentration(option.value)}%)'),
+                      labelStyle: TextStyle(
+                        color: isSelected ? scheme.onPrimary : scheme.onSurface,
+                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                      ),
+                      selectedColor: scheme.primary,
+                      backgroundColor: scheme.surface,
+                      side: BorderSide(
+                        color: isSelected ? scheme.primary : scheme.outlineVariant,
+                      ),
+                      showCheckmark: false,
                       selected: isSelected,
                       onSelected: _loading ? null : (selected) {
                         if (selected) {
