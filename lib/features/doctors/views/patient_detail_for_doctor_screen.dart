@@ -6,6 +6,7 @@ import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:frontend_dialysis_record/core/providers/providers.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
+import 'dart:math' as math;
 
 import 'package:frontend_dialysis_record/features/auth/models/me_response.dart';
 import 'package:frontend_dialysis_record/features/doctors/providers/doctor_providers.dart';
@@ -887,12 +888,14 @@ class _DailyUltrafiltrationChartState
     double maxVal = 400;
     int daysWithData = 0;
 
-    
     int daysToShow = daysInMonth;
     final now = DateTime.now();
     if (widget.month.year == now.year && widget.month.month == now.month) {
       daysToShow = now.day;
     }
+
+    final List<_ChartData> maChartData = [];
+    final List<_ChartData> meanChartData = [];
 
     for (int i = 0; i < daysToShow; i++) {
       final val = dailyTotals[i];
@@ -904,11 +907,26 @@ class _DailyUltrafiltrationChartState
         ),
       );
       
+      // Calculate 7-day SMA
+      double sum = 0;
+      int count = 0;
+      for (int j = math.max(0, i - 6); j <= i; j++) {
+        sum += dailyTotals[j];
+        count++;
+      }
+      final maVal = count > 0 ? sum / count : 0.0;
+      maChartData.add(_ChartData((i + 1).toString(), maVal, scheme.tertiary));
+      
+      meanChartData.add(_ChartData((i + 1).toString(), widget.mean, scheme.primary));
+      
       if (val != 0) {
         daysWithData++;
       }
       if (val < minVal) minVal = val;
       if (val > maxVal) maxVal = val;
+      
+      if (maVal < minVal) minVal = maVal;
+      if (maVal > maxVal) maxVal = maVal;
     }
     
     if (minVal < -1200) minVal -= 100;
@@ -920,6 +938,12 @@ class _DailyUltrafiltrationChartState
       child: SfCartesianChart(
         plotAreaBorderWidth: 0,
         margin: const EdgeInsets.only(top: 10, right: 10, bottom: 5),
+        onTrackballPositionChanging: (TrackballArgs args) {
+          if (args.chartPointInfo.seriesIndex != 0) {
+            args.chartPointInfo.label = '';
+            args.chartPointInfo.header = '';
+          }
+        },
         trackballBehavior: TrackballBehavior(
           enable: true,
           activationMode: ActivationMode.singleTap,
@@ -958,21 +982,18 @@ class _DailyUltrafiltrationChartState
             dashArray: const <double>[5, 5],
           ),
           labelStyle: TextStyle(fontSize: 10, color: scheme.onSurfaceVariant),
-          plotBands: <PlotBand>[
-            if (daysWithData > 0)
-              PlotBand(
-                isVisible: true,
-                start: widget.mean,
-                end: widget.mean,
-                borderColor: scheme.primary,
-                borderWidth: 2,
-                dashArray: const <double>[4, 4],
-                text: '',
-              ),
-          ],
+        ),
+        legend: Legend(
+          isVisible: true,
+          position: LegendPosition.bottom,
+          toggleSeriesVisibility: true,
+          textStyle: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12, fontWeight: FontWeight.w600),
+          iconHeight: 12,
+          iconWidth: 12,
         ),
         series: <CartesianSeries<_ChartData, String>>[
           SplineAreaSeries<_ChartData, String>(
+            name: 'UF Diaria',
             dataSource: chartData,
             xValueMapper: (_ChartData data, _) => data.day,
             yValueMapper: (_ChartData data, _) => data.value,
@@ -1002,6 +1023,30 @@ class _DailyUltrafiltrationChartState
               }
             },
           ),
+          SplineSeries<_ChartData, String>(
+            name: 'Tendencia (7 días)',
+            dataSource: maChartData,
+            xValueMapper: (_ChartData data, _) => data.day,
+            yValueMapper: (_ChartData data, _) => data.value,
+            color: const Color(0xFFFF9800), // Naranja para resaltar
+            width: 3,
+            enableTooltip: false,
+            animationDuration: 1000,
+            markerSettings: const MarkerSettings(isVisible: false),
+          ),
+          if (daysWithData > 0)
+            LineSeries<_ChartData, String>(
+              name: 'Media',
+              dataSource: meanChartData,
+              xValueMapper: (_ChartData data, _) => data.day,
+              yValueMapper: (_ChartData data, _) => data.value,
+              color: scheme.primary,
+              width: 2,
+              dashArray: const <double>[5, 5],
+              enableTooltip: false,
+              markerSettings: const MarkerSettings(isVisible: false),
+              animationDuration: 1000,
+            ),
         ],
       ),
     );
