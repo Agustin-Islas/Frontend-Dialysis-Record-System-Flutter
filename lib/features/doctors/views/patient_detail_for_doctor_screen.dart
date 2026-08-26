@@ -854,7 +854,7 @@ class _DailyUltrafiltrationChartState
     double minVal = -1200;
     double maxVal = 400;
     int daysWithData = 0;
-    double sumData = 0;
+
     
     int daysToShow = daysInMonth;
     final now = DateTime.now();
