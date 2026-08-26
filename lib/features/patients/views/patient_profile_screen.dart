@@ -338,68 +338,107 @@ class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
                 const SizedBox(height: AppSpacing.md),
                 Align(
                   alignment: Alignment.centerRight,
-                  child: Wrap(
-                    spacing: AppSpacing.sm,
-                    runSpacing: AppSpacing.sm,
-                    alignment: WrapAlignment.end,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      TextButton(
-                        onPressed: () async {
-                          await ref.read(authStateProvider.notifier).logout(global: true);
-                          if (!context.mounted) return;
-                          context.go(AppRoutes.login);
-                        },
-                        child: Text(
-                          'Cerrar sesión global',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Theme.of(context).colorScheme.error,
-                            decoration: TextDecoration.underline,
+                      Wrap(
+                        spacing: AppSpacing.sm,
+                        runSpacing: AppSpacing.sm,
+                        alignment: WrapAlignment.end,
+                        children: [
+                          if (!_isEditing)
+                            FilledButton.icon(
+                              onPressed: () => setState(() {
+                                _load(me); // Reset any changes if they were cancelled previously
+                                _isEditing = true;
+                              }),
+                              icon: const Icon(PhosphorIconsRegular.pencilSimple),
+                              label: const Text('Editar perfil'),
+                            )
+                          else ...[
+                            OutlinedButton(
+                              onPressed: _saving
+                                  ? null
+                                  : () => setState(() {
+                                        _load(me); // Revert changes
+                                        _isEditing = false;
+                                      }),
+                              child: const Text('Cancelar'),
+                            ),
+                            FilledButton.icon(
+                              onPressed: _saving ? null : _save,
+                              icon: _saving
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2),
+                                    )
+                                  : const Icon(PhosphorIconsRegular.floppyDisk),
+                              label: Text(
+                                  _saving ? 'Guardando...' : 'Guardar perfil'),
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.xl),
+                      Wrap(
+                        spacing: AppSpacing.sm,
+                        runSpacing: AppSpacing.sm,
+                        alignment: WrapAlignment.end,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          TextButton(
+                            onPressed: () async {
+                              final confirm = await showDialog<bool>(
+                                context: context,
+                                builder: (ctx) => AlertDialog(
+                                  title: const Text('¿Cerrar sesión global?'),
+                                  content: const Text(
+                                      'Esto cerrará tu sesión en todos los dispositivos donde hayas iniciado sesión. Deberás volver a ingresar tu contraseña en cada uno de ellos.\n\n¿Deseas continuar?'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.of(ctx).pop(false),
+                                      child: const Text('Cancelar'),
+                                    ),
+                                    FilledButton(
+                                      style: FilledButton.styleFrom(
+                                        backgroundColor: Theme.of(ctx).colorScheme.error,
+                                        foregroundColor: Theme.of(ctx).colorScheme.onError,
+                                      ),
+                                      onPressed: () => Navigator.of(ctx).pop(true),
+                                      child: const Text('Cerrar en todos lados'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              if (confirm == true) {
+                                await ref.read(authStateProvider.notifier).logout(global: true);
+                                if (!context.mounted) return;
+                                context.go(AppRoutes.login);
+                              }
+                            },
+                            child: Text(
+                              'Cerrar sesión global',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Theme.of(context).colorScheme.error,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
                           ),
-                        ),
+                          const SizedBox(width: AppSpacing.sm),
+                          OutlinedButton.icon(
+                            onPressed: () async {
+                              await ref.read(authStateProvider.notifier).logout(global: false);
+                              if (!context.mounted) return;
+                              context.go(AppRoutes.login);
+                            },
+                            icon: const Icon(PhosphorIconsRegular.signOut),
+                            label: const Text('Cerrar sesión'),
+                          ),
+                        ],
                       ),
-                      OutlinedButton.icon(
-                        onPressed: () async {
-                          await ref.read(authStateProvider.notifier).logout(global: false);
-                          if (!context.mounted) return;
-                          context.go(AppRoutes.login);
-                        },
-                        icon: const Icon(PhosphorIconsRegular.signOut),
-                        label: const Text('Cerrar sesión'),
-                      ),
-                      if (!_isEditing)
-                        FilledButton.icon(
-                          onPressed: () => setState(() {
-                            _load(me); // Reset any changes if they were cancelled previously
-                            _isEditing = true;
-                          }),
-                          icon: const Icon(PhosphorIconsRegular.pencilSimple),
-                          label: const Text('Editar perfil'),
-                        )
-                      else ...[
-                        OutlinedButton(
-                          onPressed: _saving
-                              ? null
-                              : () => setState(() {
-                                    _load(me); // Revert changes
-                                    _isEditing = false;
-                                  }),
-                          child: const Text('Cancelar'),
-                        ),
-                        FilledButton.icon(
-                          onPressed: _saving ? null : _save,
-                          icon: _saving
-                              ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                      strokeWidth: 2),
-                                )
-                              : const Icon(PhosphorIconsRegular.floppyDisk),
-                          label: Text(
-                              _saving ? 'Guardando...' : 'Guardar perfil'),
-                        ),
-                      ],
                     ],
                   ),
                 ),

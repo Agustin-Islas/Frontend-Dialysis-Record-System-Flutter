@@ -87,6 +87,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isLoading = authState.isLoading;
       final me = authState.valueOrNull;
       final isAuthenticated = me != null;
+      final hasSupabaseSession = Supabase.instance.client.auth.currentSession != null;
 
       final isAuthRoute =
           state.matchedLocation.startsWith(AppRoutes.login) ||
@@ -103,6 +104,13 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // While loading, stay on splash
       if (isLoading && isSplash) return null;
+
+      // Si hubo error de red/sincronización pero Supabase mantiene una sesión viva, 
+      // nos quedamos en Splash (SessionGate) para mostrar el error o esperar el refresco, 
+      // evitando que el usuario sea pateado al login por parpadeo.
+      if (authState.hasError && hasSupabaseSession) {
+        return isSplash ? null : AppRoutes.splash;
+      }
 
       // Not authenticated → go to login (unless already on allowed route)
       if (!isAuthenticated) {
