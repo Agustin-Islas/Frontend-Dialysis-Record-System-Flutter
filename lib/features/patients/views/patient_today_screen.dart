@@ -214,7 +214,6 @@ class PatientTodayScreenState extends ConsumerState<PatientTodayScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final me = ref.watch(authStateProvider).valueOrNull;
 
     return SafeArea(
       child: PageView.builder(
@@ -357,11 +356,25 @@ class _DayHero extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.lg,
-        vertical: AppSpacing.lg,
+        vertical: AppSpacing.xl,
       ),
       decoration: BoxDecoration(
-        color: scheme.primaryContainer,
+        gradient: LinearGradient(
+          colors: [
+            scheme.primary,
+            scheme.primary.withValues(alpha: 0.85),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+        boxShadow: [
+          BoxShadow(
+            color: scheme.primary.withValues(alpha: 0.2),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Stack(
         alignment: Alignment.center,
@@ -374,28 +387,36 @@ class _DayHero extends StatelessWidget {
                 children: [
                   Icon(
                     PhosphorIconsRegular.calendarBlank,
-                    color: scheme.primary,
+                    color: scheme.onPrimary.withValues(alpha: 0.9),
                     size: 20,
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   Text(
                     title,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: scheme.onPrimaryContainer,
+                      color: scheme.onPrimary,
                       fontWeight: FontWeight.w800,
+                      letterSpacing: -0.5,
                     ),
                   ),
                 ],
               ),
               if (onToday != null) ...[
-                const SizedBox(height: 6),
+                const SizedBox(height: 8),
                 InkWell(
                   onTap: onToday,
-                  child: Text(
-                    'Volver a hoy',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: scheme.onPrimaryContainer.withValues(alpha: 0.8),
-                      decoration: TextDecoration.underline,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: scheme.onPrimary.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      'Volver a hoy',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: scheme.onPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
@@ -410,12 +431,12 @@ class _DayHero extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: scheme.surface,
+                  color: scheme.onPrimary.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   PhosphorIconsRegular.caretLeft,
-                  color: scheme.onPrimaryContainer,
+                  color: scheme.onPrimary,
                   size: 20,
                 ),
               ),
@@ -429,14 +450,14 @@ class _DayHero extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: scheme.surface,
+                  color: scheme.onPrimary.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   PhosphorIconsRegular.caretRight,
                   color: canGoForward
-                      ? scheme.onPrimaryContainer
-                      : scheme.onPrimaryContainer.withValues(alpha: 0.3),
+                      ? scheme.onPrimary
+                      : scheme.onPrimary.withValues(alpha: 0.4),
                   size: 20,
                 ),
               ),
@@ -597,7 +618,7 @@ class _MetricTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: scheme.surface,
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.5)),
+        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -42,31 +42,43 @@ class _PatientHomeScreenState extends ConsumerState<PatientHomeScreen> {
             )
           : null,
 
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: widget.navigationShell.currentIndex,
-        onDestinationSelected: (index) {
-          widget.navigationShell.goBranch(
-            index,
-            initialLocation: index == widget.navigationShell.currentIndex,
-          );
-        },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(PhosphorIconsRegular.house),
-            selectedIcon: Icon(PhosphorIconsFill.house),
-            label: 'Hoy',
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          border: Border(
+            top: BorderSide(
+              color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.3),
+              width: 1,
+            ),
           ),
-          NavigationDestination(
-            icon: Icon(PhosphorIconsRegular.clockCounterClockwise),
-            selectedIcon: Icon(PhosphorIconsFill.clockCounterClockwise),
-            label: 'Historial',
-          ),
-          NavigationDestination(
-            icon: Icon(PhosphorIconsRegular.user),
-            selectedIcon: Icon(PhosphorIconsFill.user),
-            label: 'Perfil',
-          ),
-        ],
+        ),
+        child: NavigationBar(
+          backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
+          elevation: 0,
+          selectedIndex: widget.navigationShell.currentIndex,
+          onDestinationSelected: (index) {
+            widget.navigationShell.goBranch(
+              index,
+              initialLocation: index == widget.navigationShell.currentIndex,
+            );
+          },
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(PhosphorIconsRegular.house),
+              selectedIcon: Icon(PhosphorIconsFill.house),
+              label: 'Hoy',
+            ),
+            NavigationDestination(
+              icon: Icon(PhosphorIconsRegular.clockCounterClockwise),
+              selectedIcon: Icon(PhosphorIconsFill.clockCounterClockwise),
+              label: 'Historial',
+            ),
+            NavigationDestination(
+              icon: Icon(PhosphorIconsRegular.user),
+              selectedIcon: Icon(PhosphorIconsFill.user),
+              label: 'Perfil',
+            ),
+          ],
+        ),
       ),
     );
   }

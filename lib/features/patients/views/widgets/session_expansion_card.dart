@@ -23,8 +23,18 @@ class SessionExpansionCard extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
 
     return Card(
+      elevation: 0,
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      color: scheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+        side: BorderSide(
+          color: scheme.outlineVariant.withValues(alpha: 0.3),
+        ),
+      ),
       child: ExpansionTile(
+        shape: const Border(), // Removes top/bottom border when expanded
+        collapsedShape: const Border(),
         tilePadding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.lg,
           vertical: AppSpacing.sm,
@@ -195,7 +205,7 @@ class SessionExpansionCard extends StatelessWidget {
 
   String _ml(int? v) => v == null ? '-' : '$v ml';
 
-  String _bag(int? bag) => bag == null ? '-' : 'Bolsa $bag';
+  String _bag(int? bag) => bag == null ? '-' : '$bag';
 
   String _conc(double? c) {
     if (c == null) return '-';
