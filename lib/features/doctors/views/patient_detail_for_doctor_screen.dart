@@ -1037,7 +1037,7 @@ class _DailyUltrafiltrationChartState
           if (daysWithData > 0)
             LineSeries<_ChartData, String>(
               name: 'Media',
-              isVisible: false,
+              initialIsVisible: false,
               dataSource: meanChartData,
               xValueMapper: (_ChartData data, _) => data.day,
               yValueMapper: (_ChartData data, _) => data.value,

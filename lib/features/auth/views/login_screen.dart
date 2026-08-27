@@ -90,38 +90,75 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               constraints: const BoxConstraints(maxWidth: 460),
               child: Padding(
                 padding: const EdgeInsets.all(AppSpacing.xl),
-                child: Card(
-                  elevation: 0,
-                  color: scheme.surface,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(24),
-                    side: BorderSide(
-                      color: scheme.outlineVariant.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppSpacing.xxl),
-                    child: Form(
-                      key: _formKey,
-                      autovalidateMode: AutovalidateMode.onUserInteraction,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // ── Logo / Header ──
-                          Image.asset(
-                                'assets/images/logo RenApp.jpg',
-                                height: 120,
-                                fit: BoxFit.contain,
-                              )
-                              .animate()
-                              .fadeIn(duration: AppAnimations.slow)
-                              .scale(
-                                begin: const Offset(0.8, 0.8),
-                                end: const Offset(1, 1),
-                                duration: AppAnimations.slow,
-                                curve: AppAnimations.defaultCurve,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // ── Logo / Brand Header (Fuera de la tarjeta) ──
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(22),
+                            boxShadow: [
+                              BoxShadow(
+                                color: scheme.shadow.withValues(alpha: 0.08),
+                                blurRadius: 15,
+                                offset: const Offset(0, 6),
                               ),
-                          const SizedBox(height: AppSpacing.lg),
+                            ],
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(22),
+                            child: Image.asset(
+                              'assets/images/new_icon_renapp.jpg',
+                              height: 80, // Aumentado para mayor presencia
+                              width: 80,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.lg),
+                        Text(
+                          'RenApp',
+                          style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                                fontWeight: FontWeight.w900,
+                                color: const Color(0xFF0F3057),
+                                letterSpacing: -1.2,
+                                height: 1.0,
+                              ),
+                        ),
+                      ],
+                    )
+                        .animate()
+                        .fadeIn(duration: AppAnimations.slow)
+                        .slideY(
+                          begin: -0.1,
+                          end: 0,
+                          duration: AppAnimations.slow,
+                          curve: Curves.easeOutCubic,
+                        ),
+                    const SizedBox(height: AppSpacing.xxl),
+
+                    // ── Tarjeta de Login ──
+                    Card(
+                      elevation: 0,
+                      color: scheme.surface,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        side: BorderSide(
+                          color: scheme.outlineVariant.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppSpacing.xxl),
+                        child: Form(
+                          key: _formKey,
+                          autovalidateMode: AutovalidateMode.onUserInteraction,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
                           Text(
                             'Bienvenido',
                             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -260,8 +297,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ),
                   ),
-                ),
-              ),
+                ), // <-- Cierra Card
+              ],
+            ),
+          ),
             ),
           ),
         ),
