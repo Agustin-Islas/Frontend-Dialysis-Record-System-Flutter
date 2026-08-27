@@ -487,81 +487,110 @@ class _DayStrip extends StatelessWidget {
     final today = DateUtils.dateOnly(DateTime.now());
     final scheme = Theme.of(context).colorScheme;
 
-    return SizedBox(
-      height: 86,
-      child: Center(
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(5, (i) => 4 - i).map((index) {
-              final day = today.subtract(Duration(days: index));
-              final isSelected = index == selectedDaysAgo;
-              final isLast = index == 0;
+    Widget buildItem(int index, bool isRow) {
+      final day = today.subtract(Duration(days: index));
+      final isSelected = index == selectedDaysAgo;
+      
+      EdgeInsets padding;
+      if (isRow) {
+        // En vista centrada (Desktop/Tablet), iteramos 4..0.
+        // Espaciado a la derecha, salvo el último (Hoy = 0)
+        padding = EdgeInsets.only(right: index == 0 ? 0 : AppSpacing.sm);
+      } else {
+        // En móvil (ListView reverse: true), iteramos 0..4.
+        // Espaciado a la izquierda, salvo el último visualmente a la izq (4).
+        padding = EdgeInsets.only(
+          left: index == 4 ? 0 : AppSpacing.sm, 
+          right: index == 0 ? AppSpacing.lg : 0
+        );
+      }
 
-              return Padding(
-                padding: EdgeInsets.only(right: isLast ? 0 : AppSpacing.sm),
-                child: InkWell(
-                  onTap: () => onSelected(index),
-                  borderRadius: BorderRadius.circular(16),
-                  child: AnimatedContainer(
-                    duration: AppAnimations.fast,
-                    width: 90,
-                    height: 86,
-                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                    decoration: BoxDecoration(
-                      color: isSelected ? scheme.primary : scheme.surface,
-                      borderRadius: BorderRadius.circular(16),
-                      border: isSelected
-                          ? null
-                          : Border.all(
-                              color: scheme.outlineVariant.withValues(alpha: 0.5),
-                            ),
+      return Padding(
+        padding: padding,
+        child: InkWell(
+          onTap: () => onSelected(index),
+          borderRadius: BorderRadius.circular(16),
+          child: AnimatedContainer(
+            duration: AppAnimations.fast,
+            width: 90,
+            height: 86,
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+            decoration: BoxDecoration(
+              color: isSelected ? scheme.primary : scheme.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: isSelected
+                  ? null
+                  : Border.all(
+                      color: scheme.outlineVariant.withValues(alpha: 0.5),
                     ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          PhosphorIconsRegular.calendarBlank,
-                          color: isSelected
-                              ? scheme.onPrimary
-                              : scheme.onSurfaceVariant,
-                          size: 18,
-                        ),
-                        const SizedBox(height: AppSpacing.xs),
-                        Text(
-                          titleFor(day),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontWeight: isSelected
-                                ? FontWeight.w700
-                                : FontWeight.w600,
-                            fontSize: 13,
-                            color: isSelected
-                                ? scheme.onPrimary
-                                : scheme.onSurfaceVariant,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          shortDateFormat.format(day),
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: isSelected
-                                ? scheme.onPrimary.withValues(alpha: 0.9)
-                                : scheme.onSurfaceVariant.withValues(alpha: 0.7),
-                          ),
-                        ),
-                      ],
-                    ),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  PhosphorIconsRegular.calendarBlank,
+                  color: isSelected
+                      ? scheme.onPrimary
+                      : scheme.onSurfaceVariant,
+                  size: 18,
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  titleFor(day),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontWeight: isSelected
+                        ? FontWeight.w700
+                        : FontWeight.w600,
+                    fontSize: 13,
+                    color: isSelected
+                        ? scheme.onPrimary
+                        : scheme.onSurfaceVariant,
                   ),
                 ),
-              );
-            }).toList(),
+                const SizedBox(height: 2),
+                Text(
+                  shortDateFormat.format(day),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isSelected
+                        ? scheme.onPrimary.withValues(alpha: 0.9)
+                        : scheme.onSurfaceVariant.withValues(alpha: 0.7),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-      ),
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // 5 items * 90px = 450px + espaciados ~ 40px
+        // Si el ancho disponible es mayor a 520, entran cómodamente y los centramos
+        if (constraints.maxWidth > 520) {
+          return SizedBox(
+            height: 86,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(5, (i) => 4 - i).map((index) => buildItem(index, true)).toList(),
+            ),
+          );
+        }
+
+        // En pantallas pequeñas, usamos la lista horizontal con reverso
+        return SizedBox(
+          height: 86,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            reverse: true, // Esto hace que empiece alineado a la derecha
+            itemCount: 5,
+            itemBuilder: (context, index) => buildItem(index, false),
+          ),
+        );
+      },
     );
   }
 }

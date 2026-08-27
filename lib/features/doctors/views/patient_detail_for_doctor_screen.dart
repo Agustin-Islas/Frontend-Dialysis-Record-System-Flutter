@@ -1216,6 +1216,16 @@ class _ConcentrationPieChart extends StatelessWidget {
     final int totalBags = counts.values.fold(0, (sum, count) => sum + count);
       
     final List<_PieChartData> dataSource = [];
+    int fallbackColorIndex = 0;
+    final fallbackColors = [
+      const Color(0xFF2196F3), // Azul
+      const Color(0xFFFF9800), // Naranja
+      const Color(0xFF00BCD4), // Cyan
+      const Color(0xFFE91E63), // Rosa
+      const Color(0xFF3F51B5), // Indigo
+      const Color(0xFF795548), // Marrón
+    ];
+
     for (final entry in chartData) {
       final isInt = entry.key % 1 == 0;
       final label = isInt
@@ -1232,7 +1242,8 @@ class _ConcentrationPieChart extends StatelessWidget {
       } else if (entry.key == 7.5) {
         color = const Color(0xFF9C27B0); // Morado (Icodextrina)
       } else {
-        color = const Color(0xFF2196F3); // Azul para otros
+        color = fallbackColors[fallbackColorIndex % fallbackColors.length];
+        fallbackColorIndex++;
       }
       
       final percentage = (entry.value / totalBags * 100).toStringAsFixed(1).replaceAll('.', ',');
@@ -1256,10 +1267,10 @@ class _ConcentrationPieChart extends StatelessWidget {
     }
 
     return SizedBox(
-      height: 250,
+      height: 280, // Se aumentó la altura para dar espacio a las etiquetas
       width: double.infinity,
       child: SfCircularChart(
-        margin: const EdgeInsets.only(top: 10, bottom: 5),
+        margin: const EdgeInsets.all(16), // Margen en todos los lados
         legend: const Legend(isVisible: false),
         annotations: <CircularChartAnnotation>[
           CircularChartAnnotation(
@@ -1307,10 +1318,17 @@ class _ConcentrationPieChart extends StatelessWidget {
               textStyle: TextStyle(
                 color: scheme.onSurface,
                 fontWeight: FontWeight.w700,
+                fontSize: 11, // Texto un poco más pequeño para evitar amontonamiento
               ),
               labelPosition: ChartDataLabelPosition.outside,
+              labelIntersectAction: LabelIntersectAction.shift, // Desplaza etiquetas superpuestas
+              connectorLineSettings: const ConnectorLineSettings(
+                type: ConnectorType.curve, // Líneas curvas más estéticas
+                length: '15%', // Línea de conexión un poco más larga
+              ),
             ),
             innerRadius: '60%',
+            radius: '75%', // Reduce el diámetro del anillo para dar espacio a las etiquetas
             animationDuration: 800,
           ),
         ],
