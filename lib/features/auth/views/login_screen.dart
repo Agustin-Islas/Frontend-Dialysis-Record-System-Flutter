@@ -112,7 +112,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(22),
                             child: Image.asset(
-                              'assets/images/new_icon_renapp.jpg',
+                              'assets/images/new_icon_renapp_squared.jpg',
                               height: 80, // Aumentado para mayor presencia
                               width: 80,
                               fit: BoxFit.cover,

@@ -56,7 +56,7 @@ dev_dependencies:
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/images/icon_squared.png"
+  image_path: "assets/images/new_icon_renapp_squared.jpg"
   min_sdk_android: 21
 
 flutter:
