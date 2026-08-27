@@ -18,6 +18,8 @@ class DoctorPatientsScreen extends ConsumerStatefulWidget {
 }
 
 class _DoctorPatientsScreenState extends ConsumerState<DoctorPatientsScreen> {
+  String _searchQuery = '';
+
   Future<void> _addPatient() async {
     final success = await showDialog<bool>(
       context: context,
@@ -73,6 +75,16 @@ class _DoctorPatientsScreenState extends ConsumerState<DoctorPatientsScreen> {
           onRetry: () => ref.invalidate(doctorPatientsProvider),
         ),
         data: (patients) {
+          final safeSearch = _searchQuery.toString().toLowerCase();
+          final filteredPatients = patients.where((p) {
+            if (safeSearch.isEmpty) return true;
+            final pName = (p.name?.toString() ?? '').toLowerCase();
+            final pSurname = (p.surname?.toString() ?? '').toLowerCase();
+            final name = '$pName $pSurname'.trim();
+            final dni = p.dni?.toString() ?? '';
+            return name.contains(safeSearch) || dni.contains(safeSearch);
+          }).toList();
+
           return Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 1040),
@@ -83,7 +95,7 @@ class _DoctorPatientsScreenState extends ConsumerState<DoctorPatientsScreen> {
                     children: [
                       Expanded(
                         child: Text(
-                          'Pacientes',
+                          'Mis Pacientes (${patients.length} activos)',
                           style: Theme.of(context).textTheme.headlineSmall,
                         ),
                       ),
@@ -95,10 +107,30 @@ class _DoctorPatientsScreenState extends ConsumerState<DoctorPatientsScreen> {
                     ],
                   ),
                   const SizedBox(height: AppSpacing.md),
+                  if (patients.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                      child: TextField(
+                        decoration: InputDecoration(
+                          hintText: 'Buscar por nombre o DNI...',
+                          prefixIcon: const Icon(PhosphorIconsRegular.magnifyingGlass),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                        ),
+                        onChanged: (value) => setState(() => _searchQuery = value),
+                      ),
+                    ),
                   if (patients.isEmpty)
                     const AppEmptyState(
                       message: 'Todavía no tenés pacientes asociados.',
                       icon: PhosphorIconsRegular.usersThree,
+                    )
+                  else if (filteredPatients.isEmpty)
+                    const AppEmptyState(
+                      message: 'No se encontraron pacientes.',
+                      icon: PhosphorIconsRegular.magnifyingGlass,
                     )
                   else
                     LayoutBuilder(
@@ -109,7 +141,7 @@ class _DoctorPatientsScreenState extends ConsumerState<DoctorPatientsScreen> {
                         return Wrap(
                           spacing: AppSpacing.md,
                           runSpacing: AppSpacing.md,
-                          children: patients
+                          children: filteredPatients
                               .map(
                                 (patient) => SizedBox(
                                   width: cardWidth,
@@ -155,7 +187,14 @@ class _PatientCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final name = '${patient.name ?? "-"} ${patient.surname ?? ""}'.trim();
+    final pName = patient.name ?? '';
+    final pSurname = patient.surname ?? '';
+    final name = (pName.isNotEmpty || pSurname.isNotEmpty) ? '$pName $pSurname'.trim() : '-';
+    
+    final iName = pName.isNotEmpty ? pName[0].toUpperCase() : '';
+    final iSurname = pSurname.isNotEmpty ? pSurname[0].toUpperCase() : '';
+    final initials = iName + iSurname;
+
     return Card(
       child: ListTile(
         contentPadding: const EdgeInsets.fromLTRB(
@@ -164,14 +203,36 @@ class _PatientCard extends StatelessWidget {
           AppSpacing.sm,
           AppSpacing.sm,
         ),
+        leading: CircleAvatar(
+          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+          foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
+          child: Text(
+            initials.isNotEmpty ? initials : '?',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ),
         title: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis),
         subtitle: Text(
-          patient.dni != null ? 'DNI: ${patient.dni}' : patient.id ?? '',
+          patient.dni != null ? 'DNI: ${patient.dni}' : (patient.id?.toString() ?? ''),
         ),
-        trailing: IconButton(
-          tooltip: 'Desasociar',
-          onPressed: onRemove,
-          icon: const Icon(PhosphorIconsRegular.linkBreak),
+        trailing: PopupMenuButton<String>(
+          icon: const Icon(PhosphorIconsRegular.dotsThreeVertical),
+          tooltip: 'Opciones',
+          onSelected: (value) {
+            if (value == 'remove') onRemove();
+          },
+          itemBuilder: (context) => [
+            const PopupMenuItem(
+              value: 'remove',
+              child: Row(
+                children: [
+                  Icon(PhosphorIconsRegular.linkBreak, color: Colors.red, size: 20),
+                  SizedBox(width: 8),
+                  Text('Desasociar', style: TextStyle(color: Colors.red)),
+                ],
+              ),
+            ),
+          ],
         ),
         onTap: onOpen,
       ),

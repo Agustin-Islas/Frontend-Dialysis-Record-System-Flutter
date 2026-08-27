@@ -18,6 +18,7 @@ import 'package:frontend_dialysis_record/features/sessions/models/four_weeks_ult
 import 'package:frontend_dialysis_record/features/sessions/models/monthly_ultrafiltration_summary.dart';
 import 'package:frontend_dialysis_record/features/sessions/models/session_dto.dart';
 import 'package:frontend_dialysis_record/features/sessions/views/widgets/day_session_group_title.dart';
+import 'package:frontend_dialysis_record/features/doctors/views/widgets/observations_timeline_panel.dart';
 import 'package:frontend_dialysis_record/core/widgets/widgets.dart';
 import 'package:frontend_dialysis_record/core/design/design.dart';
 
@@ -462,6 +463,14 @@ class _PatientDetailForDoctorScreenState
                                   tooltip: 'Mes siguiente',
                                   onPressed: canGoForward ? () => _changeMonth(1) : null,
                                   icon: const Icon(Icons.chevron_right),
+                                ),
+                                IconButton(
+                                  tooltip: 'Ver Observaciones',
+                                  onPressed: () {
+                                    showObservationsPanel(context, sessions);
+                                  },
+                                  icon: const Icon(PhosphorIconsRegular.stethoscope),
+                                  color: Theme.of(context).colorScheme.primary,
                                 ),
                                 if (_generatingPdf)
                                   const Padding(

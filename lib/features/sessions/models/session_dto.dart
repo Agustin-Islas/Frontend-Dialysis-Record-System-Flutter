@@ -13,6 +13,7 @@ class SessionDto {
   final int? partial;
 
   final String? observations;
+  final int? severityLevel;
 
   final String? patientName;
   final String? patientId;
@@ -28,6 +29,7 @@ class SessionDto {
     this.infusion,
     this.partial,
     this.observations,
+    this.severityLevel,
     this.patientName,
     this.patientId,
   });
@@ -63,6 +65,7 @@ class SessionDto {
       infusion: toInt(json['infusion']),
       partial: toInt(json['partial']),
       observations: json['observations']?.toString(),
+      severityLevel: toInt(json['severityLevel']),
       patientName: json['patientName']?.toString(),
       patientId: json['patientId']?.toString(),
     );
