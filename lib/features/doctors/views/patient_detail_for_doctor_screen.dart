@@ -369,23 +369,6 @@ class _PatientDetailForDoctorScreenState
                                      Row(
                                        mainAxisSize: MainAxisSize.min,
                                        children: [
-                                         Text(
-                                           '- - -',
-                                           style: TextStyle(
-                                             color: Theme.of(context).colorScheme.primary,
-                                             fontWeight: FontWeight.w900,
-                                           ),
-                                         ),
-                                         const SizedBox(width: 4),
-                                         Text(
-                                           'Media: ${mean.toStringAsFixed(0)} ml',
-                                           style: TextStyle(
-                                             color: Theme.of(context).colorScheme.primary,
-                                             fontSize: 12,
-                                             fontWeight: FontWeight.w700,
-                                           ),
-                                         ),
-                                         const SizedBox(width: 16),
                                          Icon(
                                            Icons.touch_app_outlined,
                                            size: 18,
@@ -393,7 +376,7 @@ class _PatientDetailForDoctorScreenState
                                          ),
                                          const SizedBox(width: 4),
                                          Text(
-                                           'Toca para ir al detalle',
+                                           'Toca una barra para ir al detalle del día',
                                            style: TextStyle(
                                              fontSize: 12,
                                              color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -895,6 +878,7 @@ class _DailyUltrafiltrationChartState
     
     double minVal = -1200;
     double maxVal = 400;
+    
     int daysWithData = 0;
 
     int daysToShow = daysInMonth;
@@ -903,11 +887,11 @@ class _DailyUltrafiltrationChartState
       daysToShow = now.day;
     }
 
-    final List<_ChartData> maChartData = [];
     final List<_ChartData> meanChartData = [];
 
     for (int i = 0; i < daysToShow; i++) {
       final val = dailyTotals[i];
+      
       chartData.add(
         _ChartData(
           (i + 1).toString(),
@@ -916,16 +900,6 @@ class _DailyUltrafiltrationChartState
         ),
       );
       
-      // Calculate 7-day SMA
-      double sum = 0;
-      int count = 0;
-      for (int j = math.max(0, i - 6); j <= i; j++) {
-        sum += dailyTotals[j];
-        count++;
-      }
-      final maVal = count > 0 ? sum / count : 0.0;
-      maChartData.add(_ChartData((i + 1).toString(), maVal, scheme.tertiary));
-      
       meanChartData.add(_ChartData((i + 1).toString(), widget.mean, scheme.primary));
       
       if (val != 0) {
@@ -933,26 +907,17 @@ class _DailyUltrafiltrationChartState
       }
       if (val < minVal) minVal = val;
       if (val > maxVal) maxVal = val;
-      
-      if (maVal < minVal) minVal = maVal;
-      if (maVal > maxVal) maxVal = maVal;
     }
     
     if (minVal < -1200) minVal -= 100;
     if (maxVal > 400) maxVal += 100;
-
+    
     return SizedBox(
       height: 250,
       width: double.infinity,
       child: SfCartesianChart(
         plotAreaBorderWidth: 0,
         margin: const EdgeInsets.only(top: 10, right: 10, bottom: 5),
-        onTrackballPositionChanging: (TrackballArgs args) {
-          if (args.chartPointInfo.seriesIndex != 0) {
-            args.chartPointInfo.label = '';
-            args.chartPointInfo.header = '';
-          }
-        },
         trackballBehavior: TrackballBehavior(
           enable: true,
           activationMode: ActivationMode.singleTap,
@@ -968,14 +933,13 @@ class _DailyUltrafiltrationChartState
               fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
-            format: 'Día point.x\npoint.y ml',
           ),
         ),
         primaryXAxis: CategoryAxis(
-          crossesAt: maxVal,
+          crossesAt: 0,
           placeLabelsNearAxisLine: false,
           majorGridLines: const MajorGridLines(width: 0),
-          axisLine: const AxisLine(width: 0),
+          axisLine: const AxisLine(width: 1.5, color: Colors.grey),
           labelStyle: TextStyle(fontSize: 10, color: scheme.onSurfaceVariant),
           interval: daysInMonth > 15 ? 5 : 2,
           labelIntersectAction: AxisLabelIntersectAction.hide,
@@ -1001,30 +965,14 @@ class _DailyUltrafiltrationChartState
           iconWidth: 12,
         ),
         series: <CartesianSeries<_ChartData, String>>[
-          SplineAreaSeries<_ChartData, String>(
-            name: 'UF Diaria',
+          ColumnSeries<_ChartData, String>(
+            name: 'Balance Diario',
             dataSource: chartData,
             xValueMapper: (_ChartData data, _) => data.day,
             yValueMapper: (_ChartData data, _) => data.value,
-            gradient: LinearGradient(
-              colors: [
-                scheme.primary.withValues(alpha: 0.35),
-                scheme.primary.withValues(alpha: 0.02),
-              ],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-            borderColor: scheme.primary,
-            borderWidth: 2.5,
+            pointColorMapper: (_ChartData data, _) => data.color,
+            borderRadius: BorderRadius.circular(2),
             animationDuration: 1000,
-            markerSettings: MarkerSettings(
-              isVisible: true,
-              height: 7,
-              width: 7,
-              color: scheme.surface,
-              borderColor: scheme.primary,
-              borderWidth: 2,
-            ),
             onPointTap: (ChartPointDetails details) {
               if (widget.onDayTapped != null && details.pointIndex != null) {
                 final day = int.tryParse(chartData[details.pointIndex!].day);
@@ -1032,21 +980,10 @@ class _DailyUltrafiltrationChartState
               }
             },
           ),
-          SplineSeries<_ChartData, String>(
-            name: 'Tendencia (7 días)',
-            dataSource: maChartData,
-            xValueMapper: (_ChartData data, _) => data.day,
-            yValueMapper: (_ChartData data, _) => data.value,
-            color: const Color(0xFFFF9800), // Naranja para resaltar
-            width: 3,
-            enableTooltip: false,
-            animationDuration: 1000,
-            markerSettings: const MarkerSettings(isVisible: false),
-          ),
           if (daysWithData > 0)
             LineSeries<_ChartData, String>(
-              name: 'Media',
-              initialIsVisible: false,
+              name: 'Media Mensual',
+              initialIsVisible: true,
               dataSource: meanChartData,
               xValueMapper: (_ChartData data, _) => data.day,
               yValueMapper: (_ChartData data, _) => data.value,
@@ -1192,9 +1129,10 @@ class _PieChartData {
   final String label;
   final int count;
   final Color color;
-  final String textLabel;
+  final String percentageText;
+  final int avgPartial;
 
-  _PieChartData(this.label, this.count, this.color, this.textLabel);
+  _PieChartData(this.label, this.count, this.color, this.percentageText, this.avgPartial);
 }
 
 class _ConcentrationPieChart extends StatelessWidget {
@@ -1208,13 +1146,56 @@ class _ConcentrationPieChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    DateTime? parseDateTime(String? dateStr, String? hourStr) {
+      if (dateStr == null) return null;
+      final d = DateTime.tryParse(dateStr);
+      if (d == null) return null;
+      if (hourStr == null) return d;
+      final parts = hourStr.split(':');
+      if (parts.length >= 2) {
+        final h = int.tryParse(parts[0]) ?? 0;
+        final m = int.tryParse(parts[1]) ?? 0;
+        return DateTime(d.year, d.month, d.day, h, m);
+      }
+      return d;
+    }
+
+    final sortedSessions = List<SessionDto>.from(sessions)
+      ..sort((a, b) {
+        final dateA = parseDateTime(a.date, a.hour);
+        final dateB = parseDateTime(b.date, b.hour);
+        if (dateA == null && dateB == null) return 0;
+        if (dateA == null) return 1;
+        if (dateB == null) return -1;
+        return dateA.compareTo(dateB);
+      });
+
     final Map<double, int> counts = {};
-    for (final s in sessions) {
-      if (s.effectiveDate == null || s.concentration == null) continue;
+    final Map<double, int> partialSums = {};
+    final Map<double, int> partialCounts = {};
+    
+    for (int i = 0; i < sortedSessions.length; i++) {
+      final s = sortedSessions[i];
+      if (s.effectiveDate == null) continue;
       final date = DateTime.tryParse(s.effectiveDate!);
       if (date == null) continue;
+      
       if (date.year == month.year && date.month == month.month) {
-        counts[s.concentration!] = (counts[s.concentration!] ?? 0) + 1;
+        // Contamos la bolsa infundida en ESTA sesión
+        if (s.concentration != null) {
+          counts[s.concentration!] = (counts[s.concentration!] ?? 0) + 1;
+        }
+        
+        // Clínicamente, el 'parcial' (drenaje pos infusión) de ESTA sesión 
+        // corresponde a la eficacia de la bolsa infundida en la sesión ANTERIOR.
+        if (i > 0 && s.partial != null) {
+          final prevSession = sortedSessions[i - 1];
+          if (prevSession.concentration != null) {
+            final prevConc = prevSession.concentration!;
+            partialSums[prevConc] = (partialSums[prevConc] ?? 0) + s.partial!;
+            partialCounts[prevConc] = (partialCounts[prevConc] ?? 0) + 1;
+          }
+        }
       }
     }
 
@@ -1255,11 +1236,15 @@ class _ConcentrationPieChart extends StatelessWidget {
         fallbackColorIndex++;
       }
       
+      final validPartialsCount = partialCounts[entry.key] ?? 0;
+      final avgPartial = validPartialsCount > 0 
+          ? (partialSums[entry.key]! / validPartialsCount).round() 
+          : 0;
+          
       final percentage = (entry.value / totalBags * 100).toStringAsFixed(1).replaceAll('.', ',');
-      final textLabel = '$label\n($percentage%)';
       
       dataSource.add(
-        _PieChartData(label, entry.value, color, textLabel),
+        _PieChartData(label, entry.value, color, '$percentage%', avgPartial),
       );
     }
 
@@ -1275,73 +1260,144 @@ class _ConcentrationPieChart extends StatelessWidget {
       );
     }
 
-    return SizedBox(
-      height: 280, // Se aumentó la altura para dar espacio a las etiquetas
-      width: double.infinity,
-      child: SfCircularChart(
-        margin: const EdgeInsets.all(16), // Margen en todos los lados
-        legend: const Legend(isVisible: false),
-        annotations: <CircularChartAnnotation>[
-          CircularChartAnnotation(
-            widget: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  '$totalBags',
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          height: 220,
+          width: double.infinity,
+          child: SfCircularChart(
+            margin: EdgeInsets.zero,
+            legend: const Legend(isVisible: false),
+            annotations: <CircularChartAnnotation>[
+              CircularChartAnnotation(
+                widget: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '$totalBags',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: scheme.onSurface,
+                      ),
+                    ),
+                    Text(
+                      'Bolsas',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            tooltipBehavior: TooltipBehavior(
+              enable: true,
+              builder: (dynamic data, dynamic point, dynamic series, int pointIndex, int seriesIndex) {
+                final pieData = data as _PieChartData;
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: scheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(4),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    '${pieData.percentageText} del total',
+                    style: TextStyle(
+                      color: scheme.onSurface,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                );
+              },
+            ),
+            series: <CircularSeries>[
+              DoughnutSeries<_PieChartData, String>(
+                dataSource: dataSource,
+                xValueMapper: (_PieChartData data, _) => data.label,
+                yValueMapper: (_PieChartData data, _) => data.count,
+                pointColorMapper: (_PieChartData data, _) => data.color,
+                dataLabelMapper: (_PieChartData data, _) => data.label,
+                dataLabelSettings: DataLabelSettings(
+                  isVisible: true,
+                  textStyle: TextStyle(
                     color: scheme.onSurface,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 11,
+                  ),
+                  labelPosition: ChartDataLabelPosition.outside,
+                  labelIntersectAction: LabelIntersectAction.shift,
+                  connectorLineSettings: const ConnectorLineSettings(
+                    type: ConnectorType.curve,
+                    length: '10%',
                   ),
                 ),
-                Text(
-                  'Bolsas',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: scheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
+                innerRadius: '60%',
+                radius: '70%',
+                animationDuration: 800,
+              ),
+            ],
           ),
-        ],
-        tooltipBehavior: TooltipBehavior(
-          enable: true,
-          color: scheme.surfaceContainerHighest,
-          textStyle: TextStyle(
-            color: scheme.onSurface,
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-          ),
-          format: 'point.y bolsas',
         ),
-        series: <CircularSeries>[
-          DoughnutSeries<_PieChartData, String>(
-            dataSource: dataSource,
-            xValueMapper: (_PieChartData data, _) => data.label,
-            yValueMapper: (_PieChartData data, _) => data.count,
-            pointColorMapper: (_PieChartData data, _) => data.color,
-            dataLabelMapper: (_PieChartData data, _) => data.textLabel,
-            dataLabelSettings: DataLabelSettings(
-              isVisible: true,
-              textStyle: TextStyle(
-                color: scheme.onSurface,
-                fontWeight: FontWeight.w700,
-                fontSize: 11, // Texto un poco más pequeño para evitar amontonamiento
+        const SizedBox(height: 16),
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          alignment: WrapAlignment.center,
+          children: dataSource.map((data) {
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: scheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.5)),
               ),
-              labelPosition: ChartDataLabelPosition.outside,
-              labelIntersectAction: LabelIntersectAction.shift, // Desplaza etiquetas superpuestas
-              connectorLineSettings: const ConnectorLineSettings(
-                type: ConnectorType.curve, // Líneas curvas más estéticas
-                length: '15%', // Línea de conexión un poco más larga
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: data.color,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${data.label} (${data.count} bolsas)',
+                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                      ),
+                      Text(
+                        'Parcial prom: ${data.avgPartial} ml',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                          color: data.avgPartial <= 0 ? scheme.primary : scheme.error,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ),
-            innerRadius: '60%',
-            radius: '75%', // Reduce el diámetro del anillo para dar espacio a las etiquetas
-            animationDuration: 800,
-          ),
-        ],
-      ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 8),
+      ],
     );
   }
 }
